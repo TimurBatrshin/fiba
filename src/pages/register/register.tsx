@@ -1,77 +1,57 @@
 import React, { useState } from "react";
 import "./register.css";
+import axios from "axios";
 
-const Register = () => {
-  const [teamName, setTeamName] = useState("");
-  const [player1, setPlayer1] = useState("");
-  const [player2, setPlayer2] = useState("");
-  const [player3, setPlayer3] = useState("");
-  const [reserve, setReserve] = useState("");
+const Register = ({ tournamentId }) => {
+  const [teamName, setTeamName] = useState('');
+  const [players, setPlayers] = useState(['', '', '', '']);
+  
+    const handlePlayerChange = (index, value) => {
+        const newPlayers = [...players];
+        newPlayers[index] = value;
+        setPlayers(newPlayers);
+      };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    // Здесь будет логика для отправки данных о команде на сервер
-    console.log({ teamName, player1, player2, player3, reserve });
-  };
+      const handleSubmit = async (e) => {
+        e.preventDefault();
+    
+        const response = await fetch(`/api/tournaments/${tournamentId}/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ teamName, players })
+        });
+    
+        const data = await response.json();
+        if (response.ok) {
+          alert('Вы успешно зарегистрировались!');
+        } else {
+          alert(data.message);
+        }
+      };
 
-  return (
-    <div className="register-container">
-      <h1>Регистрация на турнир</h1>
-      <form onSubmit={handleSubmit} className="register-form">
-        <div className="form-group">
-          <label htmlFor="teamName">Название команды</label>
-          <input
-            type="text"
-            id="teamName"
-            value={teamName}
-            onChange={(e) => setTeamName(e.target.value)}
-            required
-          />
-        </div>
-        <div className="form-group">
-          <label htmlFor="player1">Игрок 1</label>
-          <input
-            type="text"
-            id="player1"
-            value={player1}
-            onChange={(e) => setPlayer1(e.target.value)}
-            required
-          />
-        </div>
-        <div className="form-group">
-          <label htmlFor="player2">Игрок 2</label>
-          <input
-            type="text"
-            id="player2"
-            value={player2}
-            onChange={(e) => setPlayer2(e.target.value)}
-            required
-          />
-        </div>
-        <div className="form-group">
-          <label htmlFor="player3">Игрок 3</label>
-          <input
-            type="text"
-            id="player3"
-            value={player3}
-            onChange={(e) => setPlayer3(e.target.value)}
-            required
-          />
-        </div>
-        <div className="form-group">
-          <label htmlFor="reserve">Запасной игрок</label>
-          <input
-            type="text"
-            id="reserve"
-            value={reserve}
-            onChange={(e) => setReserve(e.target.value)}
-            required
-          />
-        </div>
-        <button type="submit" className="submit-btn">Зарегистрировать команду</button>
-      </form>
-    </div>
-  );
-}
+      return (
+        <form onSubmit={handleSubmit}>
+          <div>
+            <label>Название команды</label>
+            <input
+              type="text"
+              value={teamName}
+              onChange={(e) => setTeamName(e.target.value)}
+            />
+          </div>
+          {players.map((player, index) => (
+            <div key={index}>
+              <label>{`Игрок ${index + 1}`}</label>
+              <input
+                type="text"
+                value={player}
+                onChange={(e) => handlePlayerChange(index, e.target.value)}
+              />
+            </div>
+          ))}
+          <button type="submit">Зарегистрировать команду</button>
+        </form>
+      );
+    };
 
 export default Register;

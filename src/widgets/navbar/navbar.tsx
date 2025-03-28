@@ -8,7 +8,6 @@ const Navbar = () => {
         <ul className='nav-links'>
           <li><Link to="/">Главная</Link></li>
           <li><Link to="/tournaments">Турниры</Link></li>
-          <li><Link to="/register">Регистрация</Link></li>
           <li><Link to="/profile">Профиль</Link></li>
           <li><Link to="/business">Для бизнеса</Link></li>
         </ul>
