@@ -1,0 +1,42 @@
+/* tournaments.css */
+.tournaments-container {
+  padding: 20px;
+}
+
+.tournament-list {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.tournament-card {
+  background-color: #f4f4f4;
+  padding: 15px;
+  margin: 10px;
+  width: 300px;
+  border-radius: 8px;
+}
+
+.details-btn {
+  background-color: #007bff;
+  color: white;
+  padding: 10px;
+  border-radius: 5px;
+  text-decoration: none;
+}
+
+.details-btn:hover {
+  background-color: #0056b3;
+}
+
+/* tournament.css */
+.tournament-page {
+  padding: 20px;
+}
+
+.tournament-page h1 {
+  font-size: 2em;
+}
+
+.tournament-page p {
+  font-size: 1.2em;
+}

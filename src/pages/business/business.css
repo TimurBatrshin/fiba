@@ -1,0 +1,74 @@
+.business-container {
+    padding: 40px;
+    background-color: #f9f9f9;
+    text-align: center;
+}
+
+h1 {
+    font-size: 2rem;
+    color: #333;
+    margin-bottom: 30px;
+}
+
+h2 {
+    font-size: 1.5rem;
+    color: #333;
+    margin: 20px 0;
+}
+
+.create-btn {
+    background-color: #0066cc;
+    color: white;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    margin-bottom: 20px;
+}
+
+.create-btn:hover {
+    background-color: #004b99;
+}
+
+.tournaments-section, .ads-section {
+    background-color: white;
+    padding: 20px;
+    margin-bottom: 30px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.tournament-item, .ad-item {
+    margin: 10px 0;
+    text-align: left;
+    padding: 10px;
+    border-radius: 5px;
+    background-color: #f0f0f0;
+}
+
+.ad-item.active {
+    background-color: #c3e6c3;
+}
+
+.ad-item.pending {
+    background-color: #ffeeba;
+}
+
+h3 {
+    font-size: 1.2rem;
+    color: #333;
+    margin: 0;
+}
+
+p {
+    font-size: 1rem;
+    color: #555;
+}
+
+.form-section input {
+    padding: 10px;
+    margin: 5px;
+    width: 200px;
+    border: 1px solid #ddd;
+}

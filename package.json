@@ -1,0 +1,37 @@
+{
+    "name": "fiba",
+    "version": "1.0.0",
+    "main": "./src/index.tsx",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "start": "brojs server --port=8099 --with-open-browser",
+        "build": "npm run clean && brojs build --dev",
+        "build:prod": "npm run clean && brojs build",
+        "clean": "rimraf dist"
+    },
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "@brojs/cli": "^1.8.4",
+        "@types/react": "^18.3.12",
+        "@types/react-dom": "^18.3.1",
+        "axios": "^1.8.4",
+        "body-parser": "^2.2.0",
+        "cors": "^2.8.5",
+        "express": "^4.21.2",
+        "pg": "^8.14.1",
+        "react": "^18.3.1",
+        "react-dom": "^18.3.1",
+        "react-router-dom": "^7.4.0",
+        "sequelize": "^6.37.7"
+    },
+    "devDependencies": {
+        "css-loader": "^7.1.2",
+        "sass": "^1.86.0",
+        "sass-loader": "^16.0.5",
+        "style-loader": "^4.0.0",
+        "webpack": "^5.98.0"
+    },
+    "keywords": [],
+    "description": ""
+}

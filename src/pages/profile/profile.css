@@ -1,0 +1,82 @@
+.profile-container {
+    padding: 40px;
+    background-color: #f9f9f9;
+    text-align: center;
+  }
+  
+  h1 {
+    font-size: 2rem;
+    color: #333;
+    margin-bottom: 30px;
+  }
+  
+  .profile-card {
+    background-color: white;
+    padding: 20px;
+    width: 300px;
+    margin: 0 auto 30px auto;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    text-align: center;
+  }
+  
+  .profile-photo {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 20px;
+  }
+  
+  .stats p {
+    font-size: 1.2rem;
+    color: #555;
+    margin: 5px 0;
+  }
+  
+  .edit-btn {
+    background-color: #0066cc;
+    color: white;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    margin-top: 20px;
+  }
+  
+  .edit-btn:hover {
+    background-color: #004b99;
+  }
+  
+  .games-history {
+    width: 80%;
+    margin: 0 auto;
+    max-width: 600px;
+  }
+  
+  .games-history h2 {
+    font-size: 1.5rem;
+    color: #333;
+    margin-bottom: 10px;
+  }
+  
+  .games-history ul {
+    list-style-type: none;
+    padding: 0;
+  }
+  
+  .games-history li {
+    font-size: 1rem;
+    color: #555;
+    margin: 5px 0;
+  }
+  
+  .win {
+    color: green;
+  }
+  
+  .loss {
+    color: red;
+  }
+  

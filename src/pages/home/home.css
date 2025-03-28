@@ -1,0 +1,46 @@
+.home-container {
+    text-align: center;
+    padding: 40px;
+    background-color: #f9f9f9;
+  }
+  
+  h1 {
+    font-size: 2rem;
+    color: #333;
+  }
+  
+  p {
+    font-size: 1.2rem;
+    color: #555;
+    margin-top: 10px;
+  }
+  
+  .quick-links {
+    margin-top: 30px;
+  }
+  
+  .quick-links h2 {
+    font-size: 1.5rem;
+    color: #333;
+  }
+  
+  .quick-links ul {
+    list-style: none;
+    padding: 0;
+  }
+  
+  .quick-links ul li {
+    margin: 10px 0;
+  }
+  
+  .quick-links a {
+    text-decoration: none;
+    color: #0066cc;
+    font-size: 1rem;
+    transition: 0.3s;
+  }
+  
+  .quick-links a:hover {
+    color: #004b99;
+    text-decoration: underline;
+  }
