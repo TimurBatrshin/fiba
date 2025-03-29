@@ -18,7 +18,7 @@ const Admin = () => {
   useEffect(() => {
     const fetchTournaments = async () => {
       try {
-        const response = await axios.get("/api/tournaments", {
+        const response = await axios.get("http://localhost:8080/api/tournaments", {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
@@ -68,7 +68,7 @@ const Admin = () => {
         prize_pool: 0,
         status: "registration",
       });
-      const response = await axios.get("/api/tournaments", {
+      const response = await axios.get("http://localhost:6000/api/tournaments", {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
@@ -94,7 +94,7 @@ const Admin = () => {
 
   const handleDelete = async (id: number) => {
     try {
-      await axios.delete(`/api/tournaments/${id}`, {
+      await axios.delete(`http://localhost:6000/api/tournaments/${id}`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },

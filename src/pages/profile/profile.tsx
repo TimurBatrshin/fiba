@@ -1,8 +1,13 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 import "./profile.css";
 
-const Profile = () => {
+interface ProfileProps {
+  isAuthenticated: boolean;
+}
+
+const Profile: React.FC<ProfileProps> = ({ isAuthenticated }) => {
   const [profile, setProfile] = useState<any>(null);
   const [editMode, setEditMode] = useState(false);
   const [formData, setFormData] = useState({
@@ -11,29 +16,47 @@ const Profile = () => {
     total_points: 0,
     rating: 0,
   });
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchProfile = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        console.error("Токен не найден");
+        navigate("/login");
+        return;
+      }
+
+      console.log("Токен найден:", token);
+
       try {
-        const response = await axios.get("/api/profile", {
+        const response = await axios.get("http://localhost:8080/api/profile", {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            Authorization: `Bearer ${token}`,
           },
         });
+
+        console.log("Ответ сервера:", response.data);
+
         setProfile(response.data);
         setFormData({
-          photo_url: response.data.photo_url,
-          tournaments_played: response.data.tournaments_played,
-          total_points: response.data.total_points,
-          rating: response.data.rating,
+          photo_url: response.data.photo_url || "",
+          tournaments_played: response.data.tournaments_played || 0,
+          total_points: response.data.total_points || 0,
+          rating: response.data.rating || 0,
         });
       } catch (err) {
         console.error("Ошибка при получении профиля", err);
+        if (err.response && err.response.status === 401) {
+          navigate("/login");
+        } else if (err.response && err.response.status === 500) {
+          console.error("Внутренняя ошибка сервера");
+        }
       }
     };
 
     fetchProfile();
-  }, []);
+  }, [navigate]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -45,10 +68,16 @@ const Profile = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
     try {
-      const response = await axios.put("/api/profile", formData, {
+      const response = await axios.put("http://localhost:8080/api/profile", formData, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${token}`,
         },
       });
       setProfile(response.data);

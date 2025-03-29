@@ -3,7 +3,11 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import "./login.css";
 
-const Login = () => {
+interface LoginProps {
+  setIsAuthenticated: (isAuthenticated: boolean) => void;
+}
+
+const Login: React.FC<LoginProps> = ({ setIsAuthenticated }) => {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -22,8 +26,14 @@ const Login = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await axios.post("/api/auth/login", formData);
+      const response = await axios.post("http://localhost:8080/api/auth/login", formData);
+      // Сохраняем токен в localStorage
       localStorage.setItem("token", response.data.token);
+
+      // Устанавливаем аутентификацию в true
+      setIsAuthenticated(true);
+
+      // Переходим на страницу профиля
       navigate("/profile");
     } catch (err) {
       setError("Ошибка при входе. Попробуйте снова.");

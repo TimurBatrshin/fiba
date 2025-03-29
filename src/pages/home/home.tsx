@@ -13,6 +13,7 @@ const Home = () => {
           <li><Link to="/tournaments">Турниры</Link></li>
           <li><Link to="/register">Зарегистрировать команду</Link></li>
           <li><Link to="/profile">Мой профиль</Link></li>
+          <li><Link to="/register-user">Регистрация</Link></li>
         </ul>
       </div>
       <div className="info-section">
@@ -22,6 +23,7 @@ const Home = () => {
           <li>Принять участие в турнирах по стритболу</li>
           <li>Зарегистрировать свою команду</li>
           <li>Следить за результатами игр и рейтингами</li>
+          <li>Пройти регистрацию на сайт</li>
         </ul>
         <p>Для получения дополнительной информации посетите <Link to="/faq">FAQ</Link>.</p>
       </div>

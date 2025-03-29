@@ -18,7 +18,7 @@ const Tournament = () => {
   useEffect(() => {
     const fetchAds = async () => {
       try {
-        const response = await axios.get(`/api/tournaments/${id}/ads`);
+        const response = await axios.get(`http://localhost:8080/api/tournaments/${id}/ads`);
         setAds(response.data);
       } catch (err) {
         console.error("Ошибка при получении рекламы", err);

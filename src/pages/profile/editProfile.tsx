@@ -1,101 +1,152 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import './profile.css';
+import { useNavigate } from "react-router-dom";
+import "./profile.css";
 
-const EditProfile = () => {
-  const [profile, setProfile] = useState({
-    name: "",
+interface ProfileProps {
+  isAuthenticated: boolean;
+}
+
+const Profile: React.FC<ProfileProps> = ({ isAuthenticated }) => {
+  const [profile, setProfile] = useState<any>(null);
+  const [editMode, setEditMode] = useState(false);
+  const [formData, setFormData] = useState({
     photo_url: "",
     tournaments_played: 0,
     total_points: 0,
     rating: 0,
   });
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchProfile = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        console.error("Токен не найден");
+        navigate("/login");
+        return;
+      }
+
+      console.log("Токен найден:", token);
+
       try {
-        const response = await axios.get("/api/profile");
+        const response = await axios.get("http://localhost:8080/api/profile", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        console.log("Ответ сервера:", response.data);
+
         setProfile(response.data);
-      } catch (error) {
-        console.error("Ошибка при загрузке профиля:", error);
+        setFormData({
+          photo_url: response.data.photo_url || "",
+          tournaments_played: response.data.tournaments_played || 0,
+          total_points: response.data.total_points || 0,
+          rating: response.data.rating || 0,
+        });
+      } catch (err) {
+        console.error("Ошибка при получении профиля", err);
+        if (err.response && err.response.status === 401) {
+          navigate("/login");
+        } else if (err.response && err.response.status === 500) {
+          console.error("Внутренняя ошибка сервера");
+        }
       }
     };
 
     fetchProfile();
-  }, []);
+  }, [navigate]);
 
-  const handleChange = (e) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setProfile((prevProfile) => ({
-      ...prevProfile,
+    setFormData((prevData) => ({
+      ...prevData,
       [name]: value,
     }));
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
     try {
-      await axios.put("/api/profile", profile);
-      alert("Профиль успешно обновлен!");
-    } catch (error) {
-      console.error("Ошибка при обновлении профиля:", error);
-      alert("Ошибка при обновлении профиля.");
+      const response = await axios.put("http://localhost:8080/api/profile", formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      setProfile(response.data);
+      setEditMode(false);
+    } catch (err) {
+      console.error("Ошибка при обновлении профиля", err);
     }
   };
 
+  if (!profile) {
+    return <div>Загрузка...</div>;
+  }
+
   return (
     <div className="profile-container">
-      <h1>Редактирование профиля</h1>
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>Имя</label>
-          <input
-            type="text"
-            name="name"
-            value={profile.name}
-            onChange={handleChange}
-          />
-        </div>
-        <div>
-          <label>URL фото</label>
-          <input
-            type="text"
-            name="photo_url"
-            value={profile.photo_url}
-            onChange={handleChange}
-          />
-        </div>
-        <div>
-          <label>Турниров сыграно</label>
-          <input
-            type="number"
-            name="tournaments_played"
-            value={profile.tournaments_played}
-            onChange={handleChange}
-          />
-        </div>
-        <div>
-          <label>Общее количество очков</label>
-          <input
-            type="number"
-            name="total_points"
-            value={profile.total_points}
-            onChange={handleChange}
-          />
-        </div>
-        <div>
-          <label>Рейтинг</label>
-          <input
-            type="number"
-            name="rating"
-            value={profile.rating}
-            onChange={handleChange}
-          />
-        </div>
-        <button type="submit">Сохранить</button>
-      </form>
+      <h1>Профиль игрока</h1>
+      <div className="profile-info">
+        <img src={profile.photo_url} alt="Фото профиля" />
+        <p>Имя: {profile.User.name}</p>
+        <p>Email: {profile.User.email}</p>
+        <p>Турниров сыграно: {profile.tournaments_played}</p>
+        <p>Всего очков: {profile.total_points}</p>
+        <p>Рейтинг: {profile.rating}</p>
+      </div>
+      <button onClick={() => setEditMode(true)}>Редактировать профиль</button>
+      {editMode && (
+        <form onSubmit={handleSubmit} className="profile-form">
+          <div>
+            <label>URL фото</label>
+            <input
+              type="text"
+              name="photo_url"
+              value={formData.photo_url}
+              onChange={handleChange}
+            />
+          </div>
+          <div>
+            <label>Турниров сыграно</label>
+            <input
+              type="number"
+              name="tournaments_played"
+              value={formData.tournaments_played}
+              onChange={handleChange}
+            />
+          </div>
+          <div>
+            <label>Всего очков</label>
+            <input
+              type="number"
+              name="total_points"
+              value={formData.total_points}
+              onChange={handleChange}
+            />
+          </div>
+          <div>
+            <label>Рейтинг</label>
+            <input
+              type="number"
+              name="rating"
+              value={formData.rating}
+              onChange={handleChange}
+            />
+          </div>
+          <button type="submit">Сохранить изменения</button>
+          <button type="button" onClick={() => setEditMode(false)}>Отмена</button>
+        </form>
+      )}
     </div>
   );
 };
 
-export default EditProfile;
+export default Profile;

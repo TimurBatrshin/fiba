@@ -15,17 +15,17 @@ const Register = ({ tournamentId }) => {
       const handleSubmit = async (e) => {
         e.preventDefault();
     
-        const response = await fetch(`/api/tournaments/${tournamentId}/register`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ teamName, players })
+        const response = await axios.post(`http://localhost:8080/api/tournaments/${tournamentId}/register`, {
+          teamName,
+          players
+        }, {
+          headers: { 'Content-Type': 'application/json' }
         });
-    
-        const data = await response.json();
-        if (response.ok) {
-          alert('Вы успешно зарегистрировались!');
-        } else {
-          alert(data.message);
+      
+        alert('Вы успешно зарегистрировались!');
+      
+        if (response.status != 200 ) {
+          alert('Произошла ошибка при регистрации.');
         }
       };
 

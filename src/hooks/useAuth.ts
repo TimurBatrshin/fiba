@@ -13,7 +13,7 @@ export const useAuth = () => {
           return;
         }
 
-        const response = await axios.get('/api/auth/check', {
+        const response = await axios.get('http://localhost:8080/api/auth/check', {
           headers: { Authorization: token },
         });
 

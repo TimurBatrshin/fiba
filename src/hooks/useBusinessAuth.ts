@@ -13,7 +13,7 @@ export const useBusinessAuth = () => {
           return;
         }
 
-        const response = await axios.get('/api/auth/business-check', {
+        const response = await axios.get('http://localhost:8080/api/auth/business-check', {
           headers: { Authorization: token },
         });
 

@@ -25,7 +25,7 @@ const TournamentBracket: React.FC<{ tournamentId: number }> = ({ tournamentId })
   useEffect(() => {
     const fetchTournament = async () => {
       try {
-        const response = await axios.get(`/api/tournaments/${tournamentId}`);
+        const response = await axios.get(`http://localhost:8080/api/tournaments/${tournamentId}`);
         setTournament(response.data);
       } catch (err) {
         console.error("Ошибка при получении информации о турнире", err);

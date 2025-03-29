@@ -16,7 +16,7 @@ const Business = () => {
   useEffect(() => {
     const fetchTournaments = async () => {
       try {
-        const response = await axios.get("http://localhost:5000/api/tournaments");
+        const response = await axios.get("http://localhost:8080/api/tournaments");
         setTournaments(response.data);
       } catch (error) {
         console.error("Ошибка при получении турниров", error);
@@ -25,7 +25,7 @@ const Business = () => {
     
     const fetchAds = async () => {
       try {
-        const response = await axios.get("http://localhost:5000/api/ads");
+        const response = await axios.get("http://localhost:8080/api/ads");
         setAds(response.data);
       } catch (error) {
         console.error("Ошибка при получении рекламы", error);
@@ -43,7 +43,7 @@ const Business = () => {
     }
 
     try {
-      const response = await axios.post("http://localhost:5000/api/tournaments", {
+      const response = await axios.post("http://localhost:8080/api/tournaments", {
         name: tournamentName,
         date: tournamentDate,
         location: tournamentLocation,
@@ -64,7 +64,7 @@ const Business = () => {
     }
 
     try {
-      const response = await axios.post("http://localhost:5000/api/ads", {
+      const response = await axios.post("http://localhost:8080/api/ads", {
         title: adTitle,
         status: "Ожидает одобрения",
       });

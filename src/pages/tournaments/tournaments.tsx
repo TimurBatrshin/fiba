@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import axios from "axios";
 import "./tournaments.css";
 
 const Tournaments = () => {
@@ -9,8 +9,8 @@ const Tournaments = () => {
     useEffect(() => {
         const fetchTournaments = async () => {
           const query = new URLSearchParams(filters).toString();
-          const response = await fetch(`/api/tournaments?${query}`);
-          const data = await response.json();
+          const response = await axios.get(`http://localhost:8080/api/tournaments?${query}`);
+          const data = await response.data;
           setTournaments(data);
         };
 

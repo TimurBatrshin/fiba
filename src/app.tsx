@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Navbar from "./widgets/navbar/navbar";
 import Home from "./pages/home/home";
@@ -10,26 +10,44 @@ import EditProfile from "./pages/profile/editProfile";
 import RegisterUser from "./pages/registerUser/registerUser";
 import Login from "./pages/login/login";
 import Admin from "./pages/admin/admin"; // Импорт компонента панели администратора
+import { UserRoleProvider } from "./context/UserRoleContext"; // Импорт провайдера контекста роли пользователя
 
-function App() {
+const App: React.FC = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      setIsAuthenticated(true);
+    }
+  }, []);
+
   return (
-    <Router>
-      <div className="app-container">
-        <Navbar />
-        <Routes>
-          <Route index path="/" element={<Home />} />
-          <Route path="/tournaments" element={<Tournaments />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/profile/edit" element={<EditProfile />} />
-          <Route path="/business" element={<Business />} />
-          <Route path="/tournament/:id" element={<Tournament />} /> {/* Новый маршрут */}
-          <Route path="/register-user" element={<RegisterUser />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/admin" element={<Admin />} />
-        </Routes>
-      </div>
-    </Router>
+    <UserRoleProvider>
+      <Router>
+        <div className="app-container">
+          <Navbar isAuthenticated={isAuthenticated} />
+          <Routes>
+            <Route index path="/" element={<Home />} />
+            <Route path="/tournaments" element={<Tournaments />} />
+            <Route
+              path="/profile"
+              element={isAuthenticated ? <Profile isAuthenticated={isAuthenticated} /> : <Login setIsAuthenticated={setIsAuthenticated} />}
+            />
+            <Route
+              path="/profile/edit"
+              element={isAuthenticated ? <EditProfile isAuthenticated={isAuthenticated} /> : <Login setIsAuthenticated={setIsAuthenticated} />}
+            />
+            <Route path="/business" element={<Business />} />
+            <Route path="/tournament/:id" element={<Tournament />} />
+            <Route path="/register-user" element={<RegisterUser />} />
+            <Route path="/login" element={<Login setIsAuthenticated={setIsAuthenticated} />} />
+            <Route path="/admin" element={<Admin />} />
+          </Routes>
+        </div>
+      </Router>
+    </UserRoleProvider>
   );
-}
+};
 
 export default App;

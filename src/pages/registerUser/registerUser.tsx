@@ -23,10 +23,23 @@ const RegisterUser = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await axios.post("/api/auth/register", formData);
-      navigate("/login");
+      const response = await axios.post("http://localhost:8080/api/auth/register", formData, {
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (response.status === 200) {
+        navigate("/login");
+      } else {
+        setError(`Ошибка при регистрации: ${response.data.message}`);
+      }
     } catch (err) {
-      setError("Ошибка при регистрации. Попробуйте снова.");
+      if (axios.isAxiosError(err) && err.response) {
+        console.error("Ошибка регистрации:", err.response.data);
+        setError(err.response.data.message || "Ошибка при регистрации.");
+      } else {
+        console.error("Ошибка сети:", err);
+        setError("Ошибка сети. Проверьте подключение к серверу.");
+      }
     }
   };
 

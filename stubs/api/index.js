@@ -4,12 +4,14 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
 const { Sequelize, DataTypes } = require("sequelize");
-const authMiddleware = require("./authMiddleware"); 
-const businessMiddleware = require("./businessMiddleware"); 
-
+const authMiddleware = require("./authMiddleware");
+const businessMiddleware = require("./businessMiddleware");
+const portfinder = require('portfinder');
+const bodyParser = require('body-parser');
 
 const app = express();
-const port = 5000;
+app.use(bodyParser.json());
+const port = 8080;
 
 // Создание подключения к базе данных через Sequelize
 const sequelize = new Sequelize("streetball", "postgres", "qwerty123", {
@@ -64,7 +66,6 @@ const Ad = sequelize.define("Ad", {
   }, {
     timestamps: true,
   });
-  
 
 // Связи
 User.hasOne(Profile, { foreignKey: "user_id" });
@@ -75,15 +76,15 @@ Tournament.hasMany(Ad, { foreignKey: "tournament_id" });
 Ad.belongsTo(Tournament, { foreignKey: "tournament_id" });
 
 // Middleware
-app.use(cors());
+app.use(cors()); // Добавлено для настройки CORS
 app.use(express.json());
 
 // Настройка отправки email с подтверждением
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: 'your-email@gmail.com',
-    pass: 'your-email-password',
+    user: 'batrshintimur.batrshin@gmail.com',
+    pass: 'ygvp rbli wchm qfkn',
   },
 });
 
@@ -100,41 +101,36 @@ app.post("/api/auth/register", async (req, res) => {
     return res.status(400).send('Email уже зарегистрирован');
   }
 
-  // Хэшируем пароль
   const hashedPassword = await bcrypt.hash(password, 10);
 
   try {
     const newUser = await User.create({ name, email, password: hashedPassword });
-
-    // Создаем профиль пользователя
     await Profile.create({ user_id: newUser.id });
 
-    // Генерация токена для подтверждения email
     const token = jwt.sign({ userId: newUser.id }, 'SECRET_KEY', { expiresIn: '1h' });
 
-    // Отправка email с ссылкой для подтверждения
     const mailOptions = {
       to: email,
       subject: 'Подтверждение email для регистрации',
-      html: `<p>Чтобы подтвердить свой email, нажмите <a href="http://localhost:3000/verify-email?token=${token}">здесь</a>.</p>`
+      html: `<p>Чтобы подтвердить свой email, нажмите <a href="http://localhost:6000/api/auth/verify-email?token=${token}">здесь</a>.</p>`
     };
 
     await transporter.sendMail(mailOptions);
     res.status(200).json({ message: 'Email отправлен, пожалуйста, подтвердите ваш email.' });
   } catch (error) {
-    console.error("Ошибка при регистрации", error);
+    console.error("Ошибка при регистрации", error); // Логирование ошибки
     res.status(500).send("Ошибка сервера");
   }
 });
 
 // Проверка авторизации
 app.get("/api/auth/check", authMiddleware, (req, res) => {
-    res.status(200).send('Авторизация успешна');
+  res.status(200).send('Авторизация успешна');
 });
 
 // Проверка прав бизнеса
 app.get("/api/auth/business-check", authMiddleware, businessMiddleware, (req, res) => {
-    res.status(200).send('Авторизация бизнеса успешна');
+  res.status(200).send('Авторизация бизнеса успешна');
 });
 
 // Подтверждение email
@@ -162,42 +158,43 @@ app.get("/api/auth/verify-email", async (req, res) => {
 
 // Авторизация
 app.post("/api/auth/login", async (req, res) => {
-  const { email, password } = req.body;
-
-  if (!email || !password) {
-    return res.status(400).send("Все поля обязательны для заполнения.");
-  }
-
-  try {
-    const user = await User.findOne({ where: { email } });
-
-    if (!user) {
-      return res.status(400).json({ message: 'Неверный email или пароль' });
+    const { email, password } = req.body;
+  
+    if (!email || !password) {
+      return res.status(400).send("Все поля обязательны для заполнения.");
     }
-
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(400).json({ message: 'Неверный email или пароль' });
-    }
-
-    const token = jwt.sign({ userId: user.id }, 'SECRET_KEY', { expiresIn: '1d' });
-
-    res.status(200).json({ token });
-  } catch (error) {
-    console.error("Ошибка при авторизации", error);
-    res.status(500).send("Ошибка сервера");
-  }
-});
-
-// Получение профиля пользователя
-app.get("/api/profile", authMiddleware, async (req, res) => {
+  
     try {
-      const profile = await Profile.findOne({ where: { user_id: req.user.id }, include: [User] });
+      const user = await User.findOne({ where: { email } });
+  
+      if (!user) {
+        return res.status(400).json({ message: 'Неверный email или пароль' });
+      }
+  
+      const isMatch = await bcrypt.compare(password, user.password);
+      if (!isMatch) {
+        return res.status(400).json({ message: 'Неверный email или пароль' });
+      }
+  
+      const token = jwt.sign({ userId: user.id }, 'Timur007', { expiresIn: '1d' });
+  
+      res.status(200).json({ token });
+    } catch (error) {
+      console.error("Ошибка при авторизации", error);
+      res.status(500).send("Ошибка сервера");
+    }
+  });
+  
+  // Получение профиля пользователя
+  app.get("/api/profile", authMiddleware, async (req, res) => {
+    try {
+      const profile = await Profile.findOne({ where: { user_id: req.user.userId }, include: [User] });
       if (!profile) {
         return res.status(404).send("Профиль не найден");
       }
       res.status(200).json(profile);
     } catch (error) {
+      console.error("Ошибка при получении профиля:", error);
       res.status(500).send("Ошибка при получении профиля");
     }
   });
@@ -206,7 +203,7 @@ app.get("/api/profile", authMiddleware, async (req, res) => {
   app.put("/api/profile", authMiddleware, async (req, res) => {
     const { photo_url, tournaments_played, total_points, rating } = req.body;
     try {
-      const profile = await Profile.findOne({ where: { user_id: req.user.id } });
+      const profile = await Profile.findOne({ where: { user_id: req.user.userId } });
       if (!profile) {
         return res.status(404).send("Профиль не найден");
       }
@@ -217,10 +214,11 @@ app.get("/api/profile", authMiddleware, async (req, res) => {
       await profile.save();
       res.status(200).json(profile);
     } catch (error) {
+      console.error("Ошибка при обновлении профиля:", error);
       res.status(500).send("Ошибка при обновлении профиля");
     }
   });
-
+  
 // Получение турниров
 app.get("/api/tournaments", async (req, res) => {
   try {
@@ -360,83 +358,100 @@ app.post("/api/tournaments/:id/register", async (req, res) => {
 
 // Получение информации о турнире и его участниках
 app.get("/api/tournaments/:id", async (req, res) => {
-    const { id } = req.params;
-  
-    try {
-      const tournament = await Tournament.findByPk(id, {
-        include: [Registration]
-      });
-      if (!tournament) {
-        return res.status(404).send("Турнир не найден");
-      }
-      res.status(200).json(tournament);
-    } catch (error) {
-      res.status(500).send("Ошибка при получении информации о турнире");
-    }
-  });
+  const { id } = req.params;
 
-// Запуск сервера
-app.listen(port, async () => {
   try {
-    await sequelize.sync();  // Синхронизация с БД
-    console.log('Синхронизация с БД прошла успешна');
-    console.log(`Server is running on http://localhost:${port}`);
+    const tournament = await Tournament.findByPk(id, {
+      include: [Registration]
+    });
+    if (!tournament) {
+      return res.status(404).send("Турнир не найден");
+    }
+    res.status(200).json(tournament);
   } catch (error) {
-    console.error("Ошибка подключения к базе данных", error);
+    res.status(500).send("Ошибка при получении информации о турнире");
   }
 });
 
 // Создание рекламы
 app.post("/api/ads", authMiddleware, async (req, res) => {
-    const { title, image_url, tournament_id } = req.body;
-  
-    if (!title || !image_url || !tournament_id) {
-      return res.status(400).send("Все поля обязательны для заполнения.");
+  const { title, image_url, tournament_id } = req.body;
+
+  if (!title || !image_url || !tournament_id) {
+    return res.status(400).send("Все поля обязательны для заполнения.");
+  }
+
+  try {
+    const newAd = await Ad.create({ title, image_url, tournament_id });
+    res.status(201).json(newAd);
+  } catch (error) {
+    res.status(500).send("Ошибка при создании рекламы");
+  }
+});
+
+// Редактирование рекламы
+app.put("/api/ads/:id", authMiddleware, async (req, res) => {
+  const { id } = req.params;
+  const { title, image_url, tournament_id } = req.body;
+
+  try {
+    const ad = await Ad.findByPk(id);
+    if (!ad) {
+      return res.status(404).send("Реклама не найдена");
     }
-  
-    try {
-      const newAd = await Ad.create({ title, image_url, tournament_id });
-      res.status(201).json(newAd);
-    } catch (error) {
-      res.status(500).send("Ошибка при создании рекламы");
+
+    ad.title = title || ad.title;
+    ad.image_url = image_url || ad.image_url;
+    ad.tournament_id = tournament_id || ad.tournament_id;
+    await ad.save();
+
+    res.status(200).json(ad);
+  } catch (error) {
+    res.status(500).send("Ошибка при редактировании рекламы");
+  }
+});
+
+// Удаление рекламы
+app.delete("/api/ads/:id", authMiddleware, async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const ad = await Ad.findByPk(id);
+    if (!ad) {
+      return res.status(404).send("Реклама не найдена");
     }
-  });
-  
-  // Редактирование рекламы
-  app.put("/api/ads/:id", authMiddleware, async (req, res) => {
-    const { id } = req.params;
-    const { title, image_url, tournament_id } = req.body;
-  
-    try {
-      const ad = await Ad.findByPk(id);
-      if (!ad) {
-        return res.status(404).send("Реклама не найдена");
+
+    await ad.destroy();
+    res.status(200).send("Реклама успешно удалена");
+  } catch (error) {
+    res.status(500).send("Ошибка при удалении рекламы");
+  }
+});
+
+// Новый маршрут для получения роли пользователя
+app.get("/api/user/role", authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findByPk(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: 'Пользователь не найден' });
+    }
+    res.status(200).json({ role: user.role });
+  } catch (error) {
+    console.error("Ошибка при получении роли пользователя", error);
+    res.status(500).send("Ошибка сервера");
+  }
+});
+
+portfinder.getPortPromise({ port: port, stopPort: 8080 }).then((port) => {
+    app.listen(port, async () => {
+      try {
+        await sequelize.sync();  // Синхронизация с БД
+        console.log('Синхронизация с БД прошла успешна');
+        console.log(`Server is running on http://localhost:${port}`);
+      } catch (error) {
+        console.error("Ошибка подключения к базе данных", error);
       }
-  
-      ad.title = title || ad.title;
-      ad.image_url = image_url || ad.image_url;
-      ad.tournament_id = tournament_id || ad.tournament_id;
-      await ad.save();
-  
-      res.status(200).json(ad);
-    } catch (error) {
-      res.status(500).send("Ошибка при редактировании рекламы");
-    }
-  });
-  
-  // Удаление рекламы
-  app.delete("/api/ads/:id", authMiddleware, async (req, res) => {
-    const { id } = req.params;
-  
-    try {
-      const ad = await Ad.findByPk(id);
-      if (!ad) {
-        return res.status(404).send("Реклама не найдена");
-      }
-  
-      await ad.destroy();
-      res.status(200).send("Реклама успешно удалена");
-    } catch (error) {
-      res.status(500).send("Ошибка при удалении рекламы");
-    }
+    });
+  }).catch((err) => {
+    console.error(`Не удалось найти свободный порт: ${err.message}`);
   });
