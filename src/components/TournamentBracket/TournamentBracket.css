@@ -1,0 +1,41 @@
+.tournament-bracket {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  background-color: #f9f9f9;
+}
+
+.tournament-bracket h2 {
+  text-align: center;
+}
+
+.bracket {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-around;
+  margin-top: 20px;
+}
+
+.bracket-item {
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  padding: 10px;
+  margin: 10px;
+  width: 200px;
+  text-align: center;
+}
+
+.bracket-item p {
+  font-weight: bold;
+}
+
+.bracket-item ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+.bracket-item li {
+  margin: 5px 0;
+}

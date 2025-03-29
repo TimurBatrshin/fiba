@@ -1,0 +1,13 @@
+.ad-container {
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  padding: 10px;
+  margin: 10px 0;
+  text-align: center;
+}
+
+.ad-container img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 5px;
+}

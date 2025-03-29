@@ -1,69 +1,121 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 import "./profile.css";
 
 const Profile = () => {
-  const [user, setUser] = useState({
-    name: "Иван Иванов",
-    photo: "https://via.placeholder.com/150",
-    stats: {
-      tournaments: 5,
-      points: 120,
-      rating: 4.5
-    },
-    gamesHistory: [
-      { opponent: "Команда A", score: "21-15", date: "2025-03-15" },
-      { opponent: "Команда B", score: "17-21", date: "2025-03-20" }
-    ]
+  const [profile, setProfile] = useState<any>(null);
+  const [editMode, setEditMode] = useState(false);
+  const [formData, setFormData] = useState({
+    photo_url: "",
+    tournaments_played: 0,
+    total_points: 0,
+    rating: 0,
   });
-  
-  const [editing, setEditing] = useState(false);
-  const [newName, setNewName] = useState(user.name);
 
-  const handleEditProfile = () => {
-    setEditing(true);
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const response = await axios.get("/api/profile", {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        });
+        setProfile(response.data);
+        setFormData({
+          photo_url: response.data.photo_url,
+          tournaments_played: response.data.tournaments_played,
+          total_points: response.data.total_points,
+          rating: response.data.rating,
+        });
+      } catch (err) {
+        console.error("Ошибка при получении профиля", err);
+      }
+    };
+
+    fetchProfile();
+  }, []);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prevData) => ({
+      ...prevData,
+      [name]: value,
+    }));
   };
 
-  const handleSaveProfile = () => {
-    setUser({ ...user, name: newName });
-    setEditing(false);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const response = await axios.put("/api/profile", formData, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      setProfile(response.data);
+      setEditMode(false);
+    } catch (err) {
+      console.error("Ошибка при обновлении профиля", err);
+    }
   };
+
+  if (!profile) {
+    return <div>Загрузка...</div>;
+  }
 
   return (
     <div className="profile-container">
-      <h1>Профиль</h1>
-      <div className="profile-header">
-        <img src={user.photo} alt="Profile" />
-        {editing ? (
-          <input
-            type="text"
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-          />
-        ) : (
-          <h2>{user.name}</h2>
-        )}
-        {editing ? (
-          <button onClick={handleSaveProfile}>Сохранить</button>
-        ) : (
-          <button onClick={handleEditProfile}>Редактировать</button>
-        )}
+      <h1>Профиль игрока</h1>
+      <div className="profile-info">
+        <img src={profile.photo_url} alt="Фото профиля" />
+        <p>Имя: {profile.User.name}</p>
+        <p>Email: {profile.User.email}</p>
+        <p>Турниров сыграно: {profile.tournaments_played}</p>
+        <p>Всего очков: {profile.total_points}</p>
+        <p>Рейтинг: {profile.rating}</p>
       </div>
-      <div className="profile-stats">
-        <h3>Статистика</h3>
-        <p>Турниры: {user.stats.tournaments}</p>
-        <p>Очки: {user.stats.points}</p>
-        <p>Рейтинг: {user.stats.rating}</p>
-      </div>
-      <div className="profile-history">
-        <h3>История игр</h3>
-        <ul>
-          {user.gamesHistory.map((game, index) => (
-            <li key={index}>
-              {game.date} - {game.opponent} ({game.score})
-            </li>
-          ))}
-        </ul>
-      </div>
+      <button onClick={() => setEditMode(true)}>Редактировать профиль</button>
+      {editMode && (
+        <form onSubmit={handleSubmit} className="profile-form">
+          <div>
+            <label>URL фото</label>
+            <input
+              type="text"
+              name="photo_url"
+              value={formData.photo_url}
+              onChange={handleChange}
+            />
+          </div>
+          <div>
+            <label>Турниров сыграно</label>
+            <input
+              type="number"
+              name="tournaments_played"
+              value={formData.tournaments_played}
+              onChange={handleChange}
+            />
+          </div>
+          <div>
+            <label>Всего очков</label>
+            <input
+              type="number"
+              name="total_points"
+              value={formData.total_points}
+              onChange={handleChange}
+            />
+          </div>
+          <div>
+            <label>Рейтинг</label>
+            <input
+              type="number"
+              name="rating"
+              value={formData.rating}
+              onChange={handleChange}
+            />
+          </div>
+          <button type="submit">Сохранить изменения</button>
+          <button type="button" onClick={() => setEditMode(false)}>Отмена</button>
+        </form>
+      )}
     </div>
   );
 };

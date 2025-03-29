@@ -1,71 +1,192 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import "./admin.css";
 
-const AdminTournamentForm = () => {
-  const [name, setName] = useState('');
-  const [date, setDate] = useState('');
-  const [location, setLocation] = useState('');
-  const [level, setLevel] = useState('');
-  const [prizePool, setPrizePool] = useState('');
-  const [error, setError] = useState('');
+const Admin = () => {
+  const [tournaments, setTournaments] = useState([]);
+  const [formData, setFormData] = useState({
+    title: "",
+    date: "",
+    location: "",
+    level: "",
+    prize_pool: 0,
+    status: "registration",
+  });
+  const [editMode, setEditMode] = useState(false);
+  const [currentTournamentId, setCurrentTournamentId] = useState(null);
 
-  const handleSubmit = async (e) => {
+  useEffect(() => {
+    const fetchTournaments = async () => {
+      try {
+        const response = await axios.get("/api/tournaments", {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        });
+        setTournaments(response.data);
+      } catch (err) {
+        console.error("Ошибка при получении турниров", err);
+      }
+    };
+
+    fetchTournaments();
+  }, []);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prevData) => ({
+      ...prevData,
+      [name]: value,
+    }));
+  };
+
+  const handleCreateOrUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Валидация
-    if (!name || !date || !location || !level || !prizePool) {
-      setError("Пожалуйста, заполните все поля.");
-      return;
+    try {
+      if (editMode) {
+        // Редактирование турнира
+        await axios.put(`/api/tournaments/${currentTournamentId}`, formData, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        });
+      } else {
+        // Создание нового турнира
+        await axios.post("/api/tournaments", formData, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        });
+      }
+      setEditMode(false);
+      setCurrentTournamentId(null);
+      setFormData({
+        title: "",
+        date: "",
+        location: "",
+        level: "",
+        prize_pool: 0,
+        status: "registration",
+      });
+      const response = await axios.get("/api/tournaments", {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      setTournaments(response.data);
+    } catch (err) {
+      console.error("Ошибка при создании или редактировании турнира", err);
     }
+  };
 
-    if (isNaN(Number(prizePool)) || Number(prizePool) <= 0) {
-      setError("Призовой фонд должен быть числом больше нуля.");
-      return;
-    }
-
-    const response = await fetch('/api/admin/tournaments', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, date, location, level, prize_pool: prizePool })
+  const handleEdit = (tournament: any) => {
+    setEditMode(true);
+    setCurrentTournamentId(tournament.id);
+    setFormData({
+      title: tournament.title,
+      date: tournament.date,
+      location: tournament.location,
+      level: tournament.level,
+      prize_pool: tournament.prize_pool,
+      status: tournament.status,
     });
+  };
 
-    const data = await response.json();
-    if (response.ok) {
-      alert('Турнир успешно создан!');
-      setError(''); // Сброс ошибки
-    } else {
-      setError(data.message || 'Ошибка при создании турнира.');
+  const handleDelete = async (id: number) => {
+    try {
+      await axios.delete(`/api/tournaments/${id}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      setTournaments(tournaments.filter((tournament) => tournament.id !== id));
+    } catch (err) {
+      console.error("Ошибка при удалении турнира", err);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <div>
-        <label>Название турнира</label>
-        <input type="text" value={name} onChange={(e) => setName(e.target.value)} />
+    <div className="admin-container">
+      <h1>Управление турнирами</h1>
+      <form onSubmit={handleCreateOrUpdate} className="admin-form">
+        <div>
+          <label>Название</label>
+          <input
+            type="text"
+            name="title"
+            value={formData.title}
+            onChange={handleChange}
+            required
+          />
+        </div>
+        <div>
+          <label>Дата</label>
+          <input
+            type="date"
+            name="date"
+            value={formData.date}
+            onChange={handleChange}
+            required
+          />
+        </div>
+        <div>
+          <label>Место</label>
+          <input
+            type="text"
+            name="location"
+            value={formData.location}
+            onChange={handleChange}
+            required
+          />
+        </div>
+        <div>
+          <label>Уровень</label>
+          <input
+            type="text"
+            name="level"
+            value={formData.level}
+            onChange={handleChange}
+            required
+          />
+        </div>
+        <div>
+          <label>Призовой фонд</label>
+          <input
+            type="number"
+            name="prize_pool"
+            value={formData.prize_pool}
+            onChange={handleChange}
+            required
+          />
+        </div>
+        <div>
+          <label>Статус</label>
+          <input
+            type="text"
+            name="status"
+            value={formData.status}
+            onChange={handleChange}
+            required
+          />
+        </div>
+        <button type="submit">{editMode ? "Обновить турнир" : "Создать турнир"}</button>
+      </form>
+      <div className="tournaments-list">
+        {tournaments.map((tournament: any) => (
+          <div key={tournament.id} className="tournament-item">
+            <h3>{tournament.title}</h3>
+            <p>Дата: {tournament.date}</p>
+            <p>Место: {tournament.location}</p>
+            <p>Уровень: {tournament.level}</p>
+            <p>Призовой фонд: {tournament.prize_pool}</p>
+            <p>Статус: {tournament.status}</p>
+            <button onClick={() => handleEdit(tournament)}>Редактировать</button>
+            <button onClick={() => handleDelete(tournament.id)}>Удалить</button>
+          </div>
+        ))}
       </div>
-      <div>
-        <label>Дата</label>
-        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-      </div>
-      <div>
-        <label>Локация</label>
-        <input type="text" value={location} onChange={(e) => setLocation(e.target.value)} />
-      </div>
-      <div>
-        <label>Уровень</label>
-        <select value={level} onChange={(e) => setLevel(e.target.value)}>
-          <option value="amateur">Любительский</option>
-          <option value="professional">Профессиональный</option>
-        </select>
-      </div>
-      <div>
-        <label>Призовой фонд</label>
-        <input type="text" value={prizePool} onChange={(e) => setPrizePool(e.target.value)} />
-      </div>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      <button type="submit">Создать турнир</button>
-    </form>
+    </div>
   );
 };
 
-export default AdminTournamentForm;
+export default Admin;

@@ -4,6 +4,9 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
 const { Sequelize, DataTypes } = require("sequelize");
+const authMiddleware = require("./authMiddleware"); 
+const businessMiddleware = require("./businessMiddleware"); 
+
 
 const app = express();
 const port = 5000;
@@ -21,6 +24,7 @@ const User = sequelize.define("User", {
   email: { type: DataTypes.STRING, unique: true, allowNull: false },
   password: { type: DataTypes.STRING, allowNull: false },
   email_verified: { type: DataTypes.BOOLEAN, defaultValue: false },
+  role: { type: DataTypes.STRING, defaultValue: 'user' }
 }, {
   timestamps: true,
 });
@@ -53,11 +57,22 @@ const Registration = sequelize.define("Registration", {
   timestamps: false,
 });
 
+const Ad = sequelize.define("Ad", {
+    title: { type: DataTypes.STRING, allowNull: false },
+    image_url: { type: DataTypes.STRING, allowNull: false },
+    tournament_id: { type: DataTypes.INTEGER, allowNull: false },
+  }, {
+    timestamps: true,
+  });
+  
+
 // Связи
 User.hasOne(Profile, { foreignKey: "user_id" });
 Profile.belongsTo(User, { foreignKey: "user_id" });
 Tournament.hasMany(Registration, { foreignKey: "tournament_id" });
 Registration.belongsTo(Tournament, { foreignKey: "tournament_id" });
+Tournament.hasMany(Ad, { foreignKey: "tournament_id" });
+Ad.belongsTo(Tournament, { foreignKey: "tournament_id" });
 
 // Middleware
 app.use(cors());
@@ -112,6 +127,16 @@ app.post("/api/auth/register", async (req, res) => {
   }
 });
 
+// Проверка авторизации
+app.get("/api/auth/check", authMiddleware, (req, res) => {
+    res.status(200).send('Авторизация успешна');
+});
+
+// Проверка прав бизнеса
+app.get("/api/auth/business-check", authMiddleware, businessMiddleware, (req, res) => {
+    res.status(200).send('Авторизация бизнеса успешна');
+});
+
 // Подтверждение email
 app.get("/api/auth/verify-email", async (req, res) => {
   const { token } = req.query;
@@ -139,6 +164,10 @@ app.get("/api/auth/verify-email", async (req, res) => {
 app.post("/api/auth/login", async (req, res) => {
   const { email, password } = req.body;
 
+  if (!email || !password) {
+    return res.status(400).send("Все поля обязательны для заполнения.");
+  }
+
   try {
     const user = await User.findOne({ where: { email } });
 
@@ -161,60 +190,36 @@ app.post("/api/auth/login", async (req, res) => {
 });
 
 // Получение профиля пользователя
-app.get("/api/profile", async (req, res) => {
-  const token = req.headers['authorization'];
-
-  if (!token) {
-    return res.status(401).send("Требуется авторизация");
-  }
-
-  try {
-    const decoded = jwt.verify(token, 'SECRET_KEY');
-    const userId = decoded.userId;
-
-    const profile = await Profile.findOne({ where: { user_id: userId } });
-
-    if (!profile) {
-      return res.status(404).json({ message: "Профиль не найден" });
+app.get("/api/profile", authMiddleware, async (req, res) => {
+    try {
+      const profile = await Profile.findOne({ where: { user_id: req.user.id }, include: [User] });
+      if (!profile) {
+        return res.status(404).send("Профиль не найден");
+      }
+      res.status(200).json(profile);
+    } catch (error) {
+      res.status(500).send("Ошибка при получении профиля");
     }
-
-    res.status(200).json(profile);
-  } catch (error) {
-    console.error("Ошибка при получении профиля", error);
-    res.status(500).send("Ошибка сервера");
-  }
-});
-
-// Обновление профиля пользователя
-app.put("/api/profile", async (req, res) => {
-  const { photo_url, tournaments_played, total_points, rating } = req.body;
-  const token = req.headers['authorization'];
-
-  if (!token) {
-    return res.status(401).send("Требуется авторизация");
-  }
-
-  try {
-    const decoded = jwt.verify(token, 'SECRET_KEY');
-    const userId = decoded.userId;
-
-    const profile = await Profile.findOne({ where: { user_id: userId } });
-    if (!profile) {
-      return res.status(404).json({ message: "Профиль не найден" });
+  });
+  
+  // Обновление профиля пользователя
+  app.put("/api/profile", authMiddleware, async (req, res) => {
+    const { photo_url, tournaments_played, total_points, rating } = req.body;
+    try {
+      const profile = await Profile.findOne({ where: { user_id: req.user.id } });
+      if (!profile) {
+        return res.status(404).send("Профиль не найден");
+      }
+      profile.photo_url = photo_url || profile.photo_url;
+      profile.tournaments_played = tournaments_played || profile.tournaments_played;
+      profile.total_points = total_points || profile.total_points;
+      profile.rating = rating || profile.rating;
+      await profile.save();
+      res.status(200).json(profile);
+    } catch (error) {
+      res.status(500).send("Ошибка при обновлении профиля");
     }
-
-    profile.photo_url = photo_url;
-    profile.tournaments_played = tournaments_played;
-    profile.total_points = total_points;
-    profile.rating = rating;
-    await profile.save();
-
-    res.status(200).json(profile);
-  } catch (error) {
-    console.error("Ошибка при обновлении профиля", error);
-    res.status(500).send("Ошибка сервера");
-  }
-});
+  });
 
 // Получение турниров
 app.get("/api/tournaments", async (req, res) => {
@@ -228,19 +233,60 @@ app.get("/api/tournaments", async (req, res) => {
 });
 
 // Создание турнира
-app.post("/api/tournaments", async (req, res) => {
-  const { title, date, location, level, prize_pool } = req.body;
+app.post("/api/tournaments", authMiddleware, async (req, res) => {
+  const { title, date, location, level, prize_pool, status } = req.body;
 
   if (!title || !date || !location || !level || !prize_pool) {
     return res.status(400).send("Все поля обязательны для заполнения.");
   }
 
   try {
-    const newTournament = await Tournament.create({ title, date, location, level, prize_pool });
-    res.json(newTournament);
+    const newTournament = await Tournament.create({ title, date, location, level, prize_pool, status });
+    res.status(201).json(newTournament);
   } catch (error) {
-    console.error("Ошибка при создании турнира", error);
-    res.status(500).send("Ошибка сервера");
+    res.status(500).send("Ошибка при создании турнира");
+  }
+});
+
+// Редактирование турнира
+app.put("/api/tournaments/:id", authMiddleware, async (req, res) => {
+  const { id } = req.params;
+  const { title, date, location, level, prize_pool, status } = req.body;
+
+  try {
+    const tournament = await Tournament.findByPk(id);
+    if (!tournament) {
+      return res.status(404).send("Турнир не найден");
+    }
+
+    tournament.title = title || tournament.title;
+    tournament.date = date || tournament.date;
+    tournament.location = location || tournament.location;
+    tournament.level = level || tournament.level;
+    tournament.prize_pool = prize_pool || tournament.prize_pool;
+    tournament.status = status || tournament.status;
+    await tournament.save();
+
+    res.status(200).json(tournament);
+  } catch (error) {
+    res.status(500).send("Ошибка при редактировании турнира");
+  }
+});
+
+// Удаление турнира
+app.delete("/api/tournaments/:id", authMiddleware, async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const tournament = await Tournament.findByPk(id);
+    if (!tournament) {
+      return res.status(404).send("Турнир не найден");
+    }
+
+    await tournament.destroy();
+    res.status(200).send("Турнир успешно удален");
+  } catch (error) {
+    res.status(500).send("Ошибка при удалении турнира");
   }
 });
 
@@ -312,23 +358,22 @@ app.post("/api/tournaments/:id/register", async (req, res) => {
   }
 });
 
-// Получение информации о турнире по ID
-app.get("/api/tournament/:id", async (req, res) => {
-  const { id } = req.params;
-
-  try {
-    const tournament = await Tournament.findByPk(id);
-
-    if (!tournament) {
-      return res.status(404).json({ message: "Турнир не найден" });
+// Получение информации о турнире и его участниках
+app.get("/api/tournaments/:id", async (req, res) => {
+    const { id } = req.params;
+  
+    try {
+      const tournament = await Tournament.findByPk(id, {
+        include: [Registration]
+      });
+      if (!tournament) {
+        return res.status(404).send("Турнир не найден");
+      }
+      res.status(200).json(tournament);
+    } catch (error) {
+      res.status(500).send("Ошибка при получении информации о турнире");
     }
-
-    res.json(tournament);
-  } catch (error) {
-    console.error("Ошибка при получении турнира", error);
-    res.status(500).send("Ошибка сервера");
-  }
-});
+  });
 
 // Запуск сервера
 app.listen(port, async () => {
@@ -340,3 +385,58 @@ app.listen(port, async () => {
     console.error("Ошибка подключения к базе данных", error);
   }
 });
+
+// Создание рекламы
+app.post("/api/ads", authMiddleware, async (req, res) => {
+    const { title, image_url, tournament_id } = req.body;
+  
+    if (!title || !image_url || !tournament_id) {
+      return res.status(400).send("Все поля обязательны для заполнения.");
+    }
+  
+    try {
+      const newAd = await Ad.create({ title, image_url, tournament_id });
+      res.status(201).json(newAd);
+    } catch (error) {
+      res.status(500).send("Ошибка при создании рекламы");
+    }
+  });
+  
+  // Редактирование рекламы
+  app.put("/api/ads/:id", authMiddleware, async (req, res) => {
+    const { id } = req.params;
+    const { title, image_url, tournament_id } = req.body;
+  
+    try {
+      const ad = await Ad.findByPk(id);
+      if (!ad) {
+        return res.status(404).send("Реклама не найдена");
+      }
+  
+      ad.title = title || ad.title;
+      ad.image_url = image_url || ad.image_url;
+      ad.tournament_id = tournament_id || ad.tournament_id;
+      await ad.save();
+  
+      res.status(200).json(ad);
+    } catch (error) {
+      res.status(500).send("Ошибка при редактировании рекламы");
+    }
+  });
+  
+  // Удаление рекламы
+  app.delete("/api/ads/:id", authMiddleware, async (req, res) => {
+    const { id } = req.params;
+  
+    try {
+      const ad = await Ad.findByPk(id);
+      if (!ad) {
+        return res.status(404).send("Реклама не найдена");
+      }
+  
+      await ad.destroy();
+      res.status(200).send("Реклама успешно удалена");
+    } catch (error) {
+      res.status(500).send("Ошибка при удалении рекламы");
+    }
+  });

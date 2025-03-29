@@ -1,42 +1,41 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
-import "./tournament.css";
+import TournamentBracket from "../../components/TournamentBracket/TournamentBracket";
+import Ad from "../../components/Ad/Ad";
+
+interface Ad {
+  id: number;
+  title: string;
+  image_url: string;
+  tournament_id: number;
+}
 
 const Tournament = () => {
-  const { id } = useParams();
-  const [tournament, setTournament] = useState(null);
+  const { id } = useParams<{ id: string }>();
+  const [ads, setAds] = useState<Ad[]>([]);
 
   useEffect(() => {
-    const fetchTournament = async () => {
+    const fetchAds = async () => {
       try {
-        const response = await axios.get(`http://localhost:5000/api/tournament/${id}`);
-        console.log(response.data);
-        if (response.status !== 200) {
-          throw new Error("Ошибка при загрузке турнира");
-        }
-        setTournament(response.data);
-      } catch (error) {
-        console.error("Ошибка:", error);
+        const response = await axios.get(`/api/tournaments/${id}/ads`);
+        setAds(response.data);
+      } catch (err) {
+        console.error("Ошибка при получении рекламы", err);
       }
     };
 
-    fetchTournament();
+    fetchAds();
   }, [id]);
 
-  if (!tournament) {
-    return <div>Загрузка...</div>;
-  }
-
   return (
-    <div className="tournament-page">
-      <h1>{tournament.name}</h1>
-      <p><strong>Статус:</strong> {tournament.status}</p>
-      <p><strong>Локация:</strong> {tournament.location}</p>
-      <p><strong>Дата:</strong> {tournament.date}</p>
-      <p><strong>Уровень:</strong> {tournament.level}</p>
-      <p><strong>Описание:</strong> {tournament.description}</p>
-      {/* Можно добавить форму для регистрации или другие элементы */}
+    <div>
+      <TournamentBracket tournamentId={parseInt(id, 10)} />
+      <div className="ads-section">
+        {ads.map((ad) => (
+          <Ad key={ad.id} title={ad.title} imageUrl={ad.image_url} />
+        ))}
+      </div>
     </div>
   );
 };
