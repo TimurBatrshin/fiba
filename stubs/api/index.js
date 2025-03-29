@@ -232,21 +232,35 @@ app.get("/api/tournaments", async (req, res) => {
   }
 });
 
-// Создание турнира
-app.post("/api/tournaments", authMiddleware, async (req, res) => {
-  const { title, date, location, level, prize_pool, status } = req.body;
+/// Создание турнира
+app.post("/api/tournaments", async (req, res) => {
+    const { title, date, location, level, prize_pool, rules } = req.body;
+  
+    try {
+      const tournament = await Tournament.create({
+        title,
+        date,
+        location,
+        level,
+        prize_pool,
+        rules,
+        status: 'registration',
+      });
+      res.status(201).json(tournament);
+    } catch (error) {
+      console.error('Error creating tournament:', error);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  });
 
-  if (!title || !date || !location || !level || !prize_pool) {
-    return res.status(400).send("Все поля обязательны для заполнения.");
-  }
-
-  try {
-    const newTournament = await Tournament.create({ title, date, location, level, prize_pool, status });
-    res.status(201).json(newTournament);
-  } catch (error) {
-    res.status(500).send("Ошибка при создании турнира");
-  }
+// Обработка маршрута /admin
+app.use('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public/admin.html'));
 });
+
+// Обслуживание статических файлов
+app.use(express.static(path.join(__dirname, 'public')));
+
 
 // Редактирование турнира
 app.put("/api/tournaments/:id", authMiddleware, async (req, res) => {
