@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import axios from "axios";
-import "./tournaments.css";
+import "./tournaments.css";  // Импортируем стили
 
 const Tournaments = () => {
     const [tournaments, setTournaments] = useState([]);
@@ -22,9 +23,11 @@ const Tournaments = () => {
       };
 
   return (
-    <div>
+    <div className="tournaments-container">
       <h1>Список турниров</h1>
-      <div>
+
+      {/* Фильтры */}
+      <div className="filters-container">
         <input
           type="date"
           name="date"
@@ -44,13 +47,16 @@ const Tournaments = () => {
           <option value="professional">Профессиональный</option>
         </select>
       </div>
-      <ul>
+
+      {/* Список турниров */}
+      <ul className="tournament-list">
         {tournaments.map((tournament) => (
-          <li key={tournament.id}>
+          <li key={tournament.id} className="tournament-item">
             <h3>{tournament.name}</h3>
             <p>{tournament.date}</p>
             <p>{tournament.location}</p>
             <p>{tournament.level}</p>
+            <Link to={`/tournament/${tournament.id}`}>Подробнее</Link>
           </li>
         ))}
       </ul>

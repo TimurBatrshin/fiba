@@ -6,11 +6,10 @@ import Tournaments from "./pages/tournaments/tournaments";
 import Profile from "./pages/profile/profile";
 import Business from "./pages/business/business";
 import Tournament from "./pages/tournament/tournament";
-import EditProfile from "./pages/profile/editProfile";
 import RegisterUser from "./pages/registerUser/registerUser";
-import Login from "./pages/login/login";
-import Admin from "./pages/admin/admin"; // Импорт компонента панели администратора
+import Login from "./pages/login/login";// Импорт компонента панели администратора
 import { UserRoleProvider } from "./context/UserRoleContext"; // Импорт провайдера контекста роли пользователя
+import Admin from "./pages/admin/admin";
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -33,10 +32,6 @@ const App: React.FC = () => {
             <Route
               path="/profile"
               element={isAuthenticated ? <Profile isAuthenticated={isAuthenticated} /> : <Login setIsAuthenticated={setIsAuthenticated} />}
-            />
-            <Route
-              path="/profile/edit"
-              element={isAuthenticated ? <EditProfile isAuthenticated={isAuthenticated} /> : <Login setIsAuthenticated={setIsAuthenticated} />}
             />
             <Route path="/business" element={<Business />} />
             <Route path="/tournament/:id" element={<Tournament />} />

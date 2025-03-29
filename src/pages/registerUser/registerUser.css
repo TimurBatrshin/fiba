@@ -1,49 +1,73 @@
+/* Основной контейнер для формы регистрации */
 .register-container {
+  width: 100%;
   max-width: 400px;
-  margin: 0 auto;
+  margin: 50px auto;
   padding: 20px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
   background-color: #f9f9f9;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
+/* Заголовок страницы */
 .register-container h1 {
   text-align: center;
+  color: #2d3b55;
+  margin-bottom: 20px;
 }
 
-.register-container form {
+/* Стили для формы */
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+/* Стили для каждого поля ввода */
+form div {
   display: flex;
   flex-direction: column;
 }
 
-.register-container form div {
-  margin-bottom: 15px;
-}
-
-.register-container form label {
+form label {
+  font-weight: bold;
   margin-bottom: 5px;
+  color: #3a4a73;
 }
 
-.register-container form input {
+form input {
   padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
+  font-size: 14px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  outline: none;
+  transition: border-color 0.3s;
 }
 
-.register-container form .error {
-  color: red;
-  text-align: center;
+form input:focus {
+  border-color: #4b8dff;
 }
 
-.register-container form button {
-  padding: 10px;
-  border: none;
-  border-radius: 5px;
+/* Стили для кнопки отправки */
+button {
+  padding: 12px;
+  font-size: 16px;
   background-color: #007bff;
   color: white;
+  border: none;
+  border-radius: 4px;
   cursor: pointer;
+  transition: background-color 0.3s;
 }
 
-.register-container form button:hover {
+button:hover {
   background-color: #0056b3;
+}
+
+/* Стили для сообщения об ошибке */
+.error {
+  color: #ff4d4d;
+  font-size: 14px;
+  text-align: center;
+  margin-top: 10px;
 }

@@ -1,14 +1,101 @@
+/* Основные стили */
+.tournament-container {
+  padding: 20px;
+  max-width: 900px;
+  margin: 0 auto;
+}
 
-  /* tournament.css */
-  .tournament-page {
-    padding: 20px;
-  }
-  
-  .tournament-page h1 {
-    font-size: 2em;
-  }
-  
-  .tournament-page p {
-    font-size: 1.2em;
-  }
-  
+h1 {
+  text-align: center;
+  color: #2d3b55;
+}
+
+h2 {
+  color: #3a4a73;
+  margin-top: 20px;
+}
+
+/* Стили для формы регистрации */
+.form-container {
+  margin-top: 20px;
+  background-color: #f9f9f9;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.form-container input {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.form-container button {
+  background-color: #4CAF50;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.form-container button:disabled {
+  background-color: #ddd;
+  cursor: not-allowed;
+}
+
+.player-input-container {
+  margin-top: 10px;
+}
+
+.player-input-container button {
+  background-color: #ff5733;
+  margin-top: 5px;
+  color: white;
+  padding: 5px 10px;
+  border: none;
+  border-radius: 4px;
+}
+
+.tournament-bracket {
+  margin-top: 40px;
+  background-color: #f0f8ff;
+  padding: 20px;
+  border-radius: 8px;
+}
+
+.bracket-item {
+  margin-bottom: 15px;
+  background-color: #ffffff;
+  padding: 10px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.bracket-item ul {
+  padding-left: 20px;
+}
+
+.bracket-item p {
+  font-weight: bold;
+  color: #333;
+}
+
+.advertisement {
+  margin-top: 20px;
+  background-color: #f7f7f7;
+  padding: 15px;
+  border-radius: 8px;
+}
+
+.advertisement h2 {
+  font-size: 18px;
+}
+
+.advertisement p {
+  color: #555;
+}

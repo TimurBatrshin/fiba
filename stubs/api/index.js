@@ -253,15 +253,6 @@ app.post("/api/tournaments", async (req, res) => {
     }
   });
 
-// Обработка маршрута /admin
-app.use('/admin', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public/admin.html'));
-});
-
-// Обслуживание статических файлов
-app.use(express.static(path.join(__dirname, 'public')));
-
-
 // Редактирование турнира
 app.put("/api/tournaments/:id", authMiddleware, async (req, res) => {
   const { id } = req.params;

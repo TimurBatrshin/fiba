@@ -1,78 +1,80 @@
+/* Контейнер для страницы администрирования */
 .admin-container {
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 20px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    background-color: #f9f9f9;
-  }
-  
-  .admin-container h1 {
-    text-align: center;
-  }
-  
-  .admin-form {
-    display: flex;
-    flex-direction: column;
-  }
-  
-  .admin-form div {
-    margin-bottom: 15px;
-  }
-  
-  .admin-form label {
-    margin-bottom: 5px;
-  }
-  
-  .admin-form input {
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-  }
-  
-  .admin-form button {
-    padding: 10px;
-    border: none;
-    border-radius: 5px;
-    background-color: #007bff;
-    color: white;
-    cursor: pointer;
-    margin-top: 10px;
-  }
-  
-  .admin-form button:hover {
-    background-color: #0056b3;
-  }
-  
-  .tournaments-list {
-    margin-top: 20px;
-  }
-  
-  .tournament-item {
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    padding: 10px;
-    margin-bottom: 10px;
-  }
-  
-  .tournament-item h3 {
-    margin: 0;
-  }
-  
-  .tournament-item p {
-    margin: 5px 0;
-  }
-  
-  .tournament-item button {
-    padding: 5px 10px;
-    border: none;
-    border-radius: 5px;
-    background-color: #ff0000;
-    color: white;
-    cursor: pointer;
-    margin-right: 5px;
-  }
-  
-  .tournament-item button:hover {
-    background-color: #cc0000;
-  }
+  padding: 40px;
+  background-color: #f8f9fa;
+  max-width: 900px;
+  margin: 0 auto;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.admin-container h1 {
+  font-size: 32px;
+  color: #2d3b55;
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+/* Формы и элементы ввода */
+form {
+  background-color: #ffffff;
+  padding: 30px;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+form div {
+  margin-bottom: 20px;
+}
+
+form label {
+  font-size: 18px;
+  color: #4b4b4b;
+  display: block;
+  margin-bottom: 5px;
+}
+
+form input,
+form select,
+form textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 16px;
+  color: #4b4b4b;
+}
+
+form input[type="number"],
+form input[type="date"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+form textarea {
+  height: 150px;
+  resize: vertical;
+}
+
+form button {
+  background-color: #007bff;
+  color: #ffffff;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  font-size: 18px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+form button:hover {
+  background-color: #0056b3;
+}
+
+/* Стили для ошибок */
+.error {
+  color: red;
+  font-size: 14px;
+  margin-top: 10px;
+  text-align: center;
+}

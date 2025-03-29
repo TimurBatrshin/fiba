@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import "./login.css";
+import "./login.css";  // Импортируем стили
 
 interface LoginProps {
   setIsAuthenticated: (isAuthenticated: boolean) => void;

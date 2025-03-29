@@ -1,82 +1,111 @@
+/* Основной контейнер профиля */
 .profile-container {
-    padding: 40px;
-    background-color: #f9f9f9;
-    text-align: center;
-  }
-  
-  h1 {
-    font-size: 2rem;
-    color: #333;
-    margin-bottom: 30px;
-  }
-  
-  .profile-card {
-    background-color: white;
-    padding: 20px;
-    width: 300px;
-    margin: 0 auto 30px auto;
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    text-align: center;
-  }
-  
-  .profile-photo {
-    width: 150px;
-    height: 150px;
-    border-radius: 50%;
-    object-fit: cover;
-    margin-bottom: 20px;
-  }
-  
-  .stats p {
-    font-size: 1.2rem;
-    color: #555;
-    margin: 5px 0;
-  }
-  
-  .edit-btn {
-    background-color: #0066cc;
-    color: white;
-    padding: 12px 24px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.3s;
-    margin-top: 20px;
-  }
-  
-  .edit-btn:hover {
-    background-color: #004b99;
-  }
-  
-  .games-history {
-    width: 80%;
-    margin: 0 auto;
-    max-width: 600px;
-  }
-  
-  .games-history h2 {
-    font-size: 1.5rem;
-    color: #333;
-    margin-bottom: 10px;
-  }
-  
-  .games-history ul {
-    list-style-type: none;
-    padding: 0;
-  }
-  
-  .games-history li {
-    font-size: 1rem;
-    color: #555;
-    margin: 5px 0;
-  }
-  
-  .win {
-    color: green;
-  }
-  
-  .loss {
-    color: red;
-  }
-  
+  max-width: 800px;
+  margin: 40px auto;
+  padding: 20px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Заголовок */
+.profile-container h1 {
+  text-align: center;
+  color: #2d3b55;
+  margin-bottom: 20px;
+}
+
+/* Контейнер для информации профиля */
+.profile-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.profile-info img {
+  border-radius: 50%;
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  margin-bottom: 15px;
+}
+
+.profile-info p {
+  font-size: 16px;
+  color: #3a4a73;
+  margin: 5px 0;
+}
+
+/* Кнопка для редактирования */
+.profile-container button {
+  padding: 12px;
+  font-size: 16px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  margin-bottom: 20px;
+  width: 100%;
+}
+
+.profile-container button:hover {
+  background-color: #0056b3;
+}
+
+/* Стиль для формы редактирования */
+.profile-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.profile-form div {
+  display: flex;
+  flex-direction: column;
+}
+
+.profile-form label {
+  font-weight: bold;
+  color: #3a4a73;
+  margin-bottom: 5px;
+}
+
+.profile-form input {
+  padding: 10px;
+  font-size: 14px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  outline: none;
+  transition: border-color 0.3s;
+}
+
+.profile-form input:focus {
+  border-color: #4b8dff;
+}
+
+.profile-form button {
+  padding: 12px;
+  font-size: 16px;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  margin-top: 10px;
+}
+
+.profile-form button:hover {
+  background-color: #218838;
+}
+
+.profile-form button[type="button"] {
+  background-color: #dc3545;
+}
+
+.profile-form button[type="button"]:hover {
+  background-color: #c82333;
+}

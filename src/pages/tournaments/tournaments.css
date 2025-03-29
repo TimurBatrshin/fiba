@@ -1,42 +1,72 @@
-/* tournaments.css */
+/* Общие стили */
 .tournaments-container {
   padding: 20px;
+  max-width: 900px;
+  margin: 0 auto;
 }
 
-.tournament-list {
+h1 {
+  text-align: center;
+  color: #2d3b55;
+  margin-bottom: 20px;
+}
+
+/* Стили для фильтров */
+.filters-container {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
 }
 
-.tournament-card {
-  background-color: #f4f4f4;
-  padding: 15px;
-  margin: 10px;
-  width: 300px;
-  border-radius: 8px;
-}
-
-.details-btn {
-  background-color: #007bff;
-  color: white;
+.filters-container input,
+.filters-container select {
   padding: 10px;
-  border-radius: 5px;
-  text-decoration: none;
+  font-size: 14px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
 }
 
-.details-btn:hover {
-  background-color: #0056b3;
+.filters-container input[type="date"] {
+  width: 200px;
 }
 
-/* tournament.css */
-.tournament-page {
+.filters-container select {
+  width: 220px;
+}
+
+/* Стили для списка турниров */
+.tournament-list {
+  list-style-type: none;
+  padding: 0;
+}
+
+.tournament-item {
+  background-color: #f9f9f9;
+  margin: 15px 0;
   padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
-.tournament-page h1 {
-  font-size: 2em;
+.tournament-item h3 {
+  color: #3a4a73;
+  margin-bottom: 10px;
 }
 
-.tournament-page p {
-  font-size: 1.2em;
+.tournament-item p {
+  margin: 5px 0;
+  color: #555;
+}
+
+.tournament-item a {
+  display: inline-block;
+  margin-top: 10px;
+  color: #007bff;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.tournament-item a:hover {
+  text-decoration: underline;
 }

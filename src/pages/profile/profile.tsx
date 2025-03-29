@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import "./profile.css";
+import "./profile.css";  // Импортируем стили
 
 interface ProfileProps {
   isAuthenticated: boolean;

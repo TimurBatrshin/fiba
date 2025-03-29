@@ -1,8 +1,12 @@
-import React from "react";
 import './home.css';
-import { Link } from "react-router-dom";
+import React, { useContext } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { UserRoleContext } from "../../context/UserRoleContext";
 
 const Home = () => {
+  const { role, loading } = useContext(UserRoleContext);
+  const navigate = useNavigate();
+
   return (
     <div className="home-container">
       <h1>Добро пожаловать на платформу для турниров по стритболу!</h1>
@@ -14,6 +18,7 @@ const Home = () => {
           <li><Link to="/register">Зарегистрировать команду</Link></li>
           <li><Link to="/profile">Мой профиль</Link></li>
           <li><Link to="/register-user">Регистрация</Link></li>
+          <li><Link to="/admin">Home</Link></li>
         </ul>
       </div>
       <div className="info-section">

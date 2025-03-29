@@ -1,49 +1,67 @@
+/* Основной контейнер для формы входа */
 .login-container {
   max-width: 400px;
-  margin: 0 auto;
+  margin: 50px auto;
   padding: 20px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
   background-color: #f9f9f9;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .login-container h1 {
   text-align: center;
+  color: #2d3b55;
+  margin-bottom: 20px;
 }
 
+/* Стиль для формы */
 .login-container form {
   display: flex;
   flex-direction: column;
+  gap: 15px;
 }
 
-.login-container form div {
-  margin-bottom: 15px;
-}
-
-.login-container form label {
+/* Стиль для каждого поля ввода */
+.login-container label {
+  font-weight: bold;
+  color: #3a4a73;
   margin-bottom: 5px;
 }
 
-.login-container form input {
+.login-container input {
   padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
+  font-size: 14px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  outline: none;
+  transition: border-color 0.3s;
 }
 
-.login-container form .error {
-  color: red;
-  text-align: center;
+.login-container input:focus {
+  border-color: #4b8dff;
 }
 
-.login-container form button {
-  padding: 10px;
-  border: none;
-  border-radius: 5px;
+/* Стиль для кнопки */
+.login-container button {
+  padding: 12px;
+  font-size: 16px;
   background-color: #007bff;
   color: white;
+  border: none;
+  border-radius: 4px;
   cursor: pointer;
+  transition: background-color 0.3s;
+  margin-top: 20px;
 }
 
-.login-container form button:hover {
+.login-container button:hover {
   background-color: #0056b3;
+}
+
+/* Стиль для ошибки */
+.error {
+  color: #dc3545;
+  font-size: 14px;
+  text-align: center;
+  margin-top: 10px;
 }
