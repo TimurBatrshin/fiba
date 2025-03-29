@@ -11,40 +11,61 @@ const Profile = () => {
       rating: 4.5
     },
     gamesHistory: [
-      { date: "2025-03-01", result: "Победа" },
-      { date: "2025-03-10", result: "Проигрыш" }
+      { opponent: "Команда A", score: "21-15", date: "2025-03-15" },
+      { opponent: "Команда B", score: "17-21", date: "2025-03-20" }
     ]
   });
+  
+  const [editing, setEditing] = useState(false);
+  const [newName, setNewName] = useState(user.name);
 
   const handleEditProfile = () => {
-    alert("Редактирование профиля");
+    setEditing(true);
+  };
+
+  const handleSaveProfile = () => {
+    setUser({ ...user, name: newName });
+    setEditing(false);
   };
 
   return (
     <div className="profile-container">
-      <h1>Мой профиль</h1>
-      <div className="profile-card">
-        <img src={user.photo} alt="User profile" className="profile-photo" />
-        <h2>{user.name}</h2>
-        <div className="stats">
-          <p>Турниры: {user.stats.tournaments}</p>
-          <p>Очки: {user.stats.points}</p>
-          <p>Рейтинг: {user.stats.rating}</p>
-        </div>
-        <button onClick={handleEditProfile} className="edit-btn">Редактировать профиль</button>
+      <h1>Профиль</h1>
+      <div className="profile-header">
+        <img src={user.photo} alt="Profile" />
+        {editing ? (
+          <input
+            type="text"
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+          />
+        ) : (
+          <h2>{user.name}</h2>
+        )}
+        {editing ? (
+          <button onClick={handleSaveProfile}>Сохранить</button>
+        ) : (
+          <button onClick={handleEditProfile}>Редактировать</button>
+        )}
       </div>
-      <div className="games-history">
-        <h2>История игр</h2>
+      <div className="profile-stats">
+        <h3>Статистика</h3>
+        <p>Турниры: {user.stats.tournaments}</p>
+        <p>Очки: {user.stats.points}</p>
+        <p>Рейтинг: {user.stats.rating}</p>
+      </div>
+      <div className="profile-history">
+        <h3>История игр</h3>
         <ul>
           {user.gamesHistory.map((game, index) => (
-            <li key={index} className={game.result === "Победа" ? "win" : "loss"}>
-              {game.date} - {game.result}
+            <li key={index}>
+              {game.date} - {game.opponent} ({game.score})
             </li>
           ))}
         </ul>
       </div>
     </div>
   );
-}
+};
 
 export default Profile;

@@ -6,9 +6,21 @@ const AdminTournamentForm = () => {
   const [location, setLocation] = useState('');
   const [level, setLevel] = useState('');
   const [prizePool, setPrizePool] = useState('');
+  const [error, setError] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Валидация
+    if (!name || !date || !location || !level || !prizePool) {
+      setError("Пожалуйста, заполните все поля.");
+      return;
+    }
+
+    if (isNaN(Number(prizePool)) || Number(prizePool) <= 0) {
+      setError("Призовой фонд должен быть числом больше нуля.");
+      return;
+    }
 
     const response = await fetch('/api/admin/tournaments', {
       method: 'POST',
@@ -19,8 +31,9 @@ const AdminTournamentForm = () => {
     const data = await response.json();
     if (response.ok) {
       alert('Турнир успешно создан!');
+      setError(''); // Сброс ошибки
     } else {
-      alert(data.message);
+      setError(data.message || 'Ошибка при создании турнира.');
     }
   };
 
@@ -49,6 +62,7 @@ const AdminTournamentForm = () => {
         <label>Призовой фонд</label>
         <input type="text" value={prizePool} onChange={(e) => setPrizePool(e.target.value)} />
       </div>
+      {error && <p style={{ color: 'red' }}>{error}</p>}
       <button type="submit">Создать турнир</button>
     </form>
   );

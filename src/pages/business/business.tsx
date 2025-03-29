@@ -3,19 +3,16 @@ import axios from "axios";
 import "./business.css";
 
 const Business = () => {
-  // Состояния для турниров и рекламы
   const [tournaments, setTournaments] = useState([]);
   const [ads, setAds] = useState([]);
   
-  // Состояния для формы создания турнира
   const [tournamentName, setTournamentName] = useState("");
   const [tournamentDate, setTournamentDate] = useState("");
   const [tournamentLocation, setTournamentLocation] = useState("");
   
-  // Состояния для формы добавления рекламы
   const [adTitle, setAdTitle] = useState("");
-  
-  // Получение списка турниров и рекламы с сервера
+  const [error, setError] = useState("");
+
   useEffect(() => {
     const fetchTournaments = async () => {
       try {
@@ -39,10 +36,9 @@ const Business = () => {
     fetchAds();
   }, []);
 
-  // Функция для создания нового турнира
   const handleCreateTournament = async () => {
     if (!tournamentName || !tournamentDate || !tournamentLocation) {
-      alert("Пожалуйста, заполните все поля для турнира!");
+      setError("Пожалуйста, заполните все поля для турнира!");
       return;
     }
 
@@ -53,17 +49,17 @@ const Business = () => {
         location: tournamentLocation,
       });
       setTournaments([...tournaments, response.data]);
+      setError('');
       alert("Турнир успешно создан!");
     } catch (error) {
       console.error("Ошибка при создании турнира", error);
-      alert("Ошибка при создании турнира.");
+      setError("Ошибка при создании турнира.");
     }
   };
 
-  // Функция для добавления рекламы
   const handleAddAd = async () => {
     if (!adTitle) {
-      alert("Пожалуйста, введите название рекламы!");
+      setError("Пожалуйста, введите название рекламы!");
       return;
     }
 
@@ -73,10 +69,11 @@ const Business = () => {
         status: "Ожидает одобрения",
       });
       setAds([...ads, response.data]);
+      setError('');
       alert("Реклама успешно добавлена!");
     } catch (error) {
       console.error("Ошибка при добавлении рекламы", error);
-      alert("Ошибка при добавлении рекламы.");
+      setError("Ошибка при добавлении рекламы.");
     }
   };
 
@@ -108,6 +105,7 @@ const Business = () => {
             Создать турнир
           </button>
         </div>
+        {error && <p style={{ color: 'red' }}>{error}</p>}
         <ul>
           {tournaments.map((tournament, index) => (
             <li key={index} className="tournament-item">
@@ -131,6 +129,7 @@ const Business = () => {
             Добавить рекламу
           </button>
         </div>
+        {error && <p style={{ color: 'red' }}>{error}</p>}
         <ul>
           {ads.map((ad, index) => (
             <li key={index} className={`ad-item ${ad.status === "Активно" ? "active" : "pending"}`}>

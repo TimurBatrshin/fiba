@@ -1,35 +1,76 @@
 const express = require("express");
 const cors = require("cors");
-const { Pool } = require("pg");
-const bodyParser = require("body-parser");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
+const { Sequelize, DataTypes } = require("sequelize");
 
 const app = express();
 const port = 5000;
 
-// Создание подключения к базе данных PostgreSQL
-const pool = new Pool({
-  user: "postgres", // Замените на вашего пользователя PostgreSQL
+// Создание подключения к базе данных через Sequelize
+const sequelize = new Sequelize("streetball", "postgres", "qwerty123", {
   host: "localhost",
-  database: "streetball", // Замените на имя вашей базы данных
-  password: "qwerty123", // Замените на ваш пароль
-  port: 5432,
+  dialect: "postgres",
+  logging: true,
 });
+
+// Определение моделей
+const User = sequelize.define("User", {
+  name: { type: DataTypes.STRING, allowNull: false },
+  email: { type: DataTypes.STRING, unique: true, allowNull: false },
+  password: { type: DataTypes.STRING, allowNull: false },
+  email_verified: { type: DataTypes.BOOLEAN, defaultValue: false },
+}, {
+  timestamps: true,
+});
+
+const Profile = sequelize.define("Profile", {
+  photo_url: DataTypes.STRING,
+  tournaments_played: { type: DataTypes.INTEGER, defaultValue: 0 },
+  total_points: { type: DataTypes.INTEGER, defaultValue: 0 },
+  rating: { type: DataTypes.INTEGER, defaultValue: 0 },
+}, {
+  timestamps: true,
+});
+
+const Tournament = sequelize.define("Tournament", {
+  title: { type: DataTypes.STRING, allowNull: false },
+  date: { type: DataTypes.DATE, allowNull: false },
+  location: { type: DataTypes.STRING, allowNull: false },
+  level: { type: DataTypes.STRING, allowNull: false },
+  prize_pool: { type: DataTypes.INTEGER, allowNull: false },
+  status: { type: DataTypes.STRING, defaultValue: "registration" },
+}, {
+  timestamps: false,
+});
+
+// Модель для регистрации
+const Registration = sequelize.define("Registration", {
+  team_name: { type: DataTypes.STRING, allowNull: false },
+  players: { type: DataTypes.JSON, allowNull: false },
+}, {
+  timestamps: false,
+});
+
+// Связи
+User.hasOne(Profile, { foreignKey: "user_id" });
+Profile.belongsTo(User, { foreignKey: "user_id" });
+Tournament.hasMany(Registration, { foreignKey: "tournament_id" });
+Registration.belongsTo(Tournament, { foreignKey: "tournament_id" });
+
+// Middleware
+app.use(cors());
+app.use(express.json());
 
 // Настройка отправки email с подтверждением
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
     user: 'your-email@gmail.com',
-    pass: 'your-email-password'
-  }
+    pass: 'your-email-password',
+  },
 });
-
-// Используем middlewares
-app.use(cors());
-app.use(bodyParser.json());
 
 // Регистрация пользователя
 app.post("/api/auth/register", async (req, res) => {
@@ -39,18 +80,22 @@ app.post("/api/auth/register", async (req, res) => {
     return res.status(400).send("Все поля обязательны для заполнения.");
   }
 
+  const userExist = await User.findOne({ where: { email } });
+  if (userExist) {
+    return res.status(400).send('Email уже зарегистрирован');
+  }
+
   // Хэшируем пароль
   const hashedPassword = await bcrypt.hash(password, 10);
 
   try {
-    // Добавляем нового пользователя в базу
-    const newUser = await pool.query(
-      "INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING *",
-      [name, email, hashedPassword]
-    );
+    const newUser = await User.create({ name, email, password: hashedPassword });
+
+    // Создаем профиль пользователя
+    await Profile.create({ user_id: newUser.id });
 
     // Генерация токена для подтверждения email
-    const token = jwt.sign({ userId: newUser.rows[0].id }, 'SECRET_KEY', { expiresIn: '1h' });
+    const token = jwt.sign({ userId: newUser.id }, 'SECRET_KEY', { expiresIn: '1h' });
 
     // Отправка email с ссылкой для подтверждения
     const mailOptions = {
@@ -61,7 +106,6 @@ app.post("/api/auth/register", async (req, res) => {
 
     await transporter.sendMail(mailOptions);
     res.status(200).json({ message: 'Email отправлен, пожалуйста, подтвердите ваш email.' });
-
   } catch (error) {
     console.error("Ошибка при регистрации", error);
     res.status(500).send("Ошибка сервера");
@@ -76,8 +120,13 @@ app.get("/api/auth/verify-email", async (req, res) => {
     const decoded = jwt.verify(token, 'SECRET_KEY');
     const userId = decoded.userId;
 
-    // Обновляем статус подтверждения email
-    await pool.query('UPDATE users SET email_verified = TRUE WHERE id = $1', [userId]);
+    const user = await User.findByPk(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'Пользователь не найден' });
+    }
+
+    user.email_verified = true;
+    await user.save();
 
     res.status(200).json({ message: 'Email подтвержден успешно!' });
   } catch (error) {
@@ -91,20 +140,17 @@ app.post("/api/auth/login", async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const userResult = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
-    const user = userResult.rows[0];
+    const user = await User.findOne({ where: { email } });
 
     if (!user) {
       return res.status(400).json({ message: 'Неверный email или пароль' });
     }
 
-    // Сравниваем пароли
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(400).json({ message: 'Неверный email или пароль' });
     }
 
-    // Генерация JWT токена
     const token = jwt.sign({ userId: user.id }, 'SECRET_KEY', { expiresIn: '1d' });
 
     res.status(200).json({ token });
@@ -126,14 +172,13 @@ app.get("/api/profile", async (req, res) => {
     const decoded = jwt.verify(token, 'SECRET_KEY');
     const userId = decoded.userId;
 
-    // Получаем профиль пользователя
-    const profile = await pool.query('SELECT * FROM profiles WHERE user_id = $1', [userId]);
+    const profile = await Profile.findOne({ where: { user_id: userId } });
 
-    if (profile.rows.length === 0) {
+    if (!profile) {
       return res.status(404).json({ message: "Профиль не найден" });
     }
 
-    res.status(200).json(profile.rows[0]);
+    res.status(200).json(profile);
   } catch (error) {
     console.error("Ошибка при получении профиля", error);
     res.status(500).send("Ошибка сервера");
@@ -153,13 +198,18 @@ app.put("/api/profile", async (req, res) => {
     const decoded = jwt.verify(token, 'SECRET_KEY');
     const userId = decoded.userId;
 
-    // Обновляем профиль пользователя
-    const updatedProfile = await pool.query(
-      'UPDATE profiles SET photo_url = $1, tournaments_played = $2, total_points = $3, rating = $4 WHERE user_id = $5 RETURNING *',
-      [photo_url, tournaments_played, total_points, rating, userId]
-    );
+    const profile = await Profile.findOne({ where: { user_id: userId } });
+    if (!profile) {
+      return res.status(404).json({ message: "Профиль не найден" });
+    }
 
-    res.status(200).json(updatedProfile.rows[0]);
+    profile.photo_url = photo_url;
+    profile.tournaments_played = tournaments_played;
+    profile.total_points = total_points;
+    profile.rating = rating;
+    await profile.save();
+
+    res.status(200).json(profile);
   } catch (error) {
     console.error("Ошибка при обновлении профиля", error);
     res.status(500).send("Ошибка сервера");
@@ -169,8 +219,8 @@ app.put("/api/profile", async (req, res) => {
 // Получение турниров
 app.get("/api/tournaments", async (req, res) => {
   try {
-    const result = await pool.query("SELECT * FROM tournaments ORDER BY date ASC");
-    res.json(result.rows);
+    const tournaments = await Tournament.findAll({ order: [['date', 'ASC']] });
+    res.json(tournaments);
   } catch (error) {
     console.error("Ошибка при получении турниров", error);
     res.status(500).send("Ошибка сервера");
@@ -179,111 +229,101 @@ app.get("/api/tournaments", async (req, res) => {
 
 // Создание турнира
 app.post("/api/tournaments", async (req, res) => {
-  const { name, date, location, level, prize_pool } = req.body;
+  const { title, date, location, level, prize_pool } = req.body;
 
-  if (!name || !date || !location || !level || !prize_pool) {
+  if (!title || !date || !location || !level || !prize_pool) {
     return res.status(400).send("Все поля обязательны для заполнения.");
   }
 
   try {
-    const result = await pool.query(
-      "INSERT INTO tournaments (name, date, location, level, prize_pool) VALUES ($1, $2, $3, $4, $5) RETURNING *",
-      [name, date, location, level, prize_pool]
-    );
-    res.json(result.rows[0]);
+    const newTournament = await Tournament.create({ title, date, location, level, prize_pool });
+    res.json(newTournament);
   } catch (error) {
     console.error("Ошибка при создании турнира", error);
     res.status(500).send("Ошибка сервера");
   }
 });
 
-// API для создания турнира администратором
+// Регистрация турнира
 app.post("/api/admin/tournaments", async (req, res) => {
-  const { name, date, location, level, prize_pool } = req.body;
+  const { title, date, location, level, prize_pool } = req.body;
 
-  if (!name || !date || !location || !level || !prize_pool) {
+  if (!title || !date || !location || !level || !prize_pool) {
     return res.status(400).send("Все поля обязательны для заполнения.");
   }
 
   try {
-    const result = await pool.query(
-      "INSERT INTO tournaments (name, date, location, level, prize_pool) VALUES ($1, $2, $3, $4, $5) RETURNING *",
-      [name, date, location, level, prize_pool]
-    );
-    res.json(result.rows[0]);
+    const newTournament = await Tournament.create({ title, date, location, level, prize_pool });
+    res.json(newTournament);
   } catch (error) {
     console.error("Ошибка при создании турнира", error);
     res.status(500).send("Ошибка сервера");
   }
 });
 
-
-// API для получения турниров с фильтрами
+// Получение турниров с фильтрами
 app.get("/api/tournaments", async (req, res) => {
-    const { date, location, level } = req.query;
-    let query = "SELECT * FROM tournaments WHERE 1 = 1";
-    const params = [];
-  
-    if (date) {
-      query += " AND date = $1";
-      params.push(date);
-    }
-  
-    if (location) {
-      query += " AND location ILIKE $2";
-      params.push(`%${location}%`);
-    }
-  
-    if (level) {
-      query += " AND level = $3";
-      params.push(level);
-    }
-  
-    query += " ORDER BY date ASC";
-  
-    try {
-      const result = await pool.query(query, params);
-      res.json(result.rows);
-    } catch (error) {
-      console.error("Ошибка при получении турниров", error);
-      res.status(500).send("Ошибка сервера");
-    }
-  });
+  const { date, location, level } = req.query;
+  const filters = {};
 
-// API для регистрации на турнир
+  if (date) {
+    filters.date = date;
+  }
+
+  if (location) {
+    filters.location = { [Sequelize.Op.iLike]: `%${location}%` };
+  }
+
+  if (level) {
+    filters.level = level;
+  }
+
+  try {
+    const tournaments = await Tournament.findAll({
+      where: filters,
+      order: [['date', 'ASC']],
+    });
+    res.json(tournaments);
+  } catch (error) {
+    console.error("Ошибка при получении турниров", error);
+    res.status(500).send("Ошибка сервера");
+  }
+});
+
+// Регистрация на турнир
 app.post("/api/tournaments/:id/register", async (req, res) => {
-    const { id } = req.params;
-    const { teamName, players } = req.body;
-  
-    if (!teamName || !players || players.length !== 4) {
-      return res.status(400).send("Команда должна состоять из 4 игроков (3 игрока и 1 запасной).");
-    }
-  
-    try {
-      // Добавляем команду в турнир
-      const result = await pool.query(
-        "INSERT INTO registrations (tournament_id, team_name, players) VALUES ($1, $2, $3) RETURNING *",
-        [id, teamName, JSON.stringify(players)]
-      );
-      res.json(result.rows[0]);
-    } catch (error) {
-      console.error("Ошибка при регистрации на турнир", error);
-      res.status(500).send("Ошибка сервера");
-    }
-  });
+  const { id } = req.params;
+  const { teamName, players } = req.body;
+
+  if (!teamName || !players || players.length !== 4) {
+    return res.status(400).send("Команда должна состоять из 4 игроков (3 игрока и 1 запасной).");
+  }
+
+  try {
+    const registration = await Registration.create({
+      tournament_id: id,
+      team_name: teamName,
+      players: JSON.stringify(players),
+    });
+    res.json(registration);
+  } catch (error) {
+    console.error("Ошибка при регистрации на турнир", error);
+    res.status(500).send("Ошибка сервера");
+  }
+});
 
 // Получение информации о турнире по ID
 app.get("/api/tournament/:id", async (req, res) => {
   const { id } = req.params;
 
   try {
-    const result = await pool.query("SELECT * FROM tournaments WHERE id = $1", [id]);
+    const tournament = await Tournament.findByPk(id);
 
-    if (result.rows.length === 0) {
+    if (!tournament) {
       return res.status(404).json({ message: "Турнир не найден" });
     }
 
-    res.json(result.rows[0]);
+    res.json(tournament);
   } catch (error) {
     console.error("Ошибка при получении турнира", error);
     res.status(500).send("Ошибка сервера");
@@ -291,6 +331,12 @@ app.get("/api/tournament/:id", async (req, res) => {
 });
 
 // Запуск сервера
-app.listen(port, () => {
-  console.log(`Server is running on http://localhost:${port}`);
+app.listen(port, async () => {
+  try {
+    await sequelize.sync();  // Синхронизация с БД
+    console.log('Синхронизация с БД прошла успешна');
+    console.log(`Server is running on http://localhost:${port}`);
+  } catch (error) {
+    console.error("Ошибка подключения к базе данных", error);
+  }
 });
