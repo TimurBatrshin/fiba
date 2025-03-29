@@ -10,7 +10,9 @@ const portfinder = require('portfinder');
 const bodyParser = require('body-parser');
 
 const app = express();
-app.use(bodyParser.json());
+app.use(cors());
+app.use(express.json());
+
 const port = 8080;
 
 // Создание подключения к базе данных через Sequelize
