@@ -1,4 +1,4 @@
-const businessMiddleware = (req, res, next) => {
+const advertiserMiddleware = (req, res, next) => {
     const { userId } = req;
   
     User.findByPk(userId).then(user => {
@@ -11,3 +11,4 @@ const businessMiddleware = (req, res, next) => {
     });
   }
   
+  module.exports = advertiserMiddleware;

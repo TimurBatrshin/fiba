@@ -27,18 +27,20 @@ const Login: React.FC<LoginProps> = ({ setIsAuthenticated }) => {
     e.preventDefault();
     try {
       const response = await axios.post("http://localhost:8080/api/auth/login", formData);
-      // Сохраняем токен в localStorage
-      localStorage.setItem("token", response.data.token);
-
-      // Устанавливаем аутентификацию в true
-      setIsAuthenticated(true);
-
-      // Переходим на страницу профиля
-      navigate("/profile");
+      if (response.status === 200) {
+        localStorage.setItem("token", response.data.token);
+        setIsAuthenticated(true);
+        navigate("/profile");
+      } else {
+        setError("Ошибка при входе. Попробуйте снова.");
+      }
     } catch (err) {
+      console.error("Login error:", err);
       setError("Ошибка при входе. Попробуйте снова.");
     }
   };
+  
+
 
   return (
     <div className="login-container">

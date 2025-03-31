@@ -1,5 +1,6 @@
 const { Sequelize, DataTypes } = require("sequelize");
 const express = require("express");
+const multer = require('multer');
 const cors = require("cors");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
@@ -8,9 +9,38 @@ const authMiddleware = require("./authMiddleware");
 const businessMiddleware = require("./businessMiddleware");
 const advertiserMiddleware = require("./advertiserMiddleware");
 
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/'); // Папка для загрузок
+  },
+  filename: (req, file, cb) => {
+    cb(null, `${Date.now()}-${file.originalname}`);
+  }
+});
+
+const upload = multer({ storage });
+
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+const authenticate = (req, res, next) => {
+  const token = req.header('Authorization')?.replace('Bearer ', '');
+  
+  if (!token) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, 'your-secret-key');
+    req.user = decoded; // Attach user info to the request
+    next();
+  } catch (error) {
+    return res.status(401).json({ error: 'Invalid token' });
+  }
+};
+
+app.use(authenticate);
 
 const port = 8080;
 
@@ -80,6 +110,17 @@ const Ad = sequelize.define("Ad", {
   timestamps: true,
 });
 
+const AdResults = sequelize.define("AdResults", {
+  adId: {
+    type: DataTypes.INTEGER,
+    references: { model: Ad, key: "id" }  // Правильно: ссылка на переменную модели
+  },
+  clicks: { type: DataTypes.INTEGER, defaultValue: 0 },
+  views: { type: DataTypes.INTEGER, defaultValue: 0 },
+});
+
+
+
 // Связи
 User.hasOne(Profile, { foreignKey: "user_id" });  
 Profile.belongsTo(User, { foreignKey: "user_id" }); 
@@ -103,6 +144,43 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+// Получить результаты рекламы
+app.get('/ad-results', async (req, res) => {
+  try {
+    const adResults = await AdResults.findAll();
+    res.json(adResults);
+  } catch (error) {
+    console.error("Ошибка при получении результатов рекламы", error);
+    res.status(500).json({ error: "Ошибка при получении результатов рекламы" });
+  }
+});
+
+// Обновить статистику рекламы
+app.post('/ad-results/update', async (req, res) => {
+  const { adId, clicks, impressions } = req.body;
+
+  try {
+    const adResult = await AdResults.findOne({ where: { adId } });
+
+    if (adResult) {
+      adResult.clicks += clicks;
+      adResult.impressions += impressions;
+      await adResult.save();
+    } else {
+      await AdResults.create({
+        adId,
+        clicks,
+        impressions,
+      });
+    }
+
+    res.status(200).json({ message: "Результаты обновлены!" });
+  } catch (error) {
+    console.error("Ошибка при обновлении результатов рекламы", error);
+    res.status(500).json({ error: "Ошибка при обновлении результатов рекламы" });
+  }
+});
+
 // Регистрация пользователя
 app.post("/api/auth/register", async (req, res) => {
   const { name, email, password } = req.body;
@@ -122,7 +200,7 @@ app.post("/api/auth/register", async (req, res) => {
     const newUser = await User.create({ name, email, password: hashedPassword });
     await Profile.create({ user_id: newUser.id });
 
-    const token = jwt.sign({ userId: user.id }, 'Timur007', { expiresIn: '1d' });
+    const token = jwt.sign({ userId: newUser.id }, 'Timur007', { expiresIn: '1d' });
 
     const mailOptions = {
       to: email,
@@ -141,11 +219,6 @@ app.post("/api/auth/register", async (req, res) => {
 // Проверка авторизации
 app.get("/api/auth/check", authMiddleware, (req, res) => {
   res.status(200).send('Авторизация успешна');
-});
-
-// Проверка прав бизнеса
-app.get("/api/auth/business-check", authMiddleware, businessMiddleware, (req, res) => {
-  res.status(200).send('Авторизация бизнеса успешна');
 });
 
 // Подтверждение email
@@ -213,26 +286,33 @@ app.post("/api/auth/login", async (req, res) => {
       res.status(500).send("Ошибка при получении профиля");
     }
   });
+
+
   
   // Обновление профиля пользователя
-  app.put("/api/profile", authMiddleware, async (req, res) => {
-    const { photo_url, tournaments_played, total_points, rating } = req.body;
-    try {
-      const profile = await Profile.findOne({ where: { user_id: req.user.userId } });
-      if (!profile) {
-        return res.status(404).send("Профиль не найден");
-      }
-      profile.photo_url = photo_url || profile.photo_url;
-      profile.tournaments_played = tournaments_played || profile.tournaments_played;
-      profile.total_points = total_points || profile.total_points;
-      profile.rating = rating || profile.rating;
-      await profile.save();
-      res.status(200).json(profile);
-    } catch (error) {
-      console.error("Ошибка при обновлении профиля:", error);
-      res.status(500).send("Ошибка при обновлении профиля");
+  app.put('/api/profile', authenticate, upload.single('photo'), async (req, res) => {
+    console.log(req.user); // Add this line to check if user is populated
+  
+    if (!req.user) {
+      return res.status(401).json({ error: 'User not authenticated' });
     }
+  
+    const { tournaments_played, total_points, rating } = req.body;
+    const photo = req.file ? `/uploads/${req.file.filename}` : null;
+  
+    const updatedProfile = await Profile.update(
+      {
+        photo_url: photo || existingProfile.photo_url,
+        tournaments_played,
+        total_points,
+        rating,
+      },
+      { where: { userId: req.user.id } }
+    );
+  
+    res.json(updatedProfile);
   });
+  
 
 /// Создание турнира
 app.post("/api/tournaments", async (req, res) => {
@@ -256,7 +336,7 @@ app.post("/api/tournaments", async (req, res) => {
   });
 
 // Создание турнира (доступно только для бизнес-аккаунтов)
-app.post("/api/tournaments/business", authMiddleware, businessMiddleware, async (req, res) => {
+app.post("/api/tournaments/business", businessMiddleware, authMiddleware , async (req, res) => {
   const { title, date, location, level, prize_pool, rules } = req.body;
 
   try {
@@ -516,16 +596,15 @@ app.post("/api/ads", advertiserMiddleware, async (req, res) => {
   }
 });
 
-portfinder.getPortPromise({ port: port, stopPort: 8080 }).then((port) => {
-    app.listen(port, async () => {
-      try {
-        await sequelize.sync();  // Синхронизация с БД
-        console.log('Синхронизация с БД прошла успешна');
-        console.log(`Server is running on http://localhost:${port}`);
-      } catch (error) {
-        console.error("Ошибка подключения к базе данных", error);
-      }
+  sequelize.sync({ alter: true })  // или { force: true } для пересоздания таблиц
+  .then(() => {
+    console.log("База данных синхронизирована");
+    app.listen(port, () => {
+      console.log(`Сервер запущен на порту ${port}`);
     });
-  }).catch((err) => {
-    console.error(`Не удалось найти свободный порт: ${err.message}`);
-  });
+  })
+  .catch((error) => console.error("Ошибка при синхронизации:", error));
+
+  sequelize.authenticate()
+  .then(() => console.log("Подключение к базе данных установлено"))
+  .catch(err => console.error("Ошибка подключения:", err));

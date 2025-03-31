@@ -10,3 +10,5 @@ const businessMiddleware = (req, res, next) => {
     res.status(500).send("Ошибка проверки пользователя");
   });
 }
+
+module.exports = businessMiddleware;

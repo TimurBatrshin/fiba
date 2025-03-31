@@ -4,6 +4,9 @@ import axios from "axios";
 import "./Tournament.css"; // Импортируем стили
 import UserCalendar from '../UserCalendar/UserCalendar';
 import TournamentBracket from '../TournamentBracket/TournamentBracket';
+import ReactGA from 'react-ga';
+
+ReactGA.initialize('UA-XXXXX-Y');  // Ваш ID отслеживания
 
 const Tournament = () => {
   const { id } = useParams(); 
@@ -32,6 +35,15 @@ const Tournament = () => {
   }, [id]);
 
   if (!tournament) return <div>Загрузка...</div>;
+
+  // Функция для отслеживания кликов по рекламе
+  const trackAdClick = () => {
+    ReactGA.event({
+      category: 'Ad',
+      action: 'Click',
+      label: 'Tournament Ad'
+    });
+  };
 
   // Обработчик изменения имени команды
   const handleTeamNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {

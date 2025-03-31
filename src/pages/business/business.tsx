@@ -5,6 +5,7 @@ import "./business.css";
 const Business = () => {
   const [tournaments, setTournaments] = useState([]);
   const [ads, setAds] = useState([]);
+  const [adResults, setAdResults] = useState([]);
   
   const [tournamentName, setTournamentName] = useState("");
   const [tournamentDate, setTournamentDate] = useState("");
@@ -22,7 +23,7 @@ const Business = () => {
         console.error("Ошибка при получении турниров", error);
       }
     };
-    
+
     const fetchAds = async () => {
       try {
         const response = await axios.get("http://localhost:8080/api/ads");
@@ -31,9 +32,19 @@ const Business = () => {
         console.error("Ошибка при получении рекламы", error);
       }
     };
+
+    const fetchAdResults = async () => {
+      try {
+        const response = await axios.get("http://localhost:8080/api/ad-results");
+        setAdResults(response.data);
+      } catch (error) {
+        console.error("Ошибка при получении результатов рекламы", error);
+      }
+    };
     
     fetchTournaments();
     fetchAds();
+    fetchAdResults();
   }, []);
 
   const handleCreateTournament = async () => {
@@ -80,7 +91,7 @@ const Business = () => {
   return (
     <div className="business-container">
       <h1>Для бизнеса</h1>
-      
+
       <div className="tournaments-section">
         <h2>Создание и управление турнирами</h2>
         <div className="form-section">
@@ -135,6 +146,19 @@ const Business = () => {
             <li key={index} className={`ad-item ${ad.status === "Активно" ? "active" : "pending"}`}>
               <h3>{ad.title}</h3>
               <p>Статус: {ad.status}</p>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div className="ad-results-section">
+        <h2>Результаты рекламы</h2>
+        <ul>
+          {adResults.map((result, index) => (
+            <li key={index}>
+              <h3>Реклама ID: {result.adId}</h3>
+              <p>Клики: {result.clicks}</p>
+              <p>Показы: {result.impressions}</p>
             </li>
           ))}
         </ul>
