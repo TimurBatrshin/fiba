@@ -6,6 +6,7 @@ const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
 const authMiddleware = require("./authMiddleware");
 const businessMiddleware = require("./businessMiddleware");
+const advertiserMiddleware = require("./advertiserMiddleware");
 
 const app = express();
 app.use(cors());
@@ -32,6 +33,7 @@ const User = sequelize.define("User", {
 });
 
 const Profile = sequelize.define("Profile", {
+  user_id: { type: DataTypes.INTEGER, allowNull: false },  // Добавлено
   photo_url: DataTypes.STRING,
   tournaments_played: { type: DataTypes.INTEGER, defaultValue: 0 },
   total_points: { type: DataTypes.INTEGER, defaultValue: 0 },
@@ -62,28 +64,25 @@ const Registration = sequelize.define("Registration", {
 const Ad = sequelize.define("Ad", {
   title: { type: DataTypes.STRING, allowNull: false },
   image_url: { type: DataTypes.STRING, allowNull: false },
-  tournament_id: { type: DataTypes.INTEGER, allowNull: false },
+  tournament_id: { 
+    type: DataTypes.INTEGER,
+    references: { model: Tournament, key: "id" }  // Исправлено
+  },
   advertiserId: { 
     type: DataTypes.INTEGER, 
-    references: {
-      model: "Users", 
-      key: "id"
-    }
+    references: { model: User, key: "id" }  // Исправлено
   },
   businessId: { 
     type: DataTypes.INTEGER, 
-    references: {
-      model: "Users", 
-      key: "id"
-    }
-  },
+    references: { model: User, key: "id" }  // Исправлено
+  }
 }, {
   timestamps: true,
 });
 
 // Связи
-User.hasOne(Profile, { foreignKey: "user_id" });
-Profile.belongsTo(User, { foreignKey: "user_id" });
+User.hasOne(Profile, { foreignKey: "user_id" });  
+Profile.belongsTo(User, { foreignKey: "user_id" }); 
 Tournament.hasMany(Registration, { foreignKey: "tournament_id" });
 Registration.belongsTo(Tournament, { foreignKey: "tournament_id" });
 Tournament.hasMany(Ad, { foreignKey: "tournament_id" });
@@ -123,7 +122,7 @@ app.post("/api/auth/register", async (req, res) => {
     const newUser = await User.create({ name, email, password: hashedPassword });
     await Profile.create({ user_id: newUser.id });
 
-    const token = jwt.sign({ userId: newUser.id }, 'SECRET_KEY', { expiresIn: '1h' });
+    const token = jwt.sign({ userId: user.id }, 'Timur007', { expiresIn: '1d' });
 
     const mailOptions = {
       to: email,
@@ -154,7 +153,7 @@ app.get("/api/auth/verify-email", async (req, res) => {
   const { token } = req.query;
 
   try {
-    const decoded = jwt.verify(token, 'SECRET_KEY');
+    const decoded = jwt.verify(token, 'Timur007');
     const userId = decoded.userId;
 
     const user = await User.findByPk(userId);
@@ -234,17 +233,6 @@ app.post("/api/auth/login", async (req, res) => {
       res.status(500).send("Ошибка при обновлении профиля");
     }
   });
-  
-// Получение турниров
-app.get("/api/tournaments", async (req, res) => {
-  try {
-    const tournaments = await Tournament.findAll({ order: [['date', 'ASC']] });
-    res.json(tournaments);
-  } catch (error) {
-    console.error("Ошибка при получении турниров", error);
-    res.status(500).send("Ошибка сервера");
-  }
-});
 
 /// Создание турнира
 app.post("/api/tournaments", async (req, res) => {
@@ -268,22 +256,25 @@ app.post("/api/tournaments", async (req, res) => {
   });
 
 // Создание турнира (доступно только для бизнес-аккаунтов)
-app.post("/api/tournaments/business", businessMiddleware, async (req, res) => {
-  const { title, date, location, level, prize_pool } = req.body;
+app.post("/api/tournaments/business", authMiddleware, businessMiddleware, async (req, res) => {
+  const { title, date, location, level, prize_pool, rules } = req.body;
 
   try {
+    // Здесь можно также добавить businessId, если требуется связывать турнир с конкретным бизнес-аккаунтом:
     const tournament = await Tournament.create({
       title,
       date,
       location,
       level,
       prize_pool,
+      rules,
       status: 'registration',
+      businessId: req.user.id  // req.user установлено в authMiddleware
     });
     res.status(201).json(tournament);
   } catch (error) {
-    console.error('Ошибка при создании турнира', error);
-    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+    console.error('Ошибка при создании турнира:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
@@ -351,17 +342,9 @@ app.get("/api/tournaments", async (req, res) => {
   const { date, location, level } = req.query;
   const filters = {};
 
-  if (date) {
-    filters.date = date;
-  }
-
-  if (location) {
-    filters.location = { [Sequelize.Op.iLike]: `%${location}%` };
-  }
-
-  if (level) {
-    filters.level = level;
-  }
+  if (date) filters.date = date;
+  if (location) filters.location = { [Sequelize.Op.iLike]: `%${location}%` };
+  if (level) filters.level = level;
 
   try {
     const tournaments = await Tournament.findAll({
@@ -411,6 +394,24 @@ app.get("/api/tournaments/:id", async (req, res) => {
     res.status(200).json(tournament);
   } catch (error) {
     res.status(500).send("Ошибка при получении информации о турнире");
+  }
+});
+
+app.post("/api/ads/propose", authMiddleware, advertiserMiddleware, async (req, res) => {
+  const { title, image_url, tournament_id, adContent } = req.body;
+  // Если в модели Ad уже используются поля title и image_url, можно их переиспользовать, либо добавить adContent отдельно.
+  try {
+    const ad = await Ad.create({
+      title, 
+      image_url,
+      tournament_id,
+      advertiserId: req.user.id  // Рекламный аккаунт
+      // businessId можно добавить, если требуется, но в данном случае мы сосредоточимся на рекламном аккаунте.
+    });
+    res.status(201).json(ad);
+  } catch (error) {
+    console.error('Ошибка при предложении рекламы:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 

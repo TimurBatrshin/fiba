@@ -1,0 +1,65 @@
+/* proposeAd.css */
+
+.propose-ad-container {
+    max-width: 500px;
+    margin: 40px auto;
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+  
+  .propose-ad-container h1 {
+    text-align: center;
+    color: #2d3b55;
+    margin-bottom: 20px;
+  }
+  
+  .propose-ad-container form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .propose-ad-container form div {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .propose-ad-container label {
+    font-size: 16px;
+    color: #3a4a73;
+    margin-bottom: 5px;
+  }
+  
+  .propose-ad-container input,
+  .propose-ad-container textarea {
+    width: 100%;
+    padding: 10px;
+    font-size: 14px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    transition: border-color 0.3s ease;
+  }
+  
+  .propose-ad-container input:focus,
+  .propose-ad-container textarea:focus {
+    border-color: #4b8dff;
+    outline: none;
+  }
+  
+  .propose-ad-container button {
+    padding: 12px;
+    font-size: 16px;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  
+  .propose-ad-container button:hover {
+    background-color: #0056b3;
+  }
+  

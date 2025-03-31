@@ -10,6 +10,8 @@ import RegisterUser from "./pages/registerUser/registerUser";
 import Login from "./pages/login/login";// Импорт компонента панели администратора
 import { UserRoleProvider } from "./context/UserRoleContext"; // Импорт провайдера контекста роли пользователя
 import Admin from "./pages/admin/admin";
+import CreateTournament from "./pages/admin/admin";
+import ProposeAd from "./pages/advertiser/ProposeAd";
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -38,6 +40,8 @@ const App: React.FC = () => {
             <Route path="/register-user" element={<RegisterUser />} />
             <Route path="/login" element={<Login setIsAuthenticated={setIsAuthenticated} />} />
             <Route path="/admin" element={<Admin />} />
+            <Route path="/admin/create-tournament" element={<CreateTournament />} />
+          <Route path="/advertiser/propose-ad" element={<ProposeAd />} />
           </Routes>
         </div>
       </Router>
