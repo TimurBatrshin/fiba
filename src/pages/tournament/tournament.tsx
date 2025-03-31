@@ -2,14 +2,17 @@ import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
 import "./Tournament.css"; // Импортируем стили
+import UserCalendar from '../UserCalendar/UserCalendar';
+import TournamentBracket from '../TournamentBracket/TournamentBracket';
 
 const Tournament = () => {
-  const { id } = useParams(); // Получаем id турнира из параметров URL
+  const { id } = useParams(); 
   const [tournament, setTournament] = useState<any>(null);
   const [advertisement, setAdvertisement] = useState<any>(null);
   const [teamName, setTeamName] = useState("");
   const [players, setPlayers] = useState<string[]>([""]);
   const [registrationStatus, setRegistrationStatus] = useState<string>("");
+  const { userId } = useParams<{ userId: string }>();
 
   useEffect(() => {
     const fetchTournamentDetails = async () => {
@@ -128,7 +131,10 @@ const Tournament = () => {
         </form>
         {registrationStatus && <p>{registrationStatus}</p>}
       </div>
-
+      <div>
+        <h1>Турнир</h1>
+        <UserCalendar userId={userId} />
+    </div>
       {/* Рекламная информация */}
       {advertisement && (
         <div className="advertisement">
@@ -137,48 +143,7 @@ const Tournament = () => {
         </div>
       )}
 
-      {/* Турнирная сетка */}
-      <div className="tournament-bracket">
-        <h2>{tournament.title}</h2>
-        <div className="bracket">
-          {tournament.Registrations.map((registration) => {
-            // Логируем всю информацию о регистрации
-            console.log("Registration data:", registration);
-
-            // Проверяем, является ли players строкой и преобразуем её в массив
-            let playersArray = registration.players;
-            if (typeof playersArray === "string") {
-              try {
-                playersArray = JSON.parse(playersArray);  // Преобразуем строку в массив
-              } catch (error) {
-                console.error("Ошибка при преобразовании строки в массив:", error);
-                playersArray = [];  // В случае ошибки, делаем массив пустым
-              }
-            }
-
-            // Проверяем, что players теперь массив
-            if (Array.isArray(playersArray)) {
-              return (
-                <div key={registration.id} className="bracket-item">
-                  <p>{registration.team_name}</p>
-                  <ul>
-                    {playersArray.map((player, idx) => (
-                      <li key={idx}>{player}</li>
-                    ))}
-                  </ul>
-                </div>
-              );
-            } else {
-              return (
-                <div key={registration.id} className="bracket-item">
-                  <p>{registration.team_name}</p>
-                  <p>Ошибка: Неверный формат игроков</p>
-                </div>
-              );
-            }
-          })}
-        </div>
-      </div>
+      <TournamentBracket registrations={tournament.Registrations} />
     </div>
   );
 };

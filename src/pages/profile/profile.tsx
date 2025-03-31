@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import "./profile.css";  // Импортируем стили
+import UserCalendar from '../UserCalendar/UserCalendar';
 
 interface ProfileProps {
   isAuthenticated: boolean;
@@ -102,6 +103,10 @@ const Profile: React.FC<ProfileProps> = ({ isAuthenticated }) => {
         <p>Всего очков: {profile.total_points}</p>
         <p>Рейтинг: {profile.rating}</p>
       </div>
+      <div>
+      <h1>Личный кабинет</h1>
+      <UserCalendar />
+    </div>
       <button onClick={() => setEditMode(true)}>Редактировать профиль</button>
       {editMode && (
         <form onSubmit={handleSubmit} className="profile-form">

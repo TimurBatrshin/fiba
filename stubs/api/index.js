@@ -338,23 +338,37 @@ app.post("/api/admin/tournaments", async (req, res) => {
 });
 
 // Получение турниров с фильтрами
-app.get("/api/tournaments", async (req, res) => {
+app.get('/api/tournaments', async (req, res) => {
   const { date, location, level } = req.query;
-  const filters = {};
-
-  if (date) filters.date = date;
-  if (location) filters.location = { [Sequelize.Op.iLike]: `%${location}%` };
-  if (level) filters.level = level;
+  
+  const query = {};
+  if (date) query.date = date;
+  if (location) query.location = location;
+  if (level) query.level = level;
 
   try {
-    const tournaments = await Tournament.findAll({
-      where: filters,
-      order: [['date', 'ASC']],
-    });
+    const tournaments = await Tournament.find(query);
     res.json(tournaments);
   } catch (error) {
-    console.error("Ошибка при получении турниров", error);
-    res.status(500).send("Ошибка сервера");
+    res.status(500).send("Ошибка при получении турниров.");
+  }
+});
+
+
+app.get("/user/:userId/registrations", async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    const registrations = await Registration.findAll({
+      where: { user_id: userId },
+      include: [{ model: Tournament }],
+    });
+
+    const tournaments = registrations.map((reg) => reg.Tournament);
+    res.json(tournaments);
+  } catch (error) {
+    console.error("Ошибка при получении турниров:", error);
+    res.status(500).json({ message: "Ошибка сервера" });
   }
 });
 

@@ -2,21 +2,21 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import "./tournaments.css";  // Импортируем стили
+import TournamentFilter from '../TournamentFilter/TournamentFilter';
 
 const Tournaments = () => {
     const [tournaments, setTournaments] = useState([]);
     const [filters, setFilters] = useState({ date: '', location: '', level: '' });
   
-    useEffect(() => {
-        const fetchTournaments = async () => {
-          const query = new URLSearchParams(filters).toString();
-          const response = await axios.get(`http://localhost:8080/api/tournaments?${query}`);
-          const data = await response.data;
-          setTournaments(data);
-        };
+    
+      const fetchTournaments = async (filters) => {
+        const response = await axios.get('http://localhost:8080/api/tournaments', { params: filters });
+        setTournaments(response.data);
+      };
 
-        fetchTournaments();
-    }, [filters]);
+      useEffect(() => {
+        fetchTournaments({});
+      }, []);
 
     const handleFilterChange = (e) => {
         setFilters({ ...filters, [e.target.name]: e.target.value });
@@ -25,29 +25,18 @@ const Tournaments = () => {
   return (
     <div className="tournaments-container">
       <h1>Список турниров</h1>
-
-      {/* Фильтры */}
-      <div className="filters-container">
-        <input
-          type="date"
-          name="date"
-          value={filters.date}
-          onChange={handleFilterChange}
-        />
-        <input
-          type="text"
-          name="location"
-          placeholder="Локация"
-          value={filters.location}
-          onChange={handleFilterChange}
-        />
-        <select name="level" value={filters.level} onChange={handleFilterChange}>
-          <option value="">Выберите уровень</option>
-          <option value="amateur">Любительский</option>
-          <option value="professional">Профессиональный</option>
-        </select>
+      <div>
+      <TournamentFilter onFilter={fetchTournaments} />
+      <div>
+        {tournaments.map((tournament) => (
+          <div key={tournament.id}>
+            <h2>{tournament.name}</h2>
+            <p>{tournament.date} - {tournament.location}</p>
+          </div>
+        ))}
       </div>
-
+    </div>
+      {/* Фильтры */}
       {/* Список турниров */}
       <ul className="tournament-list">
         {tournaments.map((tournament) => (
