@@ -1,0 +1,95 @@
+.stat-card {
+  background-color: white;
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
+  margin-bottom: 1rem;
+  border-top: 3px solid #f0f0f0;
+}
+
+.stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.stat-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.stat-card-title {
+  font-size: 14px;
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.stat-card-icon {
+  color: #6c757d;
+  font-size: 16px;
+  opacity: 0.8;
+}
+
+.stat-card-value {
+  font-size: 24px;
+  font-weight: 600;
+  color: #232323;
+  margin: 4px 0;
+}
+
+.stat-card-small {
+  font-size: 12px;
+  color: #6c757d;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.stat-increase {
+  color: #28a745;
+}
+
+.stat-decrease {
+  color: #dc3545;
+}
+
+/* Варианты цветов для карточек */
+.stat-card-primary {
+  border-top-color: #007bff;
+}
+
+.stat-card-success {
+  border-top-color: #28a745;
+}
+
+.stat-card-warning {
+  border-top-color: #ffc107;
+}
+
+.stat-card-danger {
+  border-top-color: #dc3545;
+}
+
+.stat-card-info {
+  border-top-color: #17a2b8;
+}
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 768px) {
+  .stat-card {
+    padding: 12px;
+  }
+  
+  .stat-card-value {
+    font-size: 20px;
+  }
+  
+  .stat-card-title {
+    font-size: 12px;
+  }
+} 

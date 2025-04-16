@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
+import { API_BASE_URL } from '../config/envConfig';
 
 export const useBusinessAuth = () => {
   const [isBusinessAuthenticated, setIsBusinessAuthenticated] = useState(false);
@@ -13,7 +14,7 @@ export const useBusinessAuth = () => {
           return;
         }
 
-        const response = await axios.get('http://localhost:8080/api/auth/business-check', {
+        const response = await axios.get(`${API_BASE_URL}/auth/business-check`, {
           headers: { Authorization: token },
         });
 

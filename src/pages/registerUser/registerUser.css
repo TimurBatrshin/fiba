@@ -71,3 +71,40 @@ button:hover {
   text-align: center;
   margin-top: 10px;
 }
+
+/* Используем общие стили из global.css */
+/* Специфические стили для страницы регистрации, если нужны дополнения */
+
+/* Успешная регистрация */
+.success-message {
+  text-align: center;
+  padding: 2.5rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.6s ease-out;
+}
+
+.success-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background-color: var(--success);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+}
+
+.success-message h3 {
+  color: var(--gray-900);
+  font-size: var(--font-size-2xl);
+  margin-bottom: 0.75rem;
+}
+
+.success-message p {
+  color: var(--gray-600);
+  max-width: 450px;
+}

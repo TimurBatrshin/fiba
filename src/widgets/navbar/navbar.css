@@ -1,29 +1,381 @@
 .navbar {
-    background: #333;
-    padding: 10px 20px;
+  position: sticky;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  padding: 1rem 0;
+  background-color: #1a1a1a;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  transition: padding 0.3s, box-shadow 0.3s;
+}
+
+.navbar-scrolled {
+  padding: 0.5rem 0;
+  box-shadow: 0 2px 15px rgba(0, 0, 0, 0.15);
+}
+
+.navbar-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Логотип */
+.navbar-logo {
+  display: flex;
+  align-items: center;
+}
+
+.logo-link {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 1.5rem;
+}
+
+.logo-image {
+  height: 32px;
+  margin-right: 8px;
+}
+
+.logo-text {
+  color: #ffffff;
+}
+
+.logo-accent {
+  color: #007bff;
+}
+
+/* Навигационное меню */
+.navbar-menu {
+  display: flex;
+  align-items: center;
+}
+
+.nav-list {
+  display: flex;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.nav-item {
+  margin: 0 0.5rem;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  color: #ffffff;
+  text-decoration: none;
+  font-weight: 500;
+  border-radius: 4px;
+  transition: color 0.2s, background-color 0.2s;
+}
+
+.nav-link:hover {
+  color: #007bff;
+  background-color: rgba(0, 123, 255, 0.1);
+}
+
+.nav-link.active {
+  color: #007bff;
+  background-color: rgba(0, 123, 255, 0.15);
+}
+
+.nav-icon {
+  width: 20px;
+  height: 20px;
+  margin-right: 8px;
+}
+
+.nav-actions {
+  display: flex;
+  align-items: center;
+  margin-left: 1rem;
+}
+
+.notifications-wrapper {
+  margin-right: 1rem;
+  position: relative;
+}
+
+/* Кнопки авторизации */
+.nav-auth {
+  display: flex;
+  align-items: center;
+}
+
+.auth-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-login, .btn-signup, .btn-logout {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  font-weight: 500;
+  transition: background-color 0.2s, color 0.2s;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.btn-login {
+  background-color: transparent;
+  color: #ffffff;
+  border: 1px solid #ffffff;
+}
+
+.btn-login:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #007bff;
+}
+
+.btn-signup {
+  background-color: #007bff;
+  color: white;
+  border: 1px solid #007bff;
+}
+
+.btn-signup:hover {
+  background-color: #0069d9;
+}
+
+.btn-logout {
+  background-color: transparent;
+  color: #dc3545;
+  border: 1px solid #dc3545;
+}
+
+.btn-logout:hover {
+  background-color: #dc3545;
+  color: white;
+}
+
+.logout-icon {
+  width: 18px;
+  height: 18px;
+  margin-right: 8px;
+}
+
+/* Мобильное меню */
+.mobile-menu-toggle {
+  display: none;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  z-index: 1010;
+}
+
+.hamburger-line {
+  display: block;
+  width: 24px;
+  height: 2px;
+  margin: 5px 0;
+  background-color: #ffffff;
+  transition: transform 0.3s, opacity 0.3s;
+}
+
+/* Анимация гамбургер-меню */
+.mobile-menu-toggle.active .hamburger-line:nth-child(1) {
+  transform: translateY(7px) rotate(45deg);
+}
+
+.mobile-menu-toggle.active .hamburger-line:nth-child(2) {
+  opacity: 0;
+}
+
+.mobile-menu-toggle.active .hamburger-line:nth-child(3) {
+  transform: translateY(-7px) rotate(-45deg);
+}
+
+/* Адаптив */
+@media (max-width: 992px) {
+  .mobile-menu-toggle {
+    display: block;
   }
   
-  .nav-links {
-    list-style: none;
-    display: flex;
-    justify-content: space-around;
-    padding: 0;
-    margin: 0;
+  .navbar-menu {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #1a1a1a;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 5rem 2rem 2rem;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    overflow-y: auto;
+    z-index: 1000;
   }
   
-  .nav-links li {
-    display: inline;
+  .navbar-menu.open {
+    transform: translateX(0);
   }
   
-  .nav-links a {
-    color: white;
-    text-decoration: none;
-    font-size: 16px;
-    padding: 8px 12px;
-    transition: 0.3s;
+  .nav-list {
+    flex-direction: column;
+    width: 100%;
   }
   
-  .nav-links a:hover {
-    background: #555;
-    border-radius: 5px;
+  .nav-item {
+    margin: 0.5rem 0;
+    width: 100%;
   }
+  
+  .nav-link {
+    padding: 0.75rem 1rem;
+    width: 100%;
+  }
+  
+  .nav-actions {
+    margin-top: 1rem;
+    margin-left: 0;
+    width: 100%;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .notifications-wrapper {
+    margin-right: 0;
+    margin-bottom: 1rem;
+    width: 100%;
+  }
+  
+  .nav-auth {
+    width: 100%;
+  }
+  
+  .auth-buttons {
+    width: 100%;
+    gap: 1rem;
+  }
+  
+  .btn-login, .btn-signup, .btn-logout {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 576px) {
+  .navbar-container {
+    padding: 0 1rem;
+  }
+  
+  .logo-text, .logo-accent {
+    font-size: 1.2rem;
+  }
+}
+
+/* Стили для выпадающего меню статистики */
+.stats-dropdown {
+  position: relative;
+}
+
+.stats-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 0.8rem 1rem;
+  color: #ffffff;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  transition: color 0.3s ease;
+  font-weight: 500;
+}
+
+.stats-toggle:hover,
+.stats-toggle.active {
+  color: #007bff;
+}
+
+.dropdown-arrow {
+  width: 16px;
+  height: 16px;
+  transition: transform 0.3s ease;
+}
+
+.dropdown-arrow.open {
+  transform: rotate(180deg);
+}
+
+.stats-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 200px;
+  background-color: #242424;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(10px);
+  transition: all 0.3s ease;
+  z-index: 1000;
+  overflow: hidden;
+}
+
+.stats-dropdown-menu.open {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.dropdown-item {
+  display: block;
+  padding: 0.75rem 1rem;
+  color: #ffffff;
+  text-decoration: none;
+  transition: background-color 0.2s;
+}
+
+.dropdown-item:hover {
+  background-color: #2c3036;
+  color: #007bff;
+}
+
+.dropdown-item.active {
+  background-color: #2c3036;
+  color: #007bff;
+  font-weight: 500;
+}
+
+/* Мобильная версия выпадающего меню */
+@media (max-width: 768px) {
+  .stats-toggle {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .stats-dropdown-menu {
+    position: static;
+    width: 100%;
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    box-shadow: none;
+    max-height: 0;
+    transition: max-height 0.3s ease;
+  }
+  
+  .stats-dropdown-menu.open {
+    max-height: 300px;
+  }
+  
+  .dropdown-item {
+    padding-left: 2.5rem;
+  }
+}
