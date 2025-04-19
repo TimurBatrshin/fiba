@@ -15,7 +15,7 @@ const originalFetch = window.fetch;
 // Конфигурация для скриптов bro-js
 const FIBA_CONFIG = {
   version: APP_SETTINGS.buildVersion, // Используем версию из envConfig
-  baseUrl: 'https://static.bro-js.ru/fiba/',
+  baseUrl: 'https://dev.bro-js.ru/fiba/',
   isMasterPath: false
 };
 
