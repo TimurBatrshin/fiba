@@ -61,20 +61,42 @@ window.fetch = (async (input: RequestInfo, init?: RequestInit): Promise<Response
       console.log('Intercepting critical request to static.bro-js.ru:', url);
       
       try {
-        // Попытка загрузить через XMLHttpRequest с режимом no-cors
-        await fetchAndEvalScript(url);
+        // Сначала пробуем загрузить скрипт через DOM
+        await loadScriptNoCORS(url);
         
         // Возвращаем пустой успешный ответ
-        return new Response('/* Script loaded via custom loader */', {
+        return new Response('/* Script loaded via DOM */', {
           status: 200,
           statusText: 'OK',
           headers: new Headers({
             'Content-Type': 'application/javascript'
           })
         });
-      } catch (scriptError) {
-        console.error('Failed to load script with custom loader:', scriptError);
-        // Продолжаем обычной обработкой
+      } catch (domError) {
+        console.error('Failed to load script via DOM, trying XHR:', domError);
+        
+        try {
+          // Запасной вариант: попытка загрузить через XMLHttpRequest с режимом no-cors
+          await fetchAndEvalScript(url);
+          
+          // Возвращаем пустой успешный ответ
+          return new Response('/* Script loaded via custom loader */', {
+            status: 200,
+            statusText: 'OK',
+            headers: new Headers({
+              'Content-Type': 'application/javascript'
+            })
+          });
+        } catch (xhrError) {
+          console.error('All script loading methods failed. Last error:', xhrError);
+          
+          // В качестве последнего средства попробуем direct originalFetch с no-cors
+          return originalFetch(url, {
+            ...(init || {}),
+            mode: 'no-cors',
+            credentials: 'include'
+          });
+        }
       }
     }
     
@@ -127,19 +149,42 @@ window.fetch = (async (input: RequestInfo, init?: RequestInit): Promise<Response
 
 // При загрузке страницы пытаемся предзагрузить основной скрипт
 document.addEventListener('DOMContentLoaded', () => {
-  // Определяем, какой скрипт загружать в зависимости от пути
-  const mainScriptUrl = `${FIBA_CONFIG.baseUrl}${FIBA_CONFIG.version}/index.js`;
-  console.log('Pre-loading main script:', mainScriptUrl, 
-              FIBA_CONFIG.isMasterPath ? '(from master path)' : '');
-  
-  // Используем наши специальные утилиты вместо прямого DOM метода
-  loadScriptNoCORS(mainScriptUrl)
-    .catch(error => {
-      console.error('Error loading script via no-CORS method:', error);
-      // Если не удалось загрузить через DOM, пробуем fetchAndEval
-      fetchAndEvalScript(mainScriptUrl)
-        .catch(e => console.error('Failed to eval script:', e));
-    });
+  try {
+    // Определяем, какой скрипт загружать в зависимости от пути
+    const mainScriptUrl = `${FIBA_CONFIG.baseUrl}${FIBA_CONFIG.version}/index.js`;
+    console.log('Pre-loading main script:', mainScriptUrl, 
+                FIBA_CONFIG.isMasterPath ? '(from master path)' : '');
+    
+    // Сначала попробуем загрузить через вставку script тега
+    loadScriptNoCORS(mainScriptUrl)
+      .then(() => {
+        console.log('Successfully pre-loaded main script via DOM method');
+      })
+      .catch(error => {
+        console.error('Error loading script via DOM method:', error);
+        
+        // Если не удалось, попробуем через XMLHttpRequest и eval
+        console.log('Trying alternative loading method via XHR...');
+        fetchAndEvalScript(mainScriptUrl)
+          .then(() => {
+            console.log('Successfully loaded main script via XHR method');
+          })
+          .catch(xhrError => {
+            console.error('All script loading methods failed:', xhrError);
+            
+            // Последняя попытка - прямой fetch с no-cors
+            console.log('Attempting direct fetch with no-cors as last resort...');
+            fetch(mainScriptUrl, { 
+              mode: 'no-cors',
+              credentials: 'include'
+            })
+            .then(() => console.log('Fetch request sent (response status unknown due to no-cors mode)'))
+            .catch(e => console.error('Even direct fetch failed:', e));
+          });
+      });
+  } catch (e) {
+    console.error('Error in DOMContentLoaded script loading setup:', e);
+  }
 });
 
 // Расширяем интерфейс Module для поддержки webpack hot module replacement

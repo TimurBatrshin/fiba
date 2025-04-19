@@ -21,20 +21,47 @@ export const loadScriptWithCORS = (url: string): Promise<void> => {
  */
 export const loadScriptNoCORS = (url: string): Promise<void> => {
   return new Promise((resolve, reject) => {
-    // Для bro-js.ru скриптов используем специальный подход с dynamicImport
     try {
+      console.log(`Attempting to load script via DOM: ${url}`);
+      
+      // Проверяем, не был ли скрипт уже загружен
+      const existingScripts = document.querySelectorAll(`script[src="${url}"]`);
+      if (existingScripts.length > 0) {
+        console.log(`Script already loaded: ${url}`);
+        resolve();
+        return;
+      }
+      
+      // Создаем новый элемент script
       const script = document.createElement('script');
       script.src = url;
       script.type = 'text/javascript';
       script.async = true;
-      script.onload = () => resolve();
-      script.onerror = (error) => {
-        console.error('Error loading script:', url, error);
-        reject(error);
+      
+      // Добавляем обработчики событий
+      const timeoutId = setTimeout(() => {
+        console.warn(`Script loading timed out after 20s: ${url}`);
+        // Не вызываем reject, так как скрипт все равно может загрузиться позже
+        // Просто логируем предупреждение
+      }, 20000);
+      
+      script.onload = () => {
+        clearTimeout(timeoutId);
+        console.log(`Script successfully loaded: ${url}`);
+        resolve();
       };
+      
+      script.onerror = (error) => {
+        clearTimeout(timeoutId);
+        console.error(`Error loading script: ${url}`, error);
+        reject(new Error(`Failed to load script: ${url}`));
+      };
+      
+      // Добавляем скрипт в DOM
       document.head.appendChild(script);
+      console.log(`Script element added to DOM: ${url}`);
     } catch (error) {
-      console.error('Error creating script element:', error);
+      console.error(`Error creating script element for ${url}:`, error);
       reject(error);
     }
   });
@@ -44,89 +71,94 @@ export const loadScriptNoCORS = (url: string): Promise<void> => {
  * Загружает содержимое скрипта и выполняет его
  */
 export const fetchAndEvalScript = async (url: string): Promise<void> => {
-  try {
-    console.log('Using XHR to fetch script:', url);
-    
-    // Используем XMLHttpRequest вместо fetch для поддержки no-cors режима
-    const xhr = new XMLHttpRequest();
-    xhr.open('GET', url, true);
-    xhr.responseType = 'text';
-    xhr.withCredentials = true; // Включаем поддержку куки
-    
-    return new Promise((resolve, reject) => {
+  console.log(`Fetching script content with XHR: ${url}`);
+  
+  return new Promise((resolve, reject) => {
+    try {
+      // Используем XMLHttpRequest с повышенной надежностью
+      const xhr = new XMLHttpRequest();
+      xhr.open('GET', url, true);
+      xhr.responseType = 'text';
+      
+      // Устанавливаем заголовки для имитации обычного браузерного запроса
+      xhr.setRequestHeader('Accept', '*/*');
+      
+      // Включаем поддержку cookies
+      xhr.withCredentials = true;
+      
+      // Устанавливаем таймаут в 30 секунд
+      xhr.timeout = 30000;
+      
+      // Обработка успешного ответа
       xhr.onload = () => {
-        // Принимаем любой статус от 200 до 299, а также 0 (для no-cors)
+        // Принимаем любой статус от 200 до 299, а также 0 (для opaque responses)
         if ((xhr.status >= 200 && xhr.status < 300) || xhr.status === 0) {
           try {
-            // Получаем текст ответа
+            // Получаем содержимое скрипта
             const scriptContent = xhr.responseText;
             
-            // Проверяем, что мы действительно получили JavaScript
             if (!scriptContent || scriptContent.trim().length === 0) {
-              console.warn('Received empty script content from:', url);
-              // Все равно считаем успешным, так как это может быть opaque response
+              console.warn(`Received empty script content from: ${url}`);
+              // Считаем успешным для opaque responses
               resolve();
               return;
             }
             
-            console.log('Successfully loaded script, length:', scriptContent.length);
+            console.log(`Successfully loaded script content, length: ${scriptContent.length}`);
             
-            // Выполняем код скрипта в глобальном контексте
-            try {
-              const evalScript = new Function(scriptContent);
-              evalScript();
-              console.log('Script evaluated successfully:', url);
-              resolve();
-            } catch (evalError) {
-              console.error('Error evaluating script:', evalError);
-              
-              // Пробуем альтернативный метод выполнения
-              try {
-                const scriptElement = document.createElement('script');
-                scriptElement.textContent = scriptContent;
-                document.head.appendChild(scriptElement);
-                console.log('Script executed via script tag insertion');
-                resolve();
-              } catch (scriptError) {
-                console.error('Failed to execute script via tag insertion:', scriptError);
-                reject(scriptError);
-              }
-            }
+            // Выполняем скрипт через создание элемента
+            const scriptElement = document.createElement('script');
+            scriptElement.textContent = scriptContent;
+            document.head.appendChild(scriptElement);
+            
+            console.log(`Script content successfully executed via script element: ${url}`);
+            resolve();
           } catch (evalError) {
-            console.error('Error processing script:', evalError);
-            reject(evalError);
+            console.error(`Error executing script: ${url}`, evalError);
+            
+            // Вторая попытка через Function
+            try {
+              console.log(`Trying alternative script execution method for: ${url}`);
+              const evalScript = new Function(xhr.responseText);
+              evalScript();
+              console.log(`Script executed successfully using Function: ${url}`);
+              resolve();
+            } catch (fnError) {
+              console.error(`All execution methods failed for script: ${url}`, fnError);
+              reject(fnError);
+            }
           }
         } else {
-          const errorMsg = `Failed to load script: ${xhr.status} ${xhr.statusText}`;
+          const errorMsg = `Server returned ${xhr.status} ${xhr.statusText} for ${url}`;
           console.error(errorMsg);
           reject(new Error(errorMsg));
         }
       };
       
+      // Обработчики ошибок
       xhr.onerror = (error) => {
-        console.error('Network error loading script:', error);
-        reject(new Error('Network error loading script'));
+        console.error(`Network error loading script: ${url}`, error);
+        reject(new Error(`Network error loading script: ${url}`));
       };
       
       xhr.ontimeout = () => {
-        console.error('Timeout loading script:', url);
-        reject(new Error('Timeout loading script'));
+        console.error(`Request timed out for: ${url}`);
+        reject(new Error(`Request timed out for: ${url}`));
       };
       
       xhr.onabort = () => {
-        console.error('Script loading aborted:', url);
-        reject(new Error('Script loading aborted'));
+        console.warn(`Request aborted for: ${url}`);
+        reject(new Error(`Request aborted for: ${url}`));
       };
       
-      // Устанавливаем таймаут в 15 секунд
-      xhr.timeout = 15000;
-      
+      // Отправляем запрос
       xhr.send();
-    });
-  } catch (error) {
-    console.error('Error setting up XHR for script:', error);
-    throw error;
-  }
+      console.log(`XHR request sent for: ${url}`);
+    } catch (setupError) {
+      console.error(`Error setting up XHR for: ${url}`, setupError);
+      reject(setupError);
+    }
+  });
 };
 
 /**
