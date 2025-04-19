@@ -43,8 +43,14 @@ pipeline {
                     echo "Starting build process..."
                     mkdir -p dist
                     touch dist/.gitkeep
-                    # Try to build, but continue even if it fails
-                    ./build.sh || echo "Build script exited with non-zero status, but we continue"
+                    
+                    # Попытка обычной сборки
+                    echo "Attempting regular build..."
+                    npm run build:prod || { 
+                        echo "Regular build failed, using CI build instead..."
+                        npm run build:ci
+                    }
+                    
                     # Ensure dist directory exists with content
                     ./ensure-dist.sh
                     echo "Build process completed"

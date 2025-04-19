@@ -11,8 +11,6 @@ import {
   DecodedToken 
 } from '../interfaces/Auth';
 
-const config = require('../../bro.config.js');
-
 export class AuthService {
   private static instance: AuthService;
   private apiBaseUrl: string;
