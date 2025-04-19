@@ -1,0 +1,774 @@
+/* Основные стили */
+.tournament-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: 'Roboto', sans-serif;
+}
+
+.tournament-container h1 {
+  color: #333;
+  margin-bottom: 20px;
+  font-size: 2.2rem;
+  border-bottom: 2px solid #e0e0e0;
+  padding-bottom: 10px;
+}
+
+.tournament-container h2 {
+  color: #444;
+  margin: 25px 0 15px;
+  font-size: 1.8rem;
+}
+
+/* Стили для страницы турнира */
+.tournament-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.tournament-header {
+  background-color: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  margin-bottom: 2rem;
+}
+
+.tournament-header h1 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 2rem;
+  color: #333;
+}
+
+.tournament-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+}
+
+.tournament-meta > div {
+  display: flex;
+  align-items: center;
+  margin-right: 1.5rem;
+}
+
+.tournament-meta .label {
+  font-weight: 600;
+  margin-right: 0.5rem;
+  color: #555;
+}
+
+.tournament-status {
+  display: flex;
+  align-items: center;
+}
+
+.status-registration {
+  color: #2ecc71;
+  font-weight: 600;
+  padding: 0.25rem 0.75rem;
+  background-color: #e6f7e6;
+  border-radius: 4px;
+}
+
+.status-in_progress {
+  color: #3498db;
+  font-weight: 600;
+  padding: 0.25rem 0.75rem;
+  background-color: #e6f0f7;
+  border-radius: 4px;
+}
+
+.status-completed {
+  color: #e74c3c;
+  font-weight: 600;
+  padding: 0.25rem 0.75rem;
+  background-color: #f7e6e6;
+  border-radius: 4px;
+}
+
+.tournament-content {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+}
+
+.tournament-content section {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  padding: 1.5rem;
+}
+
+.tournament-content h2 {
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  font-size: 1.5rem;
+  color: #333;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 0.75rem;
+}
+
+.description-text {
+  color: #555;
+  line-height: 1.6;
+}
+
+/* Стили для формы регистрации команды */
+.registration-form {
+  width: 100% !important;
+  max-width: none !important;
+}
+
+.registration-form form {
+  max-width: none;
+  width: 100%;
+}
+
+/* Стили для формы регистрации */
+.form-container {
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 30px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.form-container h2 {
+  margin-top: 0;
+  color: #333;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 10px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #555;
+}
+
+.form-group input[type="text"] {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 16px;
+}
+
+.search-container {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.search-container input {
+  flex: 1;
+}
+
+.search-btn {
+  padding: 0 15px;
+  background-color: #3498db;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.search-btn:hover {
+  background-color: #2980b9;
+}
+
+.search-btn:disabled {
+  background-color: #95a5a6;
+  cursor: not-allowed;
+}
+
+.search-loading {
+  color: #777;
+  font-style: italic;
+  margin: 10px 0;
+}
+
+.search-results {
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 10px;
+  margin-top: 10px;
+  max-height: 250px;
+  overflow-y: auto;
+}
+
+.search-results h4 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  color: #555;
+  font-size: 1rem;
+}
+
+.search-results ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.search-results li {
+  padding: 8px;
+  cursor: pointer;
+  border-bottom: 1px solid #eee;
+  transition: background-color 0.2s;
+}
+
+.search-results li:last-child {
+  border-bottom: none;
+}
+
+.search-results li:hover {
+  background-color: #f5f5f5;
+}
+
+.player-item {
+  display: flex;
+  align-items: center;
+  padding: 8px 5px;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 0.95rem;
+}
+
+.player-item:last-child {
+  border-bottom: none;
+}
+
+.player-avatar-container {
+  margin-right: 10px;
+  flex-shrink: 0;
+}
+
+.player-avatar-small {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid #e0e0e0;
+}
+
+.player-name {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+  flex: 1;
+}
+
+.player-icon {
+  color: #7f8c8d;
+}
+
+.add-player-btn,
+.remove-player-btn {
+  margin-left: auto;
+  background: none;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+}
+
+.add-player-btn {
+  color: #27ae60;
+}
+
+.add-player-btn:hover {
+  background-color: rgba(39, 174, 96, 0.1);
+}
+
+.remove-player-btn {
+  color: #e74c3c;
+}
+
+.remove-player-btn:hover {
+  background-color: rgba(231, 76, 60, 0.1);
+}
+
+.no-players {
+  color: #7f8c8d;
+  font-style: italic;
+  text-align: center;
+  padding: 0.75rem 0;
+}
+
+.selected-players {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  max-height: 250px;
+  overflow-y: auto;
+}
+
+.selected-players li {
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+}
+
+.selected-players li:last-child {
+  border-bottom: none;
+}
+
+.submit-btn, .submit-button {
+  padding: 12px 24px;
+  background-color: #3498db;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  display: block;
+  width: 100%;
+  font-weight: 500;
+}
+
+.submit-btn:hover, .submit-button:hover {
+  background-color: #2980b9;
+}
+
+.submit-btn:disabled, .submit-button:disabled {
+  background-color: #95a5a6;
+  cursor: not-allowed;
+}
+
+.registration-status {
+  margin-top: 15px;
+  padding: 10px;
+  border-radius: 4px;
+  font-weight: 500;
+  text-align: center;
+}
+
+.registration-status.success {
+  background-color: #e6f7e6;
+  color: #27ae60;
+  border: 1px solid #a3e6a3;
+}
+
+.registration-status.error {
+  background-color: #fde7e7;
+  color: #e74c3c;
+  border: 1px solid #f9a8a8;
+}
+
+/* Стили заглушек */
+.no-teams {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  color: #7f8c8d;
+  text-align: center;
+  font-size: 1.1rem;
+  line-height: 1.6;
+  border: 2px dashed #ddd;
+  min-height: 200px;
+  position: relative;
+}
+
+.no-teams::before {
+  content: "\f0c0"; /* Font Awesome icon code for users/group */
+  font-family: "Font Awesome 5 Free";
+  font-weight: 900;
+  font-size: 2.5rem;
+  color: #ddd;
+  margin-bottom: 1rem;
+  display: block;
+}
+
+/* Стили для команд */
+.teams-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+  max-height: 600px;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+}
+
+.team-card {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  padding: 1.5rem;
+  transition: transform 0.2s, box-shadow 0.2s;
+  border-left: 4px solid #95a5a6;
+}
+
+.team-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.team-card.approved, .team-card.confirmed {
+  border-left-color: #27ae60;
+}
+
+.team-card.pending {
+  border-left-color: #f39c12;
+}
+
+.team-card.rejected {
+  border-left-color: #e74c3c;
+}
+
+.team-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #eee;
+}
+
+.team-name {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #333;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.team-icon {
+  color: #7f8c8d;
+}
+
+.team-status {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.status-approved, .status-confirmed {
+  background-color: #e6f7e6;
+  color: #27ae60;
+}
+
+.status-pending {
+  background-color: #fef5e7;
+  color: #f39c12;
+}
+
+.status-rejected {
+  background-color: #fde7e7;
+  color: #e74c3c;
+}
+
+.team-players {
+  margin-top: 1rem;
+}
+
+.team-players h4 {
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.players-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.captain-badge {
+  font-size: 0.7rem;
+  background-color: #3498db;
+  color: white;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  margin-left: 0.5rem;
+}
+
+/* Дополнительные стили для турнирной сетки */
+.tournament-bracket {
+  margin-top: 2rem;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .tournament-page {
+    padding: 1rem;
+  }
+  
+  .tournament-meta {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .tournament-meta > div {
+    margin-right: 0;
+    margin-bottom: 0.5rem;
+    width: 100%;
+  }
+  
+  .teams-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Заглушка для пустой турнирной сетки */
+.tournament-bracket .no-teams {
+  background-color: #f9f9f9;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  border-radius: 8px;
+  color: #7f8c8d;
+  text-align: center;
+  border: 2px dashed #ddd;
+  min-height: 250px;
+}
+
+.tournament-bracket .no-teams::before {
+  content: "\f0ce"; /* Font Awesome icon code for table */
+  font-family: "Font Awesome 5 Free";
+  font-weight: 900;
+  font-size: 3rem;
+  color: #ddd;
+  margin-bottom: 1rem;
+}
+
+/* Заглушка для пустого списка команд */
+.registered-teams .no-teams::before {
+  content: "\f0c0"; /* Font Awesome icon code for users */
+}
+
+/* Рекламный блок */
+.advertisement {
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  padding: 1.5rem;
+  text-align: center;
+  transition: box-shadow 0.2s;
+}
+
+.advertisement:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.ad-image {
+  max-width: 100%;
+  height: auto;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+}
+
+.advertisement h3 {
+  font-size: 1.2rem;
+  margin-bottom: 0.75rem;
+  color: #333;
+}
+
+.advertisement p {
+  color: #555;
+  line-height: 1.5;
+}
+
+/* Стили для макета сетки турнира */
+.mock-bracket {
+  background-color: #fff;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  border: 1px solid #e0e0e0;
+}
+
+.mock-bracket-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #eee;
+}
+
+.mock-bracket-header h3 {
+  color: #333;
+  margin-bottom: 0.5rem;
+  font-size: 1.3rem;
+}
+
+.mock-bracket-header p {
+  color: #777;
+}
+
+.mock-icon {
+  font-size: 1.8rem;
+  color: #f39c12;
+  margin-bottom: 0.5rem;
+}
+
+.mock-bracket-content {
+  display: flex;
+  gap: 1.5rem;
+  overflow-x: auto;
+  padding-bottom: 1rem;
+}
+
+.mock-round {
+  min-width: 250px;
+  flex: 1;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  border: 1px solid #eee;
+}
+
+.mock-round h4 {
+  text-align: center;
+  padding: 0.5rem;
+  background-color: #f5f5f5;
+  border-bottom: 1px solid #eee;
+  margin: 0 0 1rem 0;
+  color: #555;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.mock-match {
+  background-color: white;
+  border-radius: 6px;
+  padding: 0.75rem;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  margin-bottom: 1rem;
+  border: 1px solid #eee;
+}
+
+.mock-match:last-child {
+  margin-bottom: 0;
+}
+
+.mock-final {
+  border-left: 3px solid #f39c12;
+}
+
+.mock-team {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem;
+  border-radius: 4px;
+  background-color: #fff;
+}
+
+.mock-team-1 {
+  margin-bottom: 0.5rem;
+  border-bottom: 1px dashed #eee;
+}
+
+.mock-team-name {
+  font-weight: 500;
+  font-size: 0.9rem;
+  color: #333;
+}
+
+.mock-team-score {
+  font-weight: 600;
+  color: #333;
+  background-color: #f5f5f5;
+  padding: 2px 8px;
+  border-radius: 4px;
+  min-width: 25px;
+  text-align: center;
+}
+
+.mock-match-number {
+  text-align: center;
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  color: #777;
+  font-weight: 500;
+}
+
+.mock-bracket-note {
+  text-align: center;
+  margin-top: 1.5rem;
+  padding: 0.75rem;
+  background-color: #f8f8f8;
+  border-radius: 4px;
+  color: #777;
+  font-size: 0.9rem;
+  font-style: italic;
+  border: 1px dashed #ddd;
+}
+
+/* Стили для макета команд */
+.mock-teams-container {
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  border: 1px dashed #ddd;
+}
+
+.mock-teams-header {
+  text-align: center;
+  margin-bottom: 2rem;
+  color: #555;
+}
+
+.mock-teams-header h3 {
+  color: #333;
+  margin-bottom: 0.5rem;
+  font-size: 1.3rem;
+}
+
+.mock-teams-header p {
+  color: #777;
+  margin-bottom: 1rem;
+}
+
+.mock-teams-note {
+  text-align: center;
+  margin-top: 2rem;
+  padding: 0.75rem;
+  background-color: #f8f4e5;
+  border-radius: 4px;
+  color: #b58105;
+  font-size: 0.9rem;
+  font-style: italic;
+}
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 768px) {
+  .mock-bracket-content {
+    flex-direction: column;
+    gap: 2rem;
+  }
+  
+  .mock-round {
+    width: 100%;
+  }
+}

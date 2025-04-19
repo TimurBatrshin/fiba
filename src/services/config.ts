@@ -1,0 +1,1 @@
+export const API_BASE_URL = 'https://timurbatrshin-fiba-backend-7cf2.twc1.net/api'; 

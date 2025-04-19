@@ -1,0 +1,313 @@
+/* Общие стили страницы */
+.tournaments-page {
+  padding-bottom: var(--spacing-3xl);
+}
+
+/* Стили для заголовка страницы */
+.tournaments-hero {
+  background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+  color: var(--light);
+  padding: var(--spacing-xl) 0;
+  margin-bottom: var(--spacing-xl);
+}
+
+.page-title {
+  color: var(--light);
+  margin-bottom: var(--spacing-xs);
+  font-size: var(--font-size-3xl);
+}
+
+.page-description {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: var(--font-size-lg);
+  margin-bottom: 0;
+}
+
+/* Стили для контента */
+.tournaments-content {
+  margin-top: var(--spacing-xl);
+}
+
+/* Сетка турниров */
+.tournaments-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--spacing-lg);
+  margin-top: var(--spacing-lg);
+}
+
+/* Карточка турнира */
+.tournament-card {
+  display: block;
+  background-color: var(--light);
+  border-radius: var(--border-radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+  transition: var(--transition);
+  color: var(--gray-800);
+  text-decoration: none;
+}
+
+.tournament-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+  color: var(--gray-800);
+}
+
+.tournament-image {
+  position: relative;
+  height: 180px;
+  overflow: hidden;
+}
+
+.tournament-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.tournament-card:hover .tournament-image img {
+  transform: scale(1.05);
+}
+
+.tournament-status {
+  position: absolute;
+  bottom: var(--spacing-md);
+  right: var(--spacing-md);
+  padding: 0.25rem 0.75rem;
+  background-color: var(--primary);
+  color: var(--light);
+  border-radius: 50px;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  z-index: 1;
+}
+
+.status-registration {
+  background-color: var(--primary);
+}
+
+.status-in-progress {
+  background-color: var(--warning);
+  color: var(--gray-900);
+}
+
+.status-completed {
+  background-color: var(--gray-600);
+}
+
+.tournament-info {
+  padding: var(--spacing-md) var(--spacing-lg);
+}
+
+.tournament-name {
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  margin-bottom: var(--spacing-sm);
+  color: var(--gray-900);
+  line-height: 1.3;
+}
+
+.tournament-meta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  margin-bottom: var(--spacing-sm);
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-size: var(--font-size-sm);
+  color: var(--gray-600);
+}
+
+.meta-icon {
+  width: 16px;
+  height: 16px;
+  stroke-width: 2;
+}
+
+.tournament-level {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  background-color: var(--gray-100);
+  color: var(--gray-700);
+  border-radius: 4px;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  margin-bottom: var(--spacing-sm);
+}
+
+.tournament-prize {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-weight: 700;
+  color: var(--secondary);
+  font-size: var(--font-size-md);
+}
+
+.prize-icon {
+  width: 18px;
+  height: 18px;
+  stroke: var(--secondary);
+}
+
+/* Стили для состояния загрузки */
+.tournaments-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xl) 0;
+  text-align: center;
+  color: var(--gray-600);
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--gray-200);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spinner 1s linear infinite;
+  margin-bottom: var(--spacing-md);
+}
+
+@keyframes spinner {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Стили для ошибки */
+.tournaments-error {
+  text-align: center;
+  padding: var(--spacing-xl) 0;
+  color: var(--error);
+}
+
+.tournaments-error p {
+  margin-bottom: var(--spacing-md);
+}
+
+/* Стили для пустого состояния */
+.no-tournaments {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xl) 0;
+  text-align: center;
+  color: var(--gray-600);
+}
+
+.empty-icon {
+  width: 80px;
+  height: 80px;
+  margin-bottom: var(--spacing-md);
+  color: var(--gray-400);
+}
+
+.no-tournaments h3 {
+  color: var(--gray-800);
+  margin-bottom: var(--spacing-xs);
+}
+
+/* Адаптивность */
+@media screen and (max-width: 768px) {
+  .tournaments-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .tournaments-hero {
+    padding: var(--spacing-md) 0;
+  }
+  
+  .page-title {
+    font-size: var(--font-size-2xl);
+  }
+  
+  .page-description {
+    font-size: var(--font-size-md);
+  }
+}
+
+/* Добавляю стили для спонсорских турниров */
+.business-tournament {
+  box-shadow: 0 5px 15px rgba(52, 152, 219, 0.2);
+  border: 1px solid rgba(52, 152, 219, 0.3);
+}
+
+.business-tournament:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(52, 152, 219, 0.3);
+}
+
+.tournament-sponsor-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background-color: rgba(52, 152, 219, 0.9);
+  color: white;
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: bold;
+  z-index: 2;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.tournament-sponsor {
+  background-color: #f3f9fd;
+  border-radius: 4px;
+  padding: 5px 10px;
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+
+.sponsor-label {
+  font-weight: bold;
+  color: #2980b9;
+}
+
+/* Основные стили для иконок (если не существуют) */
+.icon-calendar,
+.icon-location,
+.icon-level,
+.icon-trophy,
+.icon-business {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  margin-right: 5px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  vertical-align: middle;
+}
+
+.icon-calendar {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='18' rx='2' ry='2'/%3E%3Cline x1='16' y1='2' x2='16' y2='6'/%3E%3Cline x1='8' y1='2' x2='8' y2='6'/%3E%3Cline x1='3' y1='10' x2='21' y2='10'/%3E%3C/svg%3E");
+}
+
+.icon-location {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z'/%3E%3Ccircle cx='12' cy='10' r='3'/%3E%3C/svg%3E");
+}
+
+.icon-level {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 20h20'/%3E%3Cpath d='M5 20v-4h4v4'/%3E%3Cpath d='M10 20v-8h4v8'/%3E%3Cpath d='M15 20v-12h4v12'/%3E%3C/svg%3E");
+}
+
+.icon-trophy {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 21h8'/%3E%3Cpath d='M12 17v4'/%3E%3Cpath d='M19 10c0 3.3-2.7 6-6 6s-6-2.7-6-6V5h12v5z'/%3E%3Cpath d='M5 5v3c0 3.3 2.7 6 6 6s6-2.7 6-6V5'/%3E%3C/svg%3E");
+}
+
+.icon-business {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='2' y='7' width='20' height='14' rx='2' ry='2'/%3E%3Cpath d='M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16'/%3E%3C/svg%3E");
+}
