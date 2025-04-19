@@ -10,6 +10,12 @@ import { transformURL, loadScriptNoCORS, fetchAndEvalScript } from './utils/cors
 // Сохраняем оригинальную функцию fetch
 const originalFetch = window.fetch;
 
+// Конфигурация для скриптов bro-js
+const FIBA_CONFIG = {
+  version: '1.0.8', // Текущая версия
+  baseUrl: 'https://static.bro-js.ru/fiba/'
+};
+
 // Переопределяем fetch для обработки CORS ошибок
 window.fetch = (async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
   // Обрабатываем запросы к static.bro-js.ru специально, для остальных используем стандартный fetch
@@ -28,7 +34,7 @@ window.fetch = (async (input: RequestInfo | URL, init?: RequestInit): Promise<Re
     }
     
     // Специальная обработка для конкретного URL-адреса с проблемой CORS
-    if (url === 'https://static.bro-js.ru/fiba/1.0.2/index.js' || 
+    if (url === `${FIBA_CONFIG.baseUrl}${FIBA_CONFIG.version}/index.js` || 
         url.startsWith('https://static.bro-js.ru/fiba/') && url.endsWith('.js')) {
       console.log('Intercepting critical request to static.bro-js.ru:', url);
       
@@ -103,7 +109,7 @@ window.fetch = (async (input: RequestInfo | URL, init?: RequestInit): Promise<Re
 
 // При загрузке страницы пытаемся предзагрузить основной скрипт
 document.addEventListener('DOMContentLoaded', () => {
-  const mainScriptUrl = 'https://static.bro-js.ru/fiba/1.0.2/index.js';
+  const mainScriptUrl = `${FIBA_CONFIG.baseUrl}${FIBA_CONFIG.version}/index.js`;
   console.log('Pre-loading main script:', mainScriptUrl);
   
   // Используем наши специальные утилиты вместо прямого DOM метода
