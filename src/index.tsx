@@ -19,6 +19,19 @@ const FIBA_CONFIG = {
   isMasterPath: false
 };
 
+// Проверяем, есть ли доступ к staticBaseUrl
+const probeStaticAccess = () => {
+  const url = `${FIBA_CONFIG.baseUrl}${FIBA_CONFIG.version}/index.js`;
+  console.log(`Проверяем доступность: ${url}`);
+  
+  fetch(url, { mode: 'no-cors', credentials: 'include' })
+    .then(() => console.log('Статический сервер доступен в no-cors режиме'))
+    .catch(e => console.error('Статический сервер недоступен:', e));
+};
+
+// Выполняем проверку доступности сразу
+probeStaticAccess();
+
 // Определяем, какую версию скрипта использовать на основе текущего пути
 if (window.location.pathname.includes('/fiba/master')) {
   console.log('Detected master path, using latest version');

@@ -206,6 +206,30 @@ export const getResourceURL = (path: string): string => {
 export const transformURL = (url: string): string => {
   // Проверяем, является ли URL внешним
   if (url.startsWith('http:') || url.startsWith('https:')) {
+    // Особая обработка для static.bro-js.ru
+    if (url.includes('static.bro-js.ru')) {
+      // Проверяем, является ли это запросом на index.js
+      if (url.includes('/fiba/') && url.endsWith('index.js')) {
+        // Логируем попытку преобразования URL
+        console.log(`Перехватили запрос к static.bro-js.ru: ${url}`);
+        
+        // Получаем текущий хост
+        const currentHost = window.location.hostname;
+        
+        // Если мы уже на домене bro-js.ru, не меняем URL,
+        // но всегда используем no-cors режим для запроса
+        if (currentHost.includes('bro-js.ru')) {
+          console.log(`Оставляем URL без изменений для ${currentHost}: ${url}`);
+          return url;
+        } else {
+          // На других доменах пробуем использовать локальный сервер разработки
+          const localUrl = `/static${new URL(url).pathname}`;
+          console.log(`Преобразовали URL с ${url} на ${localUrl}`);
+          return localUrl;
+        }
+      }
+    }
+    
     // Проверяем, относится ли URL к нашим доменам
     const isSameDomain = url.includes(window.location.hostname);
     if (!isSameDomain) {
