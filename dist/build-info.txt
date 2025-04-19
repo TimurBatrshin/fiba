@@ -1,2 +1,0 @@
-Build initialized at 2024-04-19
-This file ensures the 'dist' directory exists for Jenkins builds 

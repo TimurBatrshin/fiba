@@ -6,13 +6,15 @@ import './app/styles/index.scss';
 import App from './app';
 // Импортируем CORS-утилиты
 import { transformURL, loadScriptNoCORS, fetchAndEvalScript } from './utils/corsHelper';
+// Импортируем настройки приложения
+import { APP_SETTINGS } from './config/envConfig';
 
 // Сохраняем оригинальную функцию fetch
 const originalFetch = window.fetch;
 
 // Конфигурация для скриптов bro-js
 const FIBA_CONFIG = {
-  version: '1.0.8', // Текущая версия
+  version: APP_SETTINGS.buildVersion, // Используем версию из envConfig
   baseUrl: 'https://static.bro-js.ru/fiba/'
 };
 

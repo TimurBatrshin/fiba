@@ -29,7 +29,7 @@ export const API_BASE_URL = config.apiUrl;
 // App Settings
 export const APP_SETTINGS = {
   enableLogging: config.enableLogging,
-  buildVersion: '1.0.0',
+  buildVersion: '1.0.9',
   tokenStorageKey: 'auth_token',
   userStorageKey: 'user_data',
   requestTimeout: 15000, // 15 seconds
