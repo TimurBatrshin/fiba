@@ -16,7 +16,7 @@
         "cypress:open": "cypress open",
         "start": "npx @brojs/cli server --port=8099 --with-open-browser",
         "client": "npx @brojs/cli server --port=8099 --with-open-browser",
-        "prepare": "npm ci --legacy-peer-deps"
+        "prepare": "echo 'Prepare hook is disabled to prevent recursion'"
     },
     "author": "",
     "license": "ISC",
