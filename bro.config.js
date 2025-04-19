@@ -3,6 +3,8 @@ module.exports = {
   webpackConfig: {
     output: {
       publicPath: `/static/fiba/1.0.2/`,
+      filename: '[name].[fullhash].js',
+      chunkFilename: '[name].[chunkhash].js'
     },
     module: {
       rules: [

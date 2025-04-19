@@ -1,0 +1,56 @@
+name: Deploy
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: '18.x'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: |
+        echo "Disable prepare hook temporarily"
+        npm config set ignore-scripts true
+        npm ci
+        npm config set ignore-scripts false
+    
+    - name: Build
+      run: npm run build:prod
+    
+    - name: List files
+      run: ls -la dist/
+    
+    - name: Archive build
+      uses: actions/upload-artifact@v2
+      with:
+        name: build-artifacts
+        path: dist/
+        retention-days: 5
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Download build artifacts
+      uses: actions/download-artifact@v2
+      with:
+        name: build-artifacts
+        path: dist
+    
+    - name: Deploy to server
+      run: |
+        echo "Deployment step would go here"
+        # Add your deployment commands here 
