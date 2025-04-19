@@ -17,6 +17,70 @@ export const loadScriptWithCORS = (url: string): Promise<void> => {
 };
 
 /**
+ * Загружает скрипт в no-cors режиме
+ */
+export const loadScriptNoCORS = (url: string): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    // Для bro-js.ru скриптов используем специальный подход с dynamicImport
+    try {
+      const script = document.createElement('script');
+      script.src = url;
+      script.type = 'text/javascript';
+      script.async = true;
+      script.onload = () => resolve();
+      script.onerror = (error) => {
+        console.error('Error loading script:', url, error);
+        reject(error);
+      };
+      document.head.appendChild(script);
+    } catch (error) {
+      console.error('Error creating script element:', error);
+      reject(error);
+    }
+  });
+};
+
+/**
+ * Загружает содержимое скрипта и выполняет его
+ */
+export const fetchAndEvalScript = async (url: string): Promise<void> => {
+  try {
+    // Используем XMLHttpRequest вместо fetch для поддержки no-cors режима
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', url, true);
+    xhr.responseType = 'text';
+    
+    return new Promise((resolve, reject) => {
+      xhr.onload = () => {
+        if (xhr.status === 200) {
+          try {
+            // Выполняем код скрипта
+            const scriptContent = xhr.responseText;
+            const evalScript = new Function(scriptContent);
+            evalScript();
+            resolve();
+          } catch (evalError) {
+            console.error('Error evaluating script:', evalError);
+            reject(evalError);
+          }
+        } else {
+          reject(new Error(`Failed to load script: ${xhr.status}`));
+        }
+      };
+      
+      xhr.onerror = () => {
+        reject(new Error('Network error loading script'));
+      };
+      
+      xhr.send();
+    });
+  } catch (error) {
+    console.error('Error fetching script:', error);
+    throw error;
+  }
+};
+
+/**
  * Проверяет, доступен ли ресурс через CORS
  */
 export const isCORSAccessible = async (url: string): Promise<boolean> => {
@@ -66,7 +130,8 @@ export const transformURL = (url: string): string => {
     if (!isSameDomain) {
       // Для bro-js.ru используем прямой URL
       if (url.includes('bro-js.ru')) {
-        return url.replace('https://static.bro-js.ru', window.location.origin);
+        // Возвращаем URL как есть, потому что мы будем использовать no-cors режим
+        return url;
       }
     }
   }
