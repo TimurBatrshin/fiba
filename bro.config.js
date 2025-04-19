@@ -4,7 +4,8 @@ module.exports = {
     output: {
       publicPath: `/static/fiba/1.0.2/`,
       filename: '[name].[fullhash].js',
-      chunkFilename: '[name].[chunkhash].js'
+      chunkFilename: '[name].[chunkhash].js',
+      path: require('path').resolve(__dirname, 'dist')
     },
     module: {
       rules: [

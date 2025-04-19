@@ -9,6 +9,10 @@ node_modules/
 /.next/
 /target/
 /.gradle/
+# Игнорируем содержимое dist, но сохраняем саму директорию
+/dist/*
+!/dist/.gitkeep
+!/dist/build-info.txt
 
 # Testing
 /coverage/
