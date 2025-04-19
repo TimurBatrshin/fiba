@@ -39,10 +39,48 @@ export class ApiService {
   }
 
   /**
+   * Проверяет, требуется ли использовать прокси для запроса
+   */
+  private static shouldUseProxy(url: string): boolean {
+    // Проверяем, относится ли URL к статическим ресурсам bro-js
+    return url.includes('static.bro-js.ru') || url.includes('dev.bro-js.ru');
+  }
+
+  /**
+   * Преобразует URL для проксирования
+   */
+  private static transformUrlForProxy(url: string): string {
+    try {
+      const urlObj = new URL(url);
+      
+      if (ApiService.shouldUseProxy(url)) {
+        // Извлекаем путь после домена
+        const path = urlObj.pathname;
+        
+        // Если это JS файл, добавляем метку времени для предотвращения кэширования
+        if (path.endsWith('.js')) {
+          return `/proxy${path}?t=${Date.now()}`;
+        }
+        
+        // Другие статические ресурсы
+        return `/proxy${path}`;
+      }
+      
+      return url;
+    } catch (e) {
+      // Если не можем разобрать URL, оставляем как есть
+      return url;
+    }
+  }
+
+  /**
    * Выполнить запрос к API
    */
   private static async request<T>(url: string, options: RequestInit = {}): Promise<T> {
-    const response = await fetch(url, {
+    // Проверяем, нужно ли использовать прокси
+    const requestUrl = ApiService.transformUrlForProxy(url);
+    
+    const response = await fetch(requestUrl, {
       ...options,
       headers: ApiService.createHeaders(),
     });

@@ -2,7 +2,7 @@ module.exports = {
   apiPath: "stubs/api",
   webpackConfig: {
     output: {
-      publicPath: '/fiba/1.0.17/',
+      publicPath: '/fiba/1.0.18/',
       filename: '[name].[fullhash].js',
       chunkFilename: '[name].[chunkhash].js',
       path: require('path').resolve(__dirname, 'dist')

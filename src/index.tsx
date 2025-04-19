@@ -1,47 +1,81 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react/display-name */
-import React, { useEffect } from 'react';
+import React from 'react';
 import ReactDOM from 'react-dom';
 import './app/styles/index.scss';
 import App from './app';
-// Импортируем CORS-утилиты
-import { transformURL, loadScriptNoCORS, fetchAndEvalScript } from './utils/corsHelper';
-// Импортируем настройки приложения
 import { APP_SETTINGS } from './config/envConfig';
+
+// Конфигурация для скриптов
+const APP_CONFIG = {
+  version: APP_SETTINGS.buildVersion,
+  devURL: 'https://dev.bro-js.ru/fiba/',
+  staticURL: 'https://static.bro-js.ru/fiba/',
+  localProxyURL: `/proxy/fiba/${APP_SETTINGS.buildVersion}/`,
+  isMasterPath: window.location.pathname.includes('/fiba/master')
+};
 
 // Сохраняем оригинальную функцию fetch
 const originalFetch = window.fetch;
 
-// Конфигурация для скриптов bro-js
-const FIBA_CONFIG = {
-  version: APP_SETTINGS.buildVersion, // Используем версию из envConfig
-  baseUrl: 'https://dev.bro-js.ru/fiba/',
-  isMasterPath: false
+/**
+ * Загружает скрипт через DOM
+ */
+const loadScript = (url: string): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    // Проверяем, не загружен ли скрипт уже
+    const existingScript = document.querySelector(`script[src="${url}"]`);
+    if (existingScript) {
+      console.log(`Скрипт уже загружен: ${url}`);
+      resolve();
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = url;
+    script.async = true;
+    script.crossOrigin = 'anonymous';
+    
+    script.onload = () => {
+      console.log(`Скрипт загружен успешно: ${url}`);
+      resolve();
+    };
+    
+    script.onerror = (error) => {
+      console.error(`Ошибка загрузки скрипта: ${url}`, error);
+      reject(error);
+    };
+    
+    document.head.appendChild(script);
+    console.log(`Скрипт добавлен в DOM: ${url}`);
+  });
 };
 
-// Проверяем, есть ли доступ к staticBaseUrl
-const probeStaticAccess = () => {
-  const url = `${FIBA_CONFIG.baseUrl}${FIBA_CONFIG.version}/index.js`;
-  console.log(`Проверяем доступность: ${url}`);
+/**
+ * Преобразует URL для обхода CORS
+ */
+const transformURL = (url: string): string => {
+  // Если URL относится к статическим ресурсам bro-js
+  if (url.includes('static.bro-js.ru/fiba/') || url.includes('dev.bro-js.ru/fiba/')) {
+    // Извлекаем путь после домена
+    const urlObj = new URL(url);
+    const path = urlObj.pathname;
+    
+    // Если это JS файл, добавляем метку времени для предотвращения кэширования
+    if (path.endsWith('.js')) {
+      return `/proxy${path}?t=${Date.now()}`;
+    }
+    
+    // Другие статические ресурсы
+    return `/proxy${path}`;
+  }
   
-  fetch(url, { mode: 'no-cors', credentials: 'include' })
-    .then(() => console.log('Статический сервер доступен в no-cors режиме'))
-    .catch(e => console.error('Статический сервер недоступен:', e));
+  // Для других URL ничего не меняем
+  return url;
 };
 
-// Выполняем проверку доступности сразу
-probeStaticAccess();
-
-// Определяем, какую версию скрипта использовать на основе текущего пути
-if (window.location.pathname.includes('/fiba/master')) {
-  console.log('Detected master path, using latest version');
-  // Для пути /fiba/master используем текущую версию из конфигурации
-  FIBA_CONFIG.isMasterPath = true;
-}
-
-// Переопределяем fetch для обработки CORS ошибок
+// Создаем прокси для fetch запросов
 window.fetch = (async (input: RequestInfo, init?: RequestInit): Promise<Response> => {
-  // Обрабатываем запросы к static.bro-js.ru специально, для остальных используем стандартный fetch
   try {
     let url: string;
     
@@ -50,155 +84,89 @@ window.fetch = (async (input: RequestInfo, init?: RequestInit): Promise<Response
     } else if (input instanceof Request) {
       url = input.url;
     } else {
-      // Если не можем определить URL, передаем запрос исходному fetch
       return originalFetch(input, init);
     }
     
-    // Специальная обработка для конкретного URL-адреса с проблемой CORS
-    if (url === `${FIBA_CONFIG.baseUrl}${FIBA_CONFIG.version}/index.js` || 
-        url.startsWith('https://static.bro-js.ru/fiba/') && url.endsWith('.js')) {
+    // Проверяем, относится ли запрос к проблемным доменам
+    if (url.includes('static.bro-js.ru/fiba/') || url.includes('dev.bro-js.ru/fiba/')) {
+      console.log(`Перехват запроса: ${url}`);
       
-      // Для master пути заменяем все версии на текущую
-      if (FIBA_CONFIG.isMasterPath) {
-        // Извлекаем версию из URL, если она там есть
-        const versionMatch = url.match(/\/fiba\/([^\/]+)\/index\.js/);
-        if (versionMatch && versionMatch[1]) {
-          const urlVersion = versionMatch[1];
-          if (urlVersion !== FIBA_CONFIG.version) {
-            console.log(`Master path: redirecting from version ${urlVersion} to ${FIBA_CONFIG.version}`);
-            url = url.replace(`/fiba/${urlVersion}/`, `/fiba/${FIBA_CONFIG.version}/`);
-          }
-        }
-      }
+      // Преобразуем URL для обхода CORS
+      const proxyUrl = transformURL(url);
+      console.log(`Преобразован в: ${proxyUrl}`);
       
-      console.log('Intercepting critical request to static.bro-js.ru:', url);
-      
-      try {
-        // Сначала пробуем загрузить скрипт через DOM
-        await loadScriptNoCORS(url);
-        
-        // Возвращаем пустой успешный ответ
-        return new Response('/* Script loaded via DOM */', {
-          status: 200,
-          statusText: 'OK',
-          headers: new Headers({
-            'Content-Type': 'application/javascript'
-          })
-        });
-      } catch (domError) {
-        console.error('Failed to load script via DOM, trying XHR:', domError);
-        
+      // Для JavaScript файлов
+      if (url.endsWith('.js')) {
         try {
-          // Запасной вариант: попытка загрузить через XMLHttpRequest с режимом no-cors
-          await fetchAndEvalScript(url);
+          // Пробуем загрузить через DOM
+          await loadScript(proxyUrl);
           
-          // Возвращаем пустой успешный ответ
-          return new Response('/* Script loaded via custom loader */', {
+          // Возвращаем успешный ответ
+          return new Response('/* Script loaded */', {
             status: 200,
-            statusText: 'OK',
             headers: new Headers({
               'Content-Type': 'application/javascript'
             })
           });
-        } catch (xhrError) {
-          console.error('All script loading methods failed. Last error:', xhrError);
+        } catch (error) {
+          console.error('Не удалось загрузить скрипт:', error);
           
-          // В качестве последнего средства попробуем direct originalFetch с no-cors
-          return originalFetch(url, {
-            ...(init || {}),
+          // В случае ошибки пробуем загрузить через оригинальный fetch с no-cors
+          return originalFetch(proxyUrl, {
+            ...init,
             mode: 'no-cors',
-            credentials: 'include'
+            cache: 'no-cache'
           });
         }
       }
+      
+      // Для остальных ресурсов используем прокси URL
+      return originalFetch(proxyUrl, init);
     }
     
-    // Проверяем, относится ли запрос к static.bro-js.ru
-    if (url.includes('static.bro-js.ru')) {
-      console.log('Intercepting request to static.bro-js.ru:', url);
-      
-      // Особая обработка для JS файлов
-      if (url.endsWith('.js')) {
-        console.log('Loading script via DOM instead of fetch:', url);
-        
-        // Загружаем скрипт через DOM
-        try {
-          await loadScriptNoCORS(url);
-        } catch (error) {
-          console.error('Failed to load script via DOM, trying eval:', error);
-          await fetchAndEvalScript(url);
-        }
-        
-        // Возвращаем пустой успешный ответ
-        return new Response('/* Script loaded via DOM */', {
-          status: 200,
-          statusText: 'OK',
-          headers: new Headers({
-            'Content-Type': 'application/javascript'
-          })
-        });
-      }
-      
-      // Для остальных ресурсов с статического домена
-      // создаем новый запрос с mode: 'no-cors'
-      return originalFetch(url, {
-        ...(init || {}),
-        mode: 'no-cors',
-        credentials: 'include'
-      });
-    } else if (typeof input === 'string') {
-      // Для обычных строковых URL используем трансформацию
-      return originalFetch(transformURL(input), init);
-    }
-    
-    // Для всех остальных случаев используем оригинальный fetch
+    // Все остальные запросы без изменений
     return originalFetch(input, init);
   } catch (error) {
-    console.error('Error in fetch interceptor:', error);
-    // В случае ошибки возвращаем оригинальный fetch
+    console.error('Ошибка в перехватчике fetch:', error);
     return originalFetch(input, init);
   }
 }) as typeof fetch;
 
-// При загрузке страницы пытаемся предзагрузить основной скрипт
+// Предзагрузка основного скрипта при загрузке страницы
 document.addEventListener('DOMContentLoaded', () => {
   try {
-    // Определяем, какой скрипт загружать в зависимости от пути
-    const mainScriptUrl = `${FIBA_CONFIG.baseUrl}${FIBA_CONFIG.version}/index.js`;
-    console.log('Pre-loading main script:', mainScriptUrl, 
-                FIBA_CONFIG.isMasterPath ? '(from master path)' : '');
+    // Пути для предзагрузки
+    const scriptPaths = [
+      `${APP_CONFIG.devURL}${APP_CONFIG.version}/index.js`,
+      `${APP_CONFIG.staticURL}${APP_CONFIG.version}/index.js`
+    ];
     
-    // Сначала попробуем загрузить через вставку script тега
-    loadScriptNoCORS(mainScriptUrl)
-      .then(() => {
-        console.log('Successfully pre-loaded main script via DOM method');
-      })
-      .catch(error => {
-        console.error('Error loading script via DOM method:', error);
-        
-        // Если не удалось, попробуем через XMLHttpRequest и eval
-        console.log('Trying alternative loading method via XHR...');
-        fetchAndEvalScript(mainScriptUrl)
-          .then(() => {
-            console.log('Successfully loaded main script via XHR method');
-          })
-          .catch(xhrError => {
-            console.error('All script loading methods failed:', xhrError);
-            
-            // Последняя попытка - прямой fetch с no-cors
-            console.log('Attempting direct fetch with no-cors as last resort...');
-            fetch(mainScriptUrl, { 
-              mode: 'no-cors',
-              credentials: 'include'
-            })
-            .then(() => console.log('Fetch request sent (response status unknown due to no-cors mode)'))
-            .catch(e => console.error('Even direct fetch failed:', e));
-          });
+    // Предзагрузка скриптов
+    scriptPaths.forEach(path => {
+      const proxyPath = transformURL(path);
+      console.log(`Предзагрузка скрипта: ${proxyPath}`);
+      
+      loadScript(proxyPath).catch(error => {
+        console.warn(`Не удалось предзагрузить скрипт: ${path}`, error);
       });
+    });
   } catch (e) {
-    console.error('Error in DOMContentLoaded script loading setup:', e);
+    console.error('Ошибка при предзагрузке скриптов:', e);
   }
 });
+
+// Инициализация прокси-сервера на клиенте (ServiceWorker)
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(registration => {
+        console.log('ServiceWorker зарегистрирован:', registration.scope);
+      })
+      .catch(error => {
+        console.error('Ошибка регистрации ServiceWorker:', error);
+      });
+  });
+}
 
 // Расширяем интерфейс Module для поддержки webpack hot module replacement
 declare global {
