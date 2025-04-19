@@ -2,7 +2,7 @@ module.exports = {
   apiPath: "stubs/api",
   webpackConfig: {
     output: {
-      publicPath: `/static/fiba/1.0.2/`,
+      publicPath: 'auto',
       filename: '[name].[fullhash].js',
       chunkFilename: '[name].[chunkhash].js',
       path: require('path').resolve(__dirname, 'dist')
@@ -29,6 +29,9 @@ module.exports = {
   },
   config: {
     "fiba.api": "/api",
+    "cors": {
+      "allowOrigin": "*"
+    }
   },
   port: 8099,
   apiBaseUrl: 'https://timurbatrshin-fiba-backend-7cf2.twc1.net/api'

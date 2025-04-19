@@ -4,6 +4,20 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './app/styles/index.scss';
 import App from './app';
+// Импортируем CORS-утилиты
+import { transformURL, loadScriptWithCORS } from './utils/corsHelper';
+
+// Переопределяем fetch для работы с CORS
+const originalFetch = window.fetch;
+window.fetch = function(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  // Если input - строка, пытаемся преобразовать URL
+  if (typeof input === 'string') {
+    input = transformURL(input);
+  } else if (input instanceof URL) {
+    input = new URL(transformURL(input.toString()));
+  }
+  return originalFetch(input, init);
+};
 
 // Расширяем интерфейс Module для поддержки webpack hot module replacement
 declare global {
