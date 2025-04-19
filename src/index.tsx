@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react/display-name */
 import React, { useEffect } from 'react';
-import ReactDOM from 'react-dom/client';
+import ReactDOM from 'react-dom';
 import './app/styles/index.scss';
 import App from './app';
 // Импортируем CORS-утилиты
@@ -27,15 +27,13 @@ if (window.location.pathname.includes('/fiba/master')) {
 }
 
 // Переопределяем fetch для обработки CORS ошибок
-window.fetch = (async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+window.fetch = (async (input: RequestInfo, init?: RequestInit): Promise<Response> => {
   // Обрабатываем запросы к static.bro-js.ru специально, для остальных используем стандартный fetch
   try {
     let url: string;
     
     if (typeof input === 'string') {
       url = input;
-    } else if (input instanceof URL) {
-      url = input.toString();
     } else if (input instanceof Request) {
       url = input.url;
     } else {
@@ -122,10 +120,6 @@ window.fetch = (async (input: RequestInfo | URL, init?: RequestInit): Promise<Re
     } else if (typeof input === 'string') {
       // Для обычных строковых URL используем трансформацию
       return originalFetch(transformURL(input), init);
-    } else if (input instanceof URL) {
-      // Для объектов URL также используем трансформацию
-      const transformedUrl = transformURL(url);
-      return originalFetch(new URL(transformedUrl), init);
     }
     
     // Для всех остальных случаев используем оригинальный fetch
@@ -165,7 +159,8 @@ declare global {
   
 export default () => <App/>;
   
-let rootElement: ReactDOM.Root;
+// Храним ссылку на DOM-элемент для размонтирования
+let rootElement: HTMLElement | null = null;
   
 export const mount = (Component: React.ComponentType<any>, element = document.getElementById('app')) => {
   if (!element) {
@@ -173,21 +168,22 @@ export const mount = (Component: React.ComponentType<any>, element = document.ge
     return;
   }
   
-  rootElement = ReactDOM.createRoot(element);
-  rootElement.render(<Component/>);
+  rootElement = element;
+  ReactDOM.render(<Component/>, element);
 
   // Используем явное приведение типа для решения проблемы с module.hot
   // @ts-ignore - игнорируем проверку типов для module.hot
   if (module.hot) {
     // @ts-ignore - игнорируем проверку типов для module.hot.accept
     module.hot.accept('./app', () => {
-      rootElement.render(<Component/>);
+      ReactDOM.render(<Component/>, element);
     });
   }
 };
 
 export const unmount = () => {
   if (rootElement) {
-    rootElement.unmount();
+    ReactDOM.unmountComponentAtNode(rootElement);
+    rootElement = null;
   }
 };
