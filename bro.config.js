@@ -2,7 +2,7 @@ module.exports = {
   apiPath: "stubs/api",
   webpackConfig: {
     output: {
-      publicPath: '/fiba/1.0.18/',
+      publicPath: '/fiba3x3/1.0.20/',
       filename: '[name].[fullhash].js',
       chunkFilename: '[name].[chunkhash].js',
       path: require('path').resolve(__dirname, 'dist')
@@ -22,16 +22,13 @@ module.exports = {
   },
   /* use https://admin.bro-js.ru/ to create config, navigations and features */
   navigations: {
-    "fiba.main": "/fiba",
+    "fiba3x3.main": "/fiba3x3",
   },
   features: {
-    "fiba": {},
+    "fiba3x3": {},
   },
   config: {
-    "fiba.api": "/api",
-    "cors": {
-      "allowOrigin": "*"
-    }
+    "fiba3x3.api": "/api"
   },
   port: 8099,
   apiBaseUrl: 'https://timurbatrshin-fiba-backend-7cf2.twc1.net/api'

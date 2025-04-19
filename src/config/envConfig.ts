@@ -29,12 +29,14 @@ export const API_BASE_URL = config.apiUrl;
 // App Settings
 export const APP_SETTINGS = {
   enableLogging: config.enableLogging,
-  buildVersion: '1.0.18',
-  tokenStorageKey: 'auth_token',
-  userStorageKey: 'user_data',
+  buildVersion: '1.0.20',
+  appName: 'FIBA3x3',
+  tokenStorageKey: 'fiba3x3_auth_token',
+  userStorageKey: 'fiba3x3_user_data',
   requestTimeout: 15000, // 15 seconds
   notificationDuration: 5000, // 5 seconds
-  maxUploadSize: 5 * 1024 * 1024 // 5MB
+  maxUploadSize: 5 * 1024 * 1024, // 5MB
+  apiBaseUrl: config.apiUrl
 };
 
 // Service worker settings
