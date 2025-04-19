@@ -58,12 +58,6 @@ window.fetch = (async (input: RequestInfo, init?: RequestInit): Promise<Response
         }
       }
       
-      // Перенаправляем запросы к старой версии на новую
-      if (url.includes('/fiba/1.0.2/')) {
-        console.log('Redirecting request from old version 1.0.2 to current version:', FIBA_CONFIG.version);
-        url = url.replace('/fiba/1.0.2/', `/fiba/${FIBA_CONFIG.version}/`);
-      }
-      
       console.log('Intercepting critical request to static.bro-js.ru:', url);
       
       try {
