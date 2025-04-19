@@ -27,6 +27,29 @@ window.fetch = (async (input: RequestInfo | URL, init?: RequestInit): Promise<Re
       return originalFetch(input, init);
     }
     
+    // Специальная обработка для конкретного URL-адреса с проблемой CORS
+    if (url === 'https://static.bro-js.ru/fiba/1.0.2/index.js' || 
+        url.startsWith('https://static.bro-js.ru/fiba/') && url.endsWith('.js')) {
+      console.log('Intercepting critical request to static.bro-js.ru:', url);
+      
+      try {
+        // Попытка загрузить через XMLHttpRequest с режимом no-cors
+        await fetchAndEvalScript(url);
+        
+        // Возвращаем пустой успешный ответ
+        return new Response('/* Script loaded via custom loader */', {
+          status: 200,
+          statusText: 'OK',
+          headers: new Headers({
+            'Content-Type': 'application/javascript'
+          })
+        });
+      } catch (scriptError) {
+        console.error('Failed to load script with custom loader:', scriptError);
+        // Продолжаем обычной обработкой
+      }
+    }
+    
     // Проверяем, относится ли запрос к static.bro-js.ru
     if (url.includes('static.bro-js.ru')) {
       console.log('Intercepting request to static.bro-js.ru:', url);
@@ -44,7 +67,7 @@ window.fetch = (async (input: RequestInfo | URL, init?: RequestInit): Promise<Re
         }
         
         // Возвращаем пустой успешный ответ
-        return new Response('', {
+        return new Response('/* Script loaded via DOM */', {
           status: 200,
           statusText: 'OK',
           headers: new Headers({
@@ -54,30 +77,12 @@ window.fetch = (async (input: RequestInfo | URL, init?: RequestInit): Promise<Re
       }
       
       // Для остальных ресурсов с статического домена
-      let newInput: RequestInfo;
-      let newInit = init || {};
-      newInit.mode = 'no-cors';
-      
-      if (typeof input === 'string') {
-        newInput = input;
-      } else if (input instanceof URL) {
-        newInput = input.toString();
-      } else {
-        // Создаем новый Request с режимом no-cors
-        newInput = new Request(url, {
-          method: input.method,
-          headers: input.headers,
-          body: input.body,
-          mode: 'no-cors',
-          credentials: input.credentials,
-          cache: input.cache,
-          redirect: input.redirect,
-          referrer: input.referrer,
-          integrity: input.integrity
-        });
-      }
-      
-      return originalFetch(newInput, newInit);
+      // создаем новый запрос с mode: 'no-cors'
+      return originalFetch(url, {
+        ...(init || {}),
+        mode: 'no-cors',
+        credentials: 'include'
+      });
     } else if (typeof input === 'string') {
       // Для обычных строковых URL используем трансформацию
       return originalFetch(transformURL(input), init);
@@ -101,20 +106,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const mainScriptUrl = 'https://static.bro-js.ru/fiba/1.0.2/index.js';
   console.log('Pre-loading main script:', mainScriptUrl);
   
-  // Создаем тег script напрямую
-  const script = document.createElement('script');
-  script.src = mainScriptUrl;
-  script.async = true;
-  script.defer = true;
-  script.type = 'text/javascript';
-  script.onerror = (err) => {
-    console.error('Error loading script via DOM:', err);
-    fetchAndEvalScript(mainScriptUrl)
-      .catch(e => console.error('Failed to eval script:', e));
-  };
-  
-  // Добавляем скрипт в head
-  document.head.appendChild(script);
+  // Используем наши специальные утилиты вместо прямого DOM метода
+  loadScriptNoCORS(mainScriptUrl)
+    .catch(error => {
+      console.error('Error loading script via no-CORS method:', error);
+      // Если не удалось загрузить через DOM, пробуем fetchAndEval
+      fetchAndEvalScript(mainScriptUrl)
+        .catch(e => console.error('Failed to eval script:', e));
+    });
 });
 
 // Расширяем интерфейс Module для поддержки webpack hot module replacement
