@@ -15,8 +15,16 @@ const originalFetch = window.fetch;
 // Конфигурация для скриптов bro-js
 const FIBA_CONFIG = {
   version: APP_SETTINGS.buildVersion, // Используем версию из envConfig
-  baseUrl: 'https://static.bro-js.ru/fiba/'
+  baseUrl: 'https://static.bro-js.ru/fiba/',
+  isMasterPath: false
 };
+
+// Определяем, какую версию скрипта использовать на основе текущего пути
+if (window.location.pathname.includes('/fiba/master')) {
+  console.log('Detected master path, using latest version');
+  // Для пути /fiba/master используем текущую версию из конфигурации
+  FIBA_CONFIG.isMasterPath = true;
+}
 
 // Переопределяем fetch для обработки CORS ошибок
 window.fetch = (async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
@@ -38,6 +46,26 @@ window.fetch = (async (input: RequestInfo | URL, init?: RequestInit): Promise<Re
     // Специальная обработка для конкретного URL-адреса с проблемой CORS
     if (url === `${FIBA_CONFIG.baseUrl}${FIBA_CONFIG.version}/index.js` || 
         url.startsWith('https://static.bro-js.ru/fiba/') && url.endsWith('.js')) {
+      
+      // Для master пути заменяем все версии на текущую
+      if (FIBA_CONFIG.isMasterPath) {
+        // Извлекаем версию из URL, если она там есть
+        const versionMatch = url.match(/\/fiba\/([^\/]+)\/index\.js/);
+        if (versionMatch && versionMatch[1]) {
+          const urlVersion = versionMatch[1];
+          if (urlVersion !== FIBA_CONFIG.version) {
+            console.log(`Master path: redirecting from version ${urlVersion} to ${FIBA_CONFIG.version}`);
+            url = url.replace(`/fiba/${urlVersion}/`, `/fiba/${FIBA_CONFIG.version}/`);
+          }
+        }
+      }
+      
+      // Перенаправляем запросы к старой версии на новую
+      if (url.includes('/fiba/1.0.2/')) {
+        console.log('Redirecting request from old version 1.0.2 to current version:', FIBA_CONFIG.version);
+        url = url.replace('/fiba/1.0.2/', `/fiba/${FIBA_CONFIG.version}/`);
+      }
+      
       console.log('Intercepting critical request to static.bro-js.ru:', url);
       
       try {
@@ -111,8 +139,10 @@ window.fetch = (async (input: RequestInfo | URL, init?: RequestInit): Promise<Re
 
 // При загрузке страницы пытаемся предзагрузить основной скрипт
 document.addEventListener('DOMContentLoaded', () => {
+  // Определяем, какой скрипт загружать в зависимости от пути
   const mainScriptUrl = `${FIBA_CONFIG.baseUrl}${FIBA_CONFIG.version}/index.js`;
-  console.log('Pre-loading main script:', mainScriptUrl);
+  console.log('Pre-loading main script:', mainScriptUrl, 
+              FIBA_CONFIG.isMasterPath ? '(from master path)' : '');
   
   // Используем наши специальные утилиты вместо прямого DOM метода
   loadScriptNoCORS(mainScriptUrl)
