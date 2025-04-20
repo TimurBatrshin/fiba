@@ -1,8 +1,10 @@
+const pkg = require("./package");
+
 module.exports = {
   apiPath: "stubs/api",
   webpackConfig: {
     output: {
-      publicPath: '/fiba3x3/1.0.22/',
+      publicPath: `/static/fiba3x3/${process.env.VERSION || pkg.version}/`,
       filename: '[name].[fullhash].js',
       chunkFilename: '[name].[chunkhash].js',
       path: require('path').resolve(__dirname, 'dist')
