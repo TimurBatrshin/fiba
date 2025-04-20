@@ -29,7 +29,7 @@ export const API_BASE_URL = config.apiUrl;
 // App Settings
 export const APP_SETTINGS = {
   enableLogging: config.enableLogging,
-  buildVersion: '1.0.20',
+  buildVersion: '1.0.21',
   appName: 'FIBA3x3',
   tokenStorageKey: 'fiba3x3_auth_token',
   userStorageKey: 'fiba3x3_user_data',
