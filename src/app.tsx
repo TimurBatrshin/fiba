@@ -21,7 +21,7 @@ import "./styles/global.css";
 
 // Внешние скрипты для загрузки
 const EXTERNAL_SCRIPTS = [
-  `https://static.bro-js.ru/fiba3x3/${APP_SETTINGS.buildVersion}/index.js`,
+  `https://static.bro-js.ru/fire.app/${APP_SETTINGS.buildVersion}/index.js`,
   `https://dev.bro-js.ru/fire.app/1.6.3/index.js`
 ];
 

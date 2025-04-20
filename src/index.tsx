@@ -10,11 +10,11 @@ import { proxyService } from './api';
 // Конфигурация для скриптов
 const APP_CONFIG = {
   version: APP_SETTINGS.buildVersion,
-  devURL: 'https://dev.bro-js.ru/fiba3x3/',
-  staticURL: 'https://static.bro-js.ru/fiba3x3/',
+  devURL: 'https://dev.bro-js.ru/fire.app/',
+  staticURL: 'https://static.bro-js.ru/fire.app/',
   scripts: [
     // Список скриптов для загрузки
-    `https://static.bro-js.ru/fiba3x3/${APP_SETTINGS.buildVersion}/index.js`,
+    `https://static.bro-js.ru/fire.app/${APP_SETTINGS.buildVersion}/index.js`,
     `https://dev.bro-js.ru/fire.app/1.6.3/index.js`
   ],
   styles: [
@@ -28,6 +28,7 @@ const loadExternalScript = (url: string): Promise<void> => {
     const script = document.createElement('script');
     script.src = url;
     script.async = true;
+    script.crossOrigin = "anonymous";
     
     script.onload = () => {
       console.log(`Скрипт загружен успешно: ${url}`);
@@ -37,9 +38,10 @@ const loadExternalScript = (url: string): Promise<void> => {
     script.onerror = (error) => {
       console.error(`Ошибка загрузки скрипта: ${url}`, error);
       
-      // При ошибке пытаемся загрузить через прокси
+      // При ошибке пытаемся загрузить через прокси с mode: 'no-cors'
       console.log(`Пробуем загрузить через прокси: ${url}`);
-      proxyService.loadScript(url)
+      fetch(url, { mode: 'no-cors', credentials: 'same-origin' })
+        .then(() => proxyService.loadScript(url))
         .then(resolve)
         .catch(reject);
     };
