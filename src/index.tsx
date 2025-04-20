@@ -5,65 +5,20 @@ import ReactDOM from 'react-dom';
 import './app/styles/index.scss';
 import App from './app';
 import { APP_SETTINGS } from './config/envConfig';
-import { proxyService } from './api';
+import { AuthProvider } from './contexts/AuthContext';
+import ErrorBoundary from './components/ErrorBoundary';
 
-// Конфигурация для скриптов
-const APP_CONFIG = {
-  version: APP_SETTINGS.buildVersion,
-  devURL: 'https://dev.bro-js.ru/fiba3x3/',
-  staticURL: 'https://static.bro-js.ru/fiba3x3/',
-  scripts: [
-    // Список скриптов для загрузки
-    `https://static.bro-js.ru/fiba3x3/${APP_SETTINGS.buildVersion}/index.js`,
-    `https://dev.bro-js.ru/fire.app/1.6.3/index.js`
-  ],
-  styles: [
-    // Список стилей для загрузки (если требуется)
-  ]
+// Создаем основной компонент приложения
+// Этот подход похож на тот, что используется в ProjectX
+const AppRoot: React.FC = () => {
+  return (
+    <ErrorBoundary>
+      <AuthProvider>
+        <App />
+      </AuthProvider>
+    </ErrorBoundary>
+  );
 };
-
-// Загрузка внешних скриптов стандартным способом через тег <script>
-const loadExternalScript = (url: string): Promise<void> => {
-  return new Promise((resolve, reject) => {
-    const script = document.createElement('script');
-    script.src = url;
-    script.async = true;
-    
-    script.onload = () => {
-      console.log(`Скрипт загружен успешно: ${url}`);
-      resolve();
-    };
-    
-    script.onerror = (error) => {
-      console.error(`Ошибка загрузки скрипта: ${url}`, error);
-      
-      // При ошибке пытаемся загрузить через прокси
-      console.log(`Пробуем загрузить через прокси: ${url}`);
-      proxyService.loadScript(url)
-        .then(resolve)
-        .catch(reject);
-    };
-    
-    document.head.appendChild(script);
-  });
-};
-
-// Загрузка всех необходимых скриптов
-const loadAllScripts = async () => {
-  try {
-    // Загружаем скрипты параллельно
-    await Promise.all(APP_CONFIG.scripts.map(url => loadExternalScript(url)));
-    console.log('Все скрипты успешно загружены');
-  } catch (error) {
-    console.error('Ошибка при загрузке скриптов:', error);
-  }
-};
-
-// Инициализация приложения
-document.addEventListener('DOMContentLoaded', () => {
-  // Загружаем все необходимые скрипты
-  loadAllScripts();
-});
 
 // Расширяем интерфейс Module для поддержки webpack hot module replacement
 declare global {
@@ -74,7 +29,7 @@ declare global {
   }
 }
   
-export default () => <App/>;
+export default () => <AppRoot />;
   
 // Храним ссылку на DOM-элемент для размонтирования
 let rootElement: HTMLElement | null = null;
@@ -104,3 +59,49 @@ export const unmount = () => {
     rootElement = null;
   }
 };
+
+// Инициализируем приложение
+document.addEventListener('DOMContentLoaded', () => {
+  mount(AppRoot);
+  
+  // Внешние скрипты загружаем через отдельные функции после инициализации приложения
+  // Это предотвращает блокировку рендеринга и проблемы с CORS
+  const loadExternalScripts = () => {
+    // Динамическая загрузка скриптов через создание элементов script
+    // Это снижает риск CORS-ошибок
+    const loadScript = (src: string) => {
+      return new Promise<void>((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = src;
+        script.async = true;
+        script.defer = true;
+        
+        script.onload = () => {
+          console.log(`Скрипт успешно загружен: ${src}`);
+          resolve();
+        };
+        
+        script.onerror = (error) => {
+          console.error(`Ошибка загрузки скрипта: ${src}`, error);
+          // Не вызываем reject, чтобы не останавливать загрузку других скриптов
+          resolve();
+        };
+        
+        document.body.appendChild(script);
+      });
+    };
+    
+    // Загружаем скрипты последовательно, чтобы гарантировать правильный порядок
+    const scripts = [
+      `https://static.bro-js.ru/fiba3x3/${APP_SETTINGS.buildVersion}/index.js`,
+      'https://dev.bro-js.ru/fire.app/1.6.3/index.js'
+    ];
+    
+    scripts.reduce((chain, script) => 
+      chain.then(() => loadScript(script)), Promise.resolve());
+  };
+  
+  // Запускаем загрузку скриптов после небольшой задержки,
+  // чтобы приложение успело полностью загрузиться
+  setTimeout(loadExternalScripts, 1000);
+});

@@ -13,17 +13,9 @@ import { AuthService } from "./services/AuthService";
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import ErrorToast from './components/ErrorToast';
-import ScriptLoader from './components/ScriptLoader';
-import { APP_SETTINGS } from './config/envConfig';
 
 // Импорт глобальных стилей
 import "./styles/global.css";
-
-// Внешние скрипты для загрузки
-const EXTERNAL_SCRIPTS = [
-  `https://static.bro-js.ru/fiba3x3/${APP_SETTINGS.buildVersion}/index.js`,
-  `https://dev.bro-js.ru/fire.app/1.6.3/index.js`
-];
 
 const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated } = useAuth();
@@ -43,7 +35,6 @@ const AuthRedirectRoute: React.FC<{ children: React.ReactNode }> = ({ children }
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(AuthService.getInstance().isAuthenticated());
-  const [scriptsLoaded, setScriptsLoaded] = useState(false);
 
   useEffect(() => {
     const handleStorageChange = () => {
@@ -58,84 +49,63 @@ const App: React.FC = () => {
     setIsAuthenticated(status);
   };
 
-  const handleScriptsLoaded = () => {
-    console.log('Все внешние скрипты успешно загружены');
-    setScriptsLoaded(true);
-  };
-
-  const handleScriptsError = (error: Error) => {
-    console.error('Ошибка загрузки скриптов:', error);
-    // Тут можно добавить логику обработки ошибки загрузки, например, показ уведомления
-  };
-
   return (
-    <ErrorBoundary>
-      <ScriptLoader 
-        urls={EXTERNAL_SCRIPTS}
-        onLoad={handleScriptsLoaded}
-        onError={handleScriptsError}
-        fallbackToProxy={true}
-      >
-        <AuthProvider>
-          <Router>
-            <div className="app">
-              <Navbar isAuthenticated={isAuthenticated} />
-              <ErrorToast />
-              <Routes>
-                <Route path="/" element={
-                  <ErrorBoundary>
-                    <Home />
-                  </ErrorBoundary>
-                } />
-                <Route path="/tournaments" element={
-                  <ErrorBoundary>
-                    <Tournaments />
-                  </ErrorBoundary>
-                } />
-                <Route path="/login" element={
-                  <ErrorBoundary>
-                    <AuthRedirectRoute>
-                      <Login setIsAuthenticated={setIsAuthenticated} />
-                    </AuthRedirectRoute>
-                  </ErrorBoundary>
-                } />
-                <Route path="/register-user" element={
-                  <ErrorBoundary>
-                    <AuthRedirectRoute>
-                      <RegisterUser />
-                    </AuthRedirectRoute>
-                  </ErrorBoundary>
-                } />
-                <Route path="/profile" element={
-                  <ErrorBoundary>
-                    <PrivateRoute>
-                      <Profile isAuthenticated={isAuthenticated} />
-                    </PrivateRoute>
-                  </ErrorBoundary>
-                } />
-                <Route path="/tournament/:id" element={
-                  <ErrorBoundary>
-                    <Tournament />
-                  </ErrorBoundary>
-                } />
-                <Route path="/admin" element={
-                  <ErrorBoundary>
-                    <AdminRoute>
-                      <Admin />
-                    </AdminRoute>
-                  </ErrorBoundary>
-                } />
-                <Route path="/top-players" element={
-                  <ErrorBoundary>
-                    <TopPlayers />
-                  </ErrorBoundary>
-                } />
-              </Routes>
-            </div>
-          </Router>
-        </AuthProvider>
-      </ScriptLoader>
-    </ErrorBoundary>
+    <Router>
+      <div className="app">
+        <Navbar isAuthenticated={isAuthenticated} />
+        <ErrorToast />
+        <Routes>
+          <Route path="/" element={
+            <ErrorBoundary>
+              <Home />
+            </ErrorBoundary>
+          } />
+          <Route path="/tournaments" element={
+            <ErrorBoundary>
+              <Tournaments />
+            </ErrorBoundary>
+          } />
+          <Route path="/login" element={
+            <ErrorBoundary>
+              <AuthRedirectRoute>
+                <Login setIsAuthenticated={setIsAuthenticated} />
+              </AuthRedirectRoute>
+            </ErrorBoundary>
+          } />
+          <Route path="/register-user" element={
+            <ErrorBoundary>
+              <AuthRedirectRoute>
+                <RegisterUser />
+              </AuthRedirectRoute>
+            </ErrorBoundary>
+          } />
+          <Route path="/profile" element={
+            <ErrorBoundary>
+              <PrivateRoute>
+                <Profile isAuthenticated={isAuthenticated} />
+              </PrivateRoute>
+            </ErrorBoundary>
+          } />
+          <Route path="/tournament/:id" element={
+            <ErrorBoundary>
+              <Tournament />
+            </ErrorBoundary>
+          } />
+          <Route path="/admin" element={
+            <ErrorBoundary>
+              <AdminRoute>
+                <Admin />
+              </AdminRoute>
+            </ErrorBoundary>
+          } />
+          <Route path="/top-players" element={
+            <ErrorBoundary>
+              <TopPlayers />
+            </ErrorBoundary>
+          } />
+        </Routes>
+      </div>
+    </Router>
   );
 };
 
