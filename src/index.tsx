@@ -71,23 +71,52 @@ document.addEventListener('DOMContentLoaded', () => {
     // Это снижает риск CORS-ошибок
     const loadScript = (src: string) => {
       return new Promise<void>((resolve, reject) => {
-        const script = document.createElement('script');
-        script.src = src;
-        script.async = true;
-        script.defer = true;
-        
-        script.onload = () => {
-          console.log(`Скрипт успешно загружен: ${src}`);
-          resolve();
-        };
-        
-        script.onerror = (error) => {
-          console.error(`Ошибка загрузки скрипта: ${src}`, error);
-          // Не вызываем reject, чтобы не останавливать загрузку других скриптов
-          resolve();
-        };
-        
-        document.body.appendChild(script);
+        try {
+          // Сначала попробуем использовать fetch с 'no-cors' для предзагрузки
+          fetch(src, { mode: 'no-cors' })
+            .catch(e => console.warn('Предзагрузка скрипта не удалась, продолжаем обычную загрузку', e))
+            .finally(() => {
+              // Затем создаем элемент script для фактической загрузки
+              const script = document.createElement('script');
+              script.src = src;
+              script.async = true;
+              script.defer = true;
+              script.crossOrigin = "anonymous"; // Важно для CORS
+              
+              script.onload = () => {
+                console.log(`Скрипт успешно загружен: ${src}`);
+                resolve();
+              };
+              
+              script.onerror = (error) => {
+                console.error(`Ошибка загрузки скрипта: ${src}`, error);
+                // Пробуем альтернативный способ в случае ошибки
+                // Создаем новый элемент скрипта с другими атрибутами
+                const fallbackScript = document.createElement('script');
+                fallbackScript.src = src;
+                fallbackScript.async = false;
+                fallbackScript.defer = false;
+                
+                fallbackScript.onload = () => {
+                  console.log(`Скрипт успешно загружен через fallback: ${src}`);
+                  resolve();
+                };
+                
+                fallbackScript.onerror = () => {
+                  console.error(`Окончательная ошибка загрузки скрипта: ${src}`);
+                  // Просто разрешаем промис, чтобы продолжить цепочку
+                  resolve();
+                };
+                
+                document.body.appendChild(fallbackScript);
+              };
+              
+              document.body.appendChild(script);
+            });
+        } catch (err) {
+          console.error(`Критическая ошибка при загрузке скрипта ${src}:`, err);
+          resolve(); // Разрешаем промис, чтобы продолжить загрузку других скриптов
+        }
       });
     };
     
