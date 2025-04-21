@@ -1,3 +1,14 @@
+# Release Notes - v1.6.1
+
+## Bug Fixes
+- Fixed authentication issues on mobile devices
+- Corrected date format in tournament registration
+- Improved error handling for offline mode
+
+## Security Updates
+- Updated dependencies with security patches
+- Enhanced data validation for user inputs
+
 # Release Notes - v1.6.0
 
 ## Performance Improvements
