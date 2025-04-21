@@ -7,7 +7,7 @@ import App from './app';
 import { APP_SETTINGS } from './config/envConfig';
 import { proxyService } from './api';
 
-// Конфигурация для скриптов
+// Конфигурация для скриптов - загрузка отключена, т.к. вызывает CORS-ошибки
 const APP_CONFIG = {
   version: APP_SETTINGS.buildVersion,
   devURL: 'https://dev.bro-js.ru/fiba3x3/',
