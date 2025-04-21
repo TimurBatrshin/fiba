@@ -3,7 +3,7 @@ const pkg = require("./package");
 module.exports = {
   webpackConfig: {
     output: {
-      publicPath: `/static/${pkg.name}/${process.env.VERSION || pkg.version}/`,
+      publicPath: `/static/fiba3x3/${process.env.VERSION || pkg.version}/`,
     },
     module: {
       rules: [

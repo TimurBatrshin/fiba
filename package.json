@@ -1,5 +1,5 @@
 {
-    "name": "fiba",
+    "name": "fiba3x3",
     "version": "1.2.1",
     "main": "./src/index.tsx",
     "scripts": {

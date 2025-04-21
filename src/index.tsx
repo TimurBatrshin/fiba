@@ -10,12 +10,11 @@ import { proxyService } from './api';
 // Конфигурация для скриптов
 const APP_CONFIG = {
   version: APP_SETTINGS.buildVersion,
-  devURL: 'https://dev.bro-js.ru/fiba/',
-  staticURL: 'https://static.bro-js.ru/fiba/',
+  devURL: 'https://dev.bro-js.ru/fiba3x3/',
+  staticURL: 'https://static.bro-js.ru/fiba3x3/',
   scripts: [
-    // Временно отключаем загрузку скриптов, которые вызывают ошибки
-    // `https://static.bro-js.ru/fiba/${APP_SETTINGS.buildVersion}/index.js`,
-    // `https://dev.bro-js.ru/fiba/${APP_SETTINGS.buildVersion}/index.js`
+    // Отключаем загрузку скриптов, которые вызывают CORS-ошибки
+    // `${APP_CONFIG.staticURL}${APP_SETTINGS.buildVersion}/index.js`,
   ],
   styles: [
     // Список стилей для загрузки (если требуется)
