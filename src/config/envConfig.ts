@@ -11,11 +11,15 @@ export const isDevelopment = !isProduction;
 const ENV_CONFIG = {
   development: {
     apiUrl: 'https://timurbatrshin-fiba-backend-7cf2.twc1.net/api',
-    enableLogging: true
+    enableLogging: true,
+    staticUrl: 'https://static.bro-js.ru/apps/FIBA3x3/',
+    appBaseUrl: 'https://dev.bro-js.ru/fiba/'
   },
   production: {
     apiUrl: 'https://timurbatrshin-fiba-backend-7cf2.twc1.net/api',
-    enableLogging: false
+    enableLogging: false,
+    staticUrl: 'https://static.bro-js.ru/apps/FIBA3x3/',
+    appBaseUrl: 'https://dev.bro-js.ru/fiba/'
   }
 };
 
@@ -25,11 +29,13 @@ const config = ENV_CONFIG[currentEnv];
 
 // Export API URLs
 export const API_BASE_URL = config.apiUrl;
+export const STATIC_URL = config.staticUrl;
+export const APP_BASE_URL = config.appBaseUrl;
 
 // App Settings
 export const APP_SETTINGS = {
   enableLogging: config.enableLogging,
-  buildVersion: '1.0.22',
+  buildVersion: process.env.VERSION || '1.6.1',
   appName: 'fiba',
   tokenStorageKey: 'fiba_auth_token',
   userStorageKey: 'fiba_user_data',
@@ -37,6 +43,8 @@ export const APP_SETTINGS = {
   notificationDuration: 5000, // 5 seconds
   maxUploadSize: 5 * 1024 * 1024, // 5MB
   apiBaseUrl: config.apiUrl,
+  staticUrl: config.staticUrl, 
+  appBaseUrl: config.appBaseUrl,
   basePath: '/fiba' // Base path for the application
 };
 
