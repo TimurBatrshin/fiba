@@ -35,6 +35,21 @@ const ScriptLoader: React.FC<ScriptLoaderProps> = ({
           return;
         }
 
+        // Проверяем, является ли URL относительным или абсолютным
+        const isAbsoluteUrl = url.startsWith('http://') || url.startsWith('https://');
+        const isCorsError = isAbsoluteUrl && (
+          url.includes('static.bro-js.ru') || 
+          url.includes('dev.bro-js.ru') || 
+          url.includes('fiba3x3')
+        );
+        
+        // Для ресурсов с известными CORS-проблемами сразу используем прокси
+        if (isCorsError && fallbackToProxy) {
+          console.log(`Используем прокси для скрипта с известными CORS-проблемами: ${url}`);
+          await proxyService.loadScript(url);
+          return;
+        }
+
         // Создаем элемент script
         const script = document.createElement('script');
         script.src = url;
