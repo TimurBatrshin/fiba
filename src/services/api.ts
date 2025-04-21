@@ -57,13 +57,16 @@ export class ApiService {
         // Извлекаем путь после домена
         const path = urlObj.pathname;
         
+        // Используем полный URL с нашим доменом API для прокси
+        const baseProxyUrl = 'https://timurbatrshin-fiba-backend-e561.twc1.net/api/proxy/static-bro-js';
+        
         // Если это JS файл, добавляем метку времени для предотвращения кэширования
         if (path.endsWith('.js')) {
-          return `/proxy${path}?t=${Date.now()}`;
+          return `${baseProxyUrl}${path}?t=${Date.now()}`;
         }
         
         // Другие статические ресурсы
-        return `/proxy${path}`;
+        return `${baseProxyUrl}${path}`;
       }
       
       return url;

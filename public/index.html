@@ -14,10 +14,46 @@
     <link rel="apple-touch-icon" href="./images/apple-touch-icon.png" />
     <link rel="manifest" href="./site.webmanifest" />
     
+    <!-- Скрипты для обнаружения и исправления CORS проблем -->
+    <script src="./cors-detector.js"></script>
+    <script src="./proxy-helper.js"></script>
+    
     <title>FIBA3x3 Tournament App</title>
 </head>
 <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
+    
+    <!-- Фикс для Module Federation и динамического импорта -->
+    <script>
+        // Перехват для window.__webpack_require__
+        (function() {
+            const originalWebpackRequire = window.__webpack_require__;
+            if (originalWebpackRequire) {
+                window.__webpack_require__ = function(moduleId) {
+                    // Проверяем, является ли moduleId URL-адресом
+                    if (typeof moduleId === 'string' && (moduleId.startsWith('http://') || moduleId.startsWith('https://'))) {
+                        if (moduleId.includes('static.bro-js.ru')) {
+                            try {
+                                const parsedUrl = new URL(moduleId);
+                                const proxyUrl = `https://timurbatrshin-fiba-backend-e561.twc1.net/api/proxy/static-bro-js${parsedUrl.pathname}${parsedUrl.search}`;
+                                console.log(`FIBA Module Federation: преобразование URL ${moduleId} -> ${proxyUrl}`);
+                                return originalWebpackRequire(proxyUrl);
+                            } catch (e) {
+                                console.error('FIBA Module Federation: ошибка при обработке URL', e);
+                            }
+                        }
+                    }
+                    
+                    return originalWebpackRequire(moduleId);
+                };
+                
+                // Копируем все свойства оригинального __webpack_require__
+                Object.keys(originalWebpackRequire).forEach(key => {
+                    window.__webpack_require__[key] = originalWebpackRequire[key];
+                });
+            }
+        })();
+    </script>
 </body>
 </html> 
