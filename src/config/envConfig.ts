@@ -10,16 +10,18 @@ export const isDevelopment = !isProduction;
 // Environment-specific configurations
 const ENV_CONFIG = {
   development: {
-    apiUrl: 'https://timurbatrshin-fiba-backend-7cf2.twc1.net/api',
+    apiUrl: 'https://timurbatrshin-fiba-backend-e561.twc1.net/api',
     enableLogging: true,
-    staticUrl: 'https://static.bro-js.ru/apps/FIBA3x3/',
-    appBaseUrl: 'https://dev.bro-js.ru/fiba/'
+    staticUrl: 'https://static.bro-js.ru/',
+    appBaseUrl: 'https://dev.bro-js.ru/',
+    msPath: '/ms'
   },
   production: {
-    apiUrl: 'https://timurbatrshin-fiba-backend-7cf2.twc1.net/api',
+    apiUrl: 'https://timurbatrshin-fiba-backend-e561.twc1.net/api',
     enableLogging: false,
-    staticUrl: 'https://static.bro-js.ru/apps/FIBA3x3/',
-    appBaseUrl: 'https://dev.bro-js.ru/fiba/'
+    staticUrl: 'https://static.bro-js.ru/',
+    appBaseUrl: 'https://dev.bro-js.ru/',
+    msPath: '/ms'
   }
 };
 
@@ -31,11 +33,12 @@ const config = ENV_CONFIG[currentEnv];
 export const API_BASE_URL = config.apiUrl;
 export const STATIC_URL = config.staticUrl;
 export const APP_BASE_URL = config.appBaseUrl;
+export const MS_PATH = config.msPath;
 
 // App Settings
 export const APP_SETTINGS = {
   enableLogging: config.enableLogging,
-  buildVersion: process.env.VERSION || '1.6.3',
+  buildVersion: '1.6.3', // Точная версия согласно конфигурации стенда
   appName: 'fiba',
   tokenStorageKey: 'fiba_auth_token',
   userStorageKey: 'fiba_user_data',
@@ -45,6 +48,7 @@ export const APP_SETTINGS = {
   apiBaseUrl: config.apiUrl,
   staticUrl: config.staticUrl, 
   appBaseUrl: config.appBaseUrl,
+  msPath: config.msPath,
   basePath: '/fiba' // Base path for the application
 };
 

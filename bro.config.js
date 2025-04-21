@@ -38,8 +38,11 @@ module.exports = {
     "fiba": {}
   },
   config: {
-    "fiba.api": "/api"
+    "fiba.api": "/api",
+    "fiba.static": "https://static.bro-js.ru/",
+    "fiba.ms": "/ms",
+    "fiba.version": "1.6.3"
   },
   port: 8099,
-  apiBaseUrl: 'https://timurbatrshin-fiba-backend-7cf2.twc1.net/api'
+  apiBaseUrl: 'https://timurbatrshin-fiba-backend-e561.twc1.net/api'
 };
