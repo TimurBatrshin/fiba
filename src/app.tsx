@@ -28,8 +28,8 @@ const EXTERNAL_SCRIPTS: string[] = [
 // Теперь вместо загрузки напрямую с удаленного сервера, мы запрашиваем через наш прокси
 // Для долгосрочного решения: скопируйте скрипт локально или настройте CORS на сервере
 
-// Обновляем базовый путь из настроек окружения
-const basePath = APP_SETTINGS.basePath;
+// Обновляем базовый путь для GitHub Pages
+const basePath = process.env.NODE_ENV === 'production' ? '/fiba' : '';
 
 const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated } = useAuth();

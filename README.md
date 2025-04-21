@@ -288,19 +288,4 @@ npm run build:prod
 ### Bug Fixes
 - Fixed team registration form validation issues
 - Resolved calendar display problems on mobile devices
-- Fixed authentication token refresh mechanism
-
-## New in Version 1.6.4
-
-### Обновления конфигурации
-- Обновлен домен API на timurbatrshin-fiba-backend-e561.twc1.net
-- Настроено соответствие конфигурации стенду
-- Оптимизированы настройки для работы с микросервисами
-
-### Исправления
-- Исправлены проблемы с деплоем
-- Согласованы пути во всех конфигурационных файлах
-
-## New in Version 1.6.3
-
-// ... existing code ... 
+- Fixed authentication token refresh mechanism 

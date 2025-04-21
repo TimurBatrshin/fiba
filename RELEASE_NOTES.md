@@ -28,19 +28,4 @@
 ## Technical Improvements
 - Updated dependencies to latest versions
 - Improved test coverage
-- Enhanced type safety across the application
-
-# Release Notes - v1.6.4
-
-## Обновления конфигурации
-- Обновлен домен API на timurbatrshin-fiba-backend-e561.twc1.net
-- Настроено соответствие конфигурации стенду
-- Оптимизированы настройки для работы с микросервисами
-
-## Исправления
-- Исправлены проблемы с деплоем
-- Согласованы пути во всех конфигурационных файлах
-
-# Release Notes - v1.6.3
-
-// ... existing code ... 
+- Enhanced type safety across the application 

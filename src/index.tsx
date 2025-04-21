@@ -4,13 +4,13 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import './styles/index.scss';
 import App from './app';
-import { APP_SETTINGS, STATIC_URL, APP_BASE_URL } from './config/envConfig';
+import { APP_SETTINGS } from './config/envConfig';
 
 // Конфигурация приложения
 const APP_CONFIG = {
   version: APP_SETTINGS.buildVersion,
-  devURL: APP_BASE_URL,
-  staticURL: `${STATIC_URL}${APP_SETTINGS.buildVersion}/`,
+  devURL: 'https://dev.bro-js.ru/fiba/',
+  staticURL: 'https://static.bro-js.ru/fiba/',
   scripts: [],
   styles: []
 };
@@ -58,15 +58,6 @@ document.addEventListener('DOMContentLoaded', () => {
   if (APP_CONFIG.scripts.length > 0) {
     loadAllScripts();
   }
-  
-  // Проверить доступность CDN
-  fetch(`${APP_CONFIG.staticURL}index.js`, { method: 'HEAD', mode: 'no-cors' })
-    .then(() => {
-      console.log('Static resources are accessible');
-    })
-    .catch(err => {
-      console.warn('Static resources may not be accessible:', err);
-    });
 });
 
 // Расширяем интерфейс Module для поддержки webpack hot module replacement
