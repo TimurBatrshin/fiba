@@ -446,7 +446,7 @@
 }
 
 /* Сообщения об ошибках и пустые состояния */
-.error-message, .no-tournaments {
+.error-message {
   text-align: center;
   padding: 3rem 0;
   color: var(--neutral-700);

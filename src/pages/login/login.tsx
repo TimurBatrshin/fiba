@@ -1,61 +1,66 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { AuthService } from '../../services/AuthService';
+import { useNavigate } from "react-router-dom";
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
+import { loginUser, clearError } from '../../store/slices/authSlice';
+import { addToast } from '../../store/slices/uiSlice';
 import "./login.css";  // Импортируем стили
 
 interface LoginProps {
-  setIsAuthenticated: (isAuthenticated: boolean) => void;
+  setIsAuthenticated: (value: boolean) => void;
 }
 
 const Login: React.FC<LoginProps> = ({ setIsAuthenticated }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  
   const navigate = useNavigate();
-
+  const dispatch = useAppDispatch();
+  const { loading, error, isAuthenticated } = useAppSelector(state => state.auth);
+  
+  // Перенаправление на профиль, если пользователь авторизован
   useEffect(() => {
-    if (AuthService.getInstance().isAuthenticated()) {
-      navigate("/profile");
-    }
-  }, [navigate]);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    if (name === "email") {
-      setEmail(value);
-    } else if (name === "password") {
-      setPassword(value);
-    }
-    // Сбрасываем ошибку при изменении полей
-    if (error) setError("");
-  };
-
-  const toggleShowPassword = () => {
-    setShowPassword(!showPassword);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    
-    try {
-      await AuthService.getInstance().login(email, password);
+    if (isAuthenticated) {
       setIsAuthenticated(true);
       navigate("/profile");
-    } catch (err: any) {
-      console.error("Login error:", err);
-      if (err.response?.status === 401) {
-        setError("Неверный email или пароль");
-      } else if (err.response?.data?.message) {
-        setError(err.response.data.message);
-      } else {
-        setError("Ошибка при входе. Попробуйте снова позже.");
-      }
-    } finally {
-      setIsLoading(false);
     }
+  }, [isAuthenticated, navigate, setIsAuthenticated]);
+  
+  // Показ уведомления об ошибке, если она есть
+  useEffect(() => {
+    if (error) {
+      dispatch(addToast({
+        type: 'error',
+        message: error
+      }));
+      dispatch(clearError());
+    }
+  }, [error, dispatch]);
+  
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!email.trim() || !password) {
+      dispatch(addToast({
+        type: 'error',
+        message: 'Пожалуйста, заполните все поля'
+      }));
+      return;
+    }
+    
+    try {
+      await dispatch(loginUser({ email, password })).unwrap();
+      dispatch(addToast({
+        type: 'success',
+        message: 'Вход выполнен успешно'
+      }));
+    } catch (err) {
+      // Ошибка уже обрабатывается в useEffect выше
+    }
+  };
+  
+  const toggleShowPassword = () => {
+    setShowPassword(!showPassword);
   };
 
   return (
@@ -64,97 +69,90 @@ const Login: React.FC<LoginProps> = ({ setIsAuthenticated }) => {
         <div className="auth-card animate-fade-in">
           <div className="auth-header">
             <h1>Вход в аккаунт</h1>
-            <p>Войдите для доступа к турнирам и управления командой</p>
+            <p>Введите ваши учетные данные для входа</p>
           </div>
           
           <form onSubmit={handleSubmit} className="auth-form">
+            {/* Поле Email */}
             <div className="form-group">
-              <label htmlFor="email">Email</label>
+              <label htmlFor="email" className="form-label">Email</label>
               <div className="input-wrapper">
                 <svg className="input-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M22 6C22 4.9 21.1 4 20 4H4C2.9 4 2 4.9 2 6V18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V6ZM20 6L12 11L4 6H20ZM20 18H4V8L12 13L20 8V18Z" fill="currentColor"/>
+                  <path d="M4 4H20C21.1 4 22 4.9 22 6V18C22 19.1 21.1 20 20 20H4C2.9 20 2 19.1 2 18V6C2 4.9 2.9 4 4 4Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M22 6L12 13L2 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
                 <input
                   type="email"
                   id="email"
                   name="email"
+                  className="form-control"
                   value={email}
-                  onChange={handleChange}
+                  onChange={(e) => setEmail(e.target.value)}
                   placeholder="Введите ваш email"
                   required
-                  className={error ? "error" : ""}
-                  disabled={isLoading}
-                  data-cy="email-input"
+                  disabled={loading}
                 />
               </div>
             </div>
             
+            {/* Поле пароля */}
             <div className="form-group">
-              <label htmlFor="password">Пароль</label>
+              <label htmlFor="password" className="form-label">Пароль</label>
               <div className="input-wrapper">
                 <svg className="input-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M18 8H17V6C17 3.24 14.76 1 12 1C9.24 1 7 3.24 7 6V8H6C4.9 8 4 8.9 4 10V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V10C20 8.9 19.1 8 18 8ZM12 17C10.9 17 10 16.1 10 15C10 13.9 10.9 13 12 13C13.1 13 14 13.9 14 15C14 16.1 13.1 17 12 17ZM15.1 8H8.9V6C8.9 4.29 10.29 2.9 12 2.9C13.71 2.9 15.1 4.29 15.1 6V8Z" fill="currentColor"/>
+                  <path d="M19 11H5C3.89543 11 3 11.8954 3 13V20C3 21.1046 3.89543 22 5 22H19C20.1046 22 21 21.1046 21 20V13C21 11.8954 20.1046 11 19 11Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M7 11V7C7 5.93913 7.42143 4.92172 8.17157 4.17157C8.92172 3.42143 9.93913 3 11 3H13C14.0609 3 15.0783 3.42143 15.8284 4.17157C16.5786 4.92172 17 5.93913 17 7V11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
                 <input
                   type={showPassword ? "text" : "password"}
                   id="password"
                   name="password"
+                  className="form-control"
                   value={password}
-                  onChange={handleChange}
-                  placeholder="Введите ваш пароль"
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Введите пароль"
                   required
-                  className={error ? "error" : ""}
-                  disabled={isLoading}
-                  data-cy="password-input"
+                  disabled={loading}
                 />
                 <button 
                   type="button" 
-                  onClick={toggleShowPassword} 
                   className="password-toggle"
+                  onClick={toggleShowPassword}
                   tabIndex={-1}
+                  disabled={loading}
                 >
                   {showPassword ? (
-                    <svg className="toggle-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M12 4.5C7 4.5 2.73 7.61 1 12C2.73 16.39 7 19.5 12 19.5C17 19.5 21.27 16.39 23 12C21.27 7.61 17 4.5 12 4.5ZM12 17C9.24 17 7 14.76 7 12C7 9.24 9.24 7 12 7C14.76 7 17 9.24 17 12C17 14.76 14.76 17 12 17ZM12 9C10.34 9 9 10.34 9 12C9 13.66 10.34 15 12 15C13.66 15 15 13.66 15 12C15 10.34 13.66 9 12 9Z" fill="currentColor"/>
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M1 12C1 12 5 4 12 4C19 4 23 12 23 12C23 12 19 20 12 20C5 20 1 12 1 12Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M3 3L21 21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
                   ) : (
-                    <svg className="toggle-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M12 7C14.76 7 17 9.24 17 12C17 12.65 16.87 13.26 16.64 13.83L19.56 16.75C21.07 15.49 22.26 13.86 23 12C21.27 7.61 17 4.5 12 4.5C10.6 4.5 9.26 4.75 8 5.2L10.17 7.37C10.74 7.13 11.35 7 12 7ZM2 4.27L4.28 6.55L4.74 7.01C3.08 8.3 1.78 10.02 1 12C2.73 16.39 7 19.5 12 19.5C13.55 19.5 15.03 19.2 16.38 18.66L16.8 19.08L19.73 22L21 20.73L3.27 3L2 4.27ZM7.53 9.8L9.08 11.35C9.03 11.56 9 11.78 9 12C9 13.66 10.34 15 12 15C12.22 15 12.44 14.97 12.65 14.92L14.2 16.47C13.53 16.8 12.79 17 12 17C9.24 17 7 14.76 7 12C7 11.21 7.2 10.47 7.53 9.8ZM11.84 9.02L14.99 12.17L15.01 12.01C15.01 10.35 13.67 9.01 12.01 9.01L11.84 9.02Z" fill="currentColor"/>
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M1 12C1 12 5 4 12 4C19 4 23 12 23 12C23 12 19 20 12 20C5 20 1 12 1 12Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
                   )}
                 </button>
               </div>
             </div>
             
-            {error && <div className="error-message" data-cy="error-message">{error}</div>}
-            
-            <div className="form-options">
-              <div className="remember-me">
-                <input type="checkbox" id="remember" />
-                <label htmlFor="remember">Запомнить меня</label>
-              </div>
-              <Link to="/forgot-password" className="forgot-password">Забыли пароль?</Link>
+            <div className="form-actions">
+              <button 
+                type="submit" 
+                className="btn btn-primary w-100"
+                disabled={loading}
+              >
+                {loading ? 'Входим...' : 'Войти'}
+              </button>
             </div>
             
-            <button 
-              type="submit" 
-              className="btn btn-primary btn-full"
-              disabled={isLoading}
-              data-cy="login-button"
-            >
-              {isLoading ? (
-                <div className="button-loader">
-                  <span className="loader-dot"></span>
-                  <span className="loader-dot"></span>
-                  <span className="loader-dot"></span>
-                </div>
-              ) : "Войти"}
-            </button>
+            <div className="auth-links">
+              <p className="text-center">
+                Нет аккаунта? <a href="/register-user">Зарегистрироваться</a>
+              </p>
+            </div>
           </form>
-          
-          <div className="auth-footer">
-            <p>Еще нет аккаунта? <Link to="/register-user">Зарегистрироваться</Link></p>
-          </div>
           
           <div className="auth-background">
             <svg className="auth-blob" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">

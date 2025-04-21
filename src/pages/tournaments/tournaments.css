@@ -196,27 +196,16 @@
 }
 
 /* Стили для пустого состояния */
-.no-tournaments {
+.tournaments-empty {
   grid-column: 1 / -1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: var(--spacing-xl) 0;
   text-align: center;
+  padding: var(--spacing-xl) 0;
   color: var(--gray-600);
 }
 
-.empty-icon {
-  width: 80px;
-  height: 80px;
-  margin-bottom: var(--spacing-md);
-  color: var(--gray-400);
-}
-
-.no-tournaments h3 {
-  color: var(--gray-800);
-  margin-bottom: var(--spacing-xs);
+.tournaments-empty h3 {
+  color: var(--gray-700);
+  margin-bottom: var(--spacing-sm);
 }
 
 /* Адаптивность */

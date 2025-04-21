@@ -5,6 +5,9 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faChartBar, faUser, faHome, faTrophy } from "@fortawesome/free-solid-svg-icons";
 import fibaLogo from '../../assets/images/fiba-logo.png';
 import { useAuth } from "../../contexts/AuthContext";
+import { useAppDispatch, useAppSelector } from "../../store/hooks";
+import { logoutUser } from "../../store/slices/authSlice";
+import { addToast } from "../../store/slices/uiSlice";
 
 interface NavbarProps {
   isAuthenticated: boolean;
@@ -13,28 +16,48 @@ interface NavbarProps {
 const Navbar: React.FC<NavbarProps> = ({ isAuthenticated: propIsAuthenticated }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const dispatch = useAppDispatch();
   const { logout: contextLogout } = useAuth();
+  
+  // Используем состояние из Redux
+  const { isAuthenticated: reduxIsAuthenticated } = useAppSelector(state => state.auth);
+  
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(propIsAuthenticated);
+  const [isAuthenticated, setIsAuthenticated] = useState(propIsAuthenticated || reduxIsAuthenticated);
   const [showStatsDropdown, setShowStatsDropdown] = useState(false);
 
   useEffect(() => {
-    setIsAuthenticated(propIsAuthenticated || !!localStorage.getItem("token"));
+    // Приоритизируем Redux-состояние, но сохраняем обратную совместимость
+    setIsAuthenticated(reduxIsAuthenticated || propIsAuthenticated || !!localStorage.getItem("token"));
     
     const handleScroll = () => setIsScrolled(window.pageYOffset > 10);
     window.addEventListener("scroll", handleScroll);
     
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [propIsAuthenticated]);
+  }, [propIsAuthenticated, reduxIsAuthenticated]);
 
   useEffect(() => {
     setIsMobileMenuOpen(false);
   }, [location.pathname]);
 
   const handleLogout = () => {
+    // Используем Redux для выхода
+    dispatch(logoutUser());
+    
+    // Для обратной совместимости также используем contextLogout
     contextLogout();
+    
     setIsAuthenticated(false);
+    
+    // Добавляем уведомление через Redux
+    dispatch(addToast({
+      type: 'success',
+      message: 'Вы успешно вышли из системы'
+    }));
+    
+    // Перенаправляем на страницу входа
+    navigate('/login');
   };
 
   const toggleStatsDropdown = () => {

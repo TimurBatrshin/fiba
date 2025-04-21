@@ -30,7 +30,14 @@ apiClient.interceptors.request.use(
     
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`;
+      // Добавляем дополнительные параметры заголовков для совместимости
+      config.headers['Accept'] = 'application/json';
+      config.headers['X-Requested-With'] = 'XMLHttpRequest';
     }
+    
+    // Логирование запроса для отладки
+    logger.info(`Making API request to: ${config.url}`, { method: config.method });
+    
     return config;
   },
   (error) => {
@@ -41,7 +48,14 @@ apiClient.interceptors.request.use(
 
 // Response interceptor for error handling
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Логируем успешные ответы для отладки
+    logger.info(`API success response from: ${response.config.url}`, { 
+      status: response.status,
+      statusText: response.statusText
+    });
+    return response;
+  },
   (error: AxiosError) => {
     // Handle token expiration
     if (error.response?.status === 401) {
@@ -51,14 +65,23 @@ apiClient.interceptors.response.use(
       window.location.href = '/login';
     }
     
-    // Log errors
+    // Log errors with more details
     logger.error('API Error', {
       url: error.config?.url,
       method: error.config?.method?.toUpperCase(),
       status: error.response?.status,
       statusText: error.response?.statusText,
-      data: error.response?.data
+      data: error.response?.data,
+      headers: error.config?.headers
     });
+    
+    // При ошибке сервера 500 - вывести более подробную информацию
+    if (error.response?.status === 500) {
+      logger.error('Server Error', { 
+        data: error.response?.data,
+        message: 'Сервер вернул ошибку 500. Возможно проблема с API или авторизацией.'
+      });
+    }
     
     // Transform error to custom error type
     if (error.response) {

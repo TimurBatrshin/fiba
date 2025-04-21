@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { useAppDispatch, useAppSelector } from './store/hooks';
+import { checkAndLoadUser } from './store/slices/authSlice';
 import Navbar from "./widgets/navbar/navbar";
 import Home from "./pages/home/home";
 import Tournaments from "./pages/tournaments/tournaments";
@@ -13,9 +15,22 @@ import { AuthService } from "./services/AuthService";
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import ErrorToast from './components/ErrorToast';
+import Toast from './components/Toast/Toast';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 // Импорт глобальных стилей
 import "./styles/global.css";
+
+// Создаем вспомогательную функцию для безопасного использования Redux
+const useSafeDispatch = () => {
+  try {
+    return useAppDispatch();
+  } catch (error) {
+    console.warn('Redux Provider not found, using fallback dispatch');
+    return (() => {}) as any;
+  }
+};
 
 const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated } = useAuth();
@@ -35,15 +50,23 @@ const AuthRedirectRoute: React.FC<{ children: React.ReactNode }> = ({ children }
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(AuthService.getInstance().isAuthenticated());
+  const dispatch = useSafeDispatch();
 
   useEffect(() => {
+    try {
+      // Проверяем и загружаем текущего пользователя при запуске
+      dispatch(checkAndLoadUser());
+    } catch (error) {
+      console.error('Failed to dispatch checkAndLoadUser:', error);
+    }
+    
     const handleStorageChange = () => {
       setIsAuthenticated(AuthService.getInstance().isAuthenticated());
     };
 
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
+  }, [dispatch]);
 
   const updateAuthStatus = (status: boolean) => {
     setIsAuthenticated(status);
@@ -56,6 +79,19 @@ const App: React.FC = () => {
           <div className="app">
             <Navbar isAuthenticated={isAuthenticated} />
             <ErrorToast />
+            <Toast />
+            <ToastContainer
+              position="top-right"
+              autoClose={5000}
+              hideProgressBar={false}
+              newestOnTop={false}
+              closeOnClick
+              rtl={false}
+              pauseOnFocusLoss
+              draggable
+              pauseOnHover
+              theme="light"
+            />
             <Routes>
               <Route path="/" element={
                 <ErrorBoundary>
@@ -84,7 +120,7 @@ const App: React.FC = () => {
               <Route path="/profile" element={
                 <ErrorBoundary>
                   <PrivateRoute>
-                    <Profile isAuthenticated={isAuthenticated} />
+                    <Profile setIsAuthenticated={updateAuthStatus} />
                   </PrivateRoute>
                 </ErrorBoundary>
               } />

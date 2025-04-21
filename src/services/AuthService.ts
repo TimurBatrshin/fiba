@@ -203,11 +203,8 @@ export class AuthService {
    */
   getCurrentUserRole(): string | null {
     try {
-      const token = this.getToken();
-      if (!token) return null;
-
-      const decoded = jwtDecode<DecodedToken>(token);
-      return decoded.role;
+      const user = this.getCurrentUser();
+      return user ? user.role : null;
     } catch (error) {
       return null;
     }
@@ -224,10 +221,10 @@ export class AuthService {
   /**
    * Gets the current authenticated user
    */
-  getCurrentUser(): User {
+  getCurrentUser(): User | null {
     const token = this.getToken();
     if (!token) {
-      throw new Error('No authenticated user');
+      return null;
     }
 
     try {
@@ -239,7 +236,9 @@ export class AuthService {
         role: decoded.role
       };
     } catch (error) {
-      throw new Error('Invalid token');
+      console.error('Invalid token', error);
+      this.removeToken();
+      return null;
     }
   }
 } 

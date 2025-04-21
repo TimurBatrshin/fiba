@@ -1,6 +1,9 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { AuthService } from '../services/AuthService';
 import { User } from '../interfaces/Auth';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { loginUser, logoutUser, registerUser, checkAndLoadUser } from '../store/slices/authSlice';
+import { addToast } from '../store/slices/uiSlice';
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -21,69 +24,94 @@ export const useAuth = () => {
   return context;
 };
 
-export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [currentRole, setCurrentRole] = useState<string | null>(null);
+// Хелперы для безопасного доступа к Redux
+const safeDispatch = () => {
+  try {
+    return useAppDispatch();
+  } catch (error) {
+    // Если Provider не найден, возвращаем функцию-заглушку
+    return (() => {}) as any;
+  }
+};
+
+const safeSelector = <T extends unknown>(selector: (state: any) => T, defaultValue: T): T => {
+  try {
+    return useAppSelector(selector);
+  } catch (error) {
+    // Если Provider не найден, возвращаем значение по умолчанию
+    return defaultValue;
+  }
+};
+
+// Компонент-обертка для обхода проблемы использования хуков в функции
+const AuthProviderWithRedux: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const dispatch = safeDispatch();
+  
+  // Используем состояние из Redux с защитой от ошибок
+  const { isAuthenticated, currentUser, currentRole, error } = safeSelector(state => state.auth, {
+    isAuthenticated: false,
+    currentUser: null,
+    currentRole: null,
+    error: null
+  });
+  
   const authService = AuthService.getInstance();
+  
+  // Инициализация при запуске компонента
+  useEffect(() => {
+    try {
+      dispatch(checkAndLoadUser());
+    } catch (error) {
+      console.error('Failed to dispatch checkAndLoadUser:', error);
+    }
+  }, [dispatch]);
+  
+  // Теперь мы не используем локальное состояние, а берем из Redux
+  // Но для обратной совместимости по-прежнему можем поддерживать интерфейс AuthContext
 
   useEffect(() => {
-    // Check authentication status on mount
-    const checkAuth = () => {
-      try {
-        if (authService.isAuthenticated()) {
-          const user = authService.getCurrentUser();
-          setCurrentUser(user);
-          setCurrentRole(user.role);
-          setIsAuthenticated(true);
-        } else {
-          setCurrentUser(null);
-          setCurrentRole(null);
-          setIsAuthenticated(false);
-        }
-      } catch (error) {
-        console.error("Auth check error:", error);
-        setCurrentUser(null);
-        setCurrentRole(null);
-        setIsAuthenticated(false);
-      }
-    };
-
-    // Run initial check
-    checkAuth();
-
-    // Set up event listener for storage changes
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'token' || e.key === 'auth_token') {
-        checkAuth();
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-    };
-  }, [authService]);
+    // Показываем ошибки аутентификации как уведомления
+    if (error) {
+      dispatch(addToast({
+        type: 'error',
+        message: error
+      }));
+    }
+  }, [error, dispatch]);
 
   const login = async (email: string, password: string) => {
-    const response = await authService.login(email, password);
-    // Token is stored inside AuthService.login
-    const user = authService.getCurrentUser();
-    setCurrentUser(user);
-    setCurrentRole(user.role);
-    setIsAuthenticated(true);
+    try {
+      // Используем Redux-действие вместо прямого вызова сервиса
+      await dispatch(loginUser({ email, password })).unwrap();
+      
+      // Уведомление об успешном входе
+      dispatch(addToast({
+        type: 'success',
+        message: 'Вы успешно вошли в систему'
+      }));
+    } catch (error) {
+      // Ошибки обрабатываются в редьюсере и показываются через useEffect выше
+    }
   };
 
   const logout = () => {
-    authService.logout();
-    setCurrentUser(null);
-    setCurrentRole(null);
-    setIsAuthenticated(false);
+    // Используем Redux-действие
+    dispatch(logoutUser());
   };
 
   const register = async (username: string, email: string, password: string) => {
-    await authService.register({ username, email, password, name: username });
+    try {
+      // Используем Redux-действие
+      await dispatch(registerUser({ username, email, password, name: username })).unwrap();
+      
+      // Уведомление об успешной регистрации
+      dispatch(addToast({
+        type: 'success',
+        message: 'Регистрация успешно завершена. Теперь вы можете войти.'
+      }));
+    } catch (error) {
+      // Ошибки обрабатываются в редьюсере и показываются через useEffect выше
+    }
   };
 
   return (
@@ -100,4 +128,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       {children}
     </AuthContext.Provider>
   );
+};
+
+// Экспортируем обертку как основной компонент
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  return <AuthProviderWithRedux>{children}</AuthProviderWithRedux>;
 }; 

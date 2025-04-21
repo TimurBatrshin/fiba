@@ -1,0 +1,97 @@
+/* Стили для контейнера тостов */
+.toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 350px;
+}
+
+/* Стили для отдельного тоста */
+.toast-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 12px 16px;
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-md);
+  animation: slideIn 0.3s ease-out;
+  color: white;
+}
+
+/* Типы тостов */
+.toast-success {
+  background-color: var(--success);
+}
+
+.toast-error {
+  background-color: var(--error);
+}
+
+.toast-warning {
+  background-color: var(--warning);
+  color: var(--gray-900);
+}
+
+.toast-info {
+  background-color: var(--primary);
+}
+
+/* Содержимое тоста */
+.toast-content {
+  flex: 1;
+  font-size: var(--font-size-sm);
+  margin-right: 10px;
+}
+
+.toast-content p {
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Кнопка закрытия */
+.toast-close {
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: 20px;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+  padding: 0;
+  margin: 0;
+  line-height: 1;
+}
+
+.toast-close:hover {
+  opacity: 1;
+}
+
+/* Анимация появления */
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 576px) {
+  .toast-container {
+    top: 10px;
+    right: 10px;
+    left: 10px;
+    max-width: none;
+  }
+  
+  .toast-item {
+    width: 100%;
+  }
+} 

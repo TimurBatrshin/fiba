@@ -13,6 +13,15 @@ export interface User {
   username: string;
   email: string;
   role: string;
+  name?: string;
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  avatarUrl?: string;
+  teams?: Array<{
+    name: string;
+    role: string;
+  }>;
 }
 
 export interface LoginCredentials {

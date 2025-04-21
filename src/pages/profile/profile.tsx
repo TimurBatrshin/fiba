@@ -1,231 +1,218 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
+import { logoutUser } from '../../store/slices/authSlice';
+import { fetchUserProfile } from '../../store/slices/userSlice';
+import { addToast } from '../../store/slices/uiSlice';
+import logger from '../../utils/logger';
+import { APP_SETTINGS } from '../../config/envConfig';
 import "./profile.css";
-import { useParams } from "react-router-dom";
-import { API_BASE_URL } from "../../config/envConfig";
-import defaultAvatar from '../../assets/images/default-avatar.png';
-import { AuthService } from '../../services/AuthService';
 
 interface ProfileProps {
-  isAuthenticated?: boolean;
+  setIsAuthenticated: (value: boolean) => void;
 }
 
-interface ProfileFormData {
-  photo: File | null;
-  tournaments_played: number;
-  total_points: number;
-  rating: number;
-}
-
-const Profile: React.FC<ProfileProps> = ({ isAuthenticated }) => {
-  const { id } = useParams(); 
-  const [profile, setProfile] = useState<any>(null);
-  const [editMode, setEditMode] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(false);
-  const [uploadError, setUploadError] = useState("");
-  const [formData, setFormData] = useState<ProfileFormData>({
-    photo: null,
-    tournaments_played: 0,
-    total_points: 0,
-    rating: 0,
-  });
+const Profile: React.FC<ProfileProps> = ({ setIsAuthenticated }) => {
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  const [retryCount, setRetryCount] = useState(0);
+  const maxRetries = 3;
+  
+  // Получаем данные из обоих срезов состояния
+  const { isAuthenticated, currentUser: authUser, error: authError } = useAppSelector(state => state.auth);
+  const { profile: userProfile, loading: userLoading, error: userError } = useAppSelector(state => state.user);
+  
+  // Объединяем данные пользователя (берем данные или из auth, или из user slice)
+  const user = userProfile || authUser;
+  const loading = userLoading;
+  const error = authError || userError;
 
+  // Проверка токена и редиректа перед загрузкой профиля
   useEffect(() => {
-    const fetchProfile = async () => {
-      const authService = AuthService.getInstance();
-      const token = authService.getToken();
-      
-      if (!token) {
-        console.error("Токен не найден");
-        navigate("/login");
-        return;
-      }
-
-      try {
-        setIsLoading(true);
-        const response = await axios.get(`${API_BASE_URL}/profile`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setProfile(response.data);
-        setFormData({
-          photo: null, // Обнуляем фото в форме, чтобы не отправлять старое
-          tournaments_played: response.data.tournaments_played || 0,
-          total_points: response.data.total_points || 0,
-          rating: response.data.rating || 0,
-        });
-      } catch (err: any) {
-        console.error("Ошибка при получении профиля", err);
-        setError(true);
-        if (err.response?.status === 401) navigate("/login");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchProfile();
-  }, [navigate]);
-
-  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    e.currentTarget.src = defaultAvatar;
-    e.currentTarget.onerror = null; // Предотвращаем бесконечный цикл
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.name === "photo" && e.target.files && e.target.files.length > 0) {
-      setFormData({
-        ...formData,
-        photo: e.target.files[0],
-      });
-      setUploadError("");
-    } else {
-      setFormData({
-        ...formData,
-        [e.target.name]: e.target.value,
-      });
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const authService = AuthService.getInstance();
-    const token = authService.getToken();
-    
-    if (!token) {
-      navigate("/login");
+    if (!isAuthenticated) {
+      navigate('/login');
       return;
     }
-
-    const formDataToSend = new FormData();
     
-    // Добавляем фото только если оно есть
-    if (formData.photo) {
-      formDataToSend.append("photo", formData.photo);
+    // Проверяем наличие токена
+    const token = localStorage.getItem(APP_SETTINGS.tokenStorageKey) || localStorage.getItem('token');
+    if (!token) {
+      logger.warn('Authentication token not found, redirecting to login');
+      navigate('/login');
+      return;
     }
-
-    formDataToSend.append("tournaments_played", formData.tournaments_played.toString());
-    formDataToSend.append("total_points", formData.total_points.toString());
-    formDataToSend.append("rating", formData.rating.toString());
-
-    try {
-      setIsLoading(true);
-      // Используем новый endpoint для загрузки фото
-      const response = await axios.post(`${API_BASE_URL}/profile/photo`, formDataToSend, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          // Content-Type будет автоматически установлен как multipart/form-data
-        },
-      });
-
-      // Обновляем профиль с новыми данными
-      const updatedProfile = await axios.get(`${API_BASE_URL}/profile`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      setProfile(updatedProfile.data);
-      setEditMode(false);
-    } catch (err: any) {
-      console.error("Ошибка при обновлении профиля", err);
-      setUploadError("Ошибка при сохранении профиля");
-    } finally {
-      setIsLoading(false);
+    
+    logger.info('Attempting to load user profile', { authenticated: isAuthenticated, hasToken: !!token });
+    
+    // Если у нас есть пользователь из auth, но нет профиля, загружаем профиль
+    if (!userProfile && retryCount < maxRetries) {
+      logger.info(`Loading user profile (attempt ${retryCount + 1}/${maxRetries})`);
+      dispatch(fetchUserProfile())
+        .unwrap()
+        .then((response: any) => {
+          logger.info('Profile loaded successfully', { profileData: !!response });
+        })
+        .catch((error: any) => {
+          logger.error('Failed to load profile', { error, retryCount });
+          setRetryCount(prev => prev + 1);
+          
+          // Если ошибка 500, попробуем еще раз через 2 секунды
+          if (error.status === 500 && retryCount < maxRetries - 1) {
+            const retryTimeout = setTimeout(() => {
+              dispatch(fetchUserProfile());
+            }, 2000);
+            
+            return () => clearTimeout(retryTimeout);
+          }
+        });
     }
+  }, [isAuthenticated, userProfile, dispatch, navigate, retryCount]);
+
+  useEffect(() => {
+    if (error) {
+      // Показываем разные сообщения в зависимости от типа ошибки
+      const errorMessage = error.includes('500') 
+        ? 'Сервер временно недоступен. Попробуйте перезагрузить страницу через несколько минут.' 
+        : error;
+      
+      dispatch(addToast({
+        type: 'error',
+        message: errorMessage
+      }));
+    }
+  }, [error, dispatch]);
+
+  const handleLogout = () => {
+    dispatch(logoutUser());
+    setIsAuthenticated(false);
+    navigate('/login');
+    dispatch(addToast({
+      type: 'success',
+      message: 'Вы успешно вышли из системы'
+    }));
   };
 
+  // Если многократные попытки не удались
+  if (retryCount >= maxRetries && error) {
+    return (
+      <div className="profile-page">
+        <div className="container">
+          <div className="error-message">
+            <h2>Не удалось загрузить профиль</h2>
+            <p>Произошла ошибка при загрузке данных профиля. Возможно, сервер временно недоступен.</p>
+            <button 
+              className="btn btn-primary" 
+              onClick={() => {
+                setRetryCount(0);
+                dispatch(fetchUserProfile());
+              }}
+            >
+              Попробовать снова
+            </button>
+            <button 
+              className="btn btn-secondary" 
+              onClick={handleLogout}
+            >
+              Выйти из системы
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="profile-page">
+        <div className="container">
+          <div className="loading-spinner">Загрузка...</div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="profile-container">
-      <h1>Профиль игрока</h1>
-      {isLoading ? (
-        <div className="loading-indicator">
-          <div className="spinner"></div>
-          <p>Загрузка профиля...</p>
-        </div>
-      ) : profile ? (
-        <div className="profile-info">
-          <div className="profile-avatar">
-            <img 
-              src={profile.photo_url ? `${API_BASE_URL.replace('/api', '')}${profile.photo_url}` : defaultAvatar} 
-              alt="Фото профиля" 
-              onError={handleImageError}
-            />
+    <div className="profile-page">
+      <div className="container">
+        <div className="profile-card animate-fade-in">
+          <div className="profile-header">
+            <h1>Профиль пользователя</h1>
           </div>
-          <div className="profile-details">
-            <p><strong>Имя:</strong> {profile.User?.name || profile.name || "Не указано"}</p>
-            <p><strong>Email:</strong> {profile.User?.email || profile.email || "Не указано"}</p>
-            <p><strong>Турниров сыграно:</strong> {profile.tournaments_played}</p>
-            <p><strong>Всего очков:</strong> {profile.total_points}</p>
-            <p><strong>Рейтинг:</strong> {profile.rating}</p>
+          
+          <div className="profile-content">
+            {user && (
+              <>
+                <div className="profile-avatar">
+                  {user.avatarUrl ? (
+                    <img src={user.avatarUrl} alt="Аватар пользователя" />
+                  ) : (
+                    <div className="avatar-placeholder">
+                      {user.firstName && user.lastName
+                        ? `${user.firstName[0]}${user.lastName[0]}`
+                        : (user.email && user.email[0] ? user.email[0].toUpperCase() : '?')}
+                    </div>
+                  )}
+                </div>
+                
+                <div className="profile-info">
+                  <h2>{user.firstName} {user.lastName}</h2>
+                  <p className="user-role">{user.role === 'ADMIN' ? 'Администратор' : 'Пользователь'}</p>
+                  
+                  <div className="profile-details">
+                    <div className="detail-item">
+                      <span className="label">Email:</span>
+                      <span className="value">{user.email}</span>
+                    </div>
+                    
+                    {user.phone && (
+                      <div className="detail-item">
+                        <span className="label">Телефон:</span>
+                        <span className="value">{user.phone}</span>
+                      </div>
+                    )}
+                    
+                    {user.teams && user.teams.length > 0 && (
+                      <div className="detail-item teams-list">
+                        <span className="label">Команды:</span>
+                        <ul>
+                          {user.teams.map((team: any, index: number) => (
+                            <li key={team.id || index}>{team.name}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    
+                    {user.createdAt && (
+                      <div className="detail-item">
+                        <span className="label">Дата регистрации:</span>
+                        <span className="value">
+                          {new Date(user.createdAt).toLocaleDateString('ru-RU')}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
-        </div>
-      ) : (
-        <p>Профиль не найден</p>
-      )}
-
-      {!isLoading && profile && !editMode && (
-        <button onClick={() => setEditMode(true)} className="edit-profile-btn">
-          Редактировать профиль
-        </button>
-      )}
-
-      {editMode && (
-        <form onSubmit={handleSubmit} className="profile-form">
-          <div className="form-group">
-            <label htmlFor="photo">Фото профиля</label>
-            <input
-              id="photo"
-              type="file"
-              name="photo"
-              accept="image/*"
-              onChange={handleChange}
-              disabled={isLoading}
-            />
-            {uploadError && <p className="error-message">{uploadError}</p>}
-          </div>
-          <div className="form-group">
-            <label htmlFor="tournaments_played">Турниров сыграно</label>
-            <input
-              id="tournaments_played"
-              type="number"
-              name="tournaments_played"
-              value={formData.tournaments_played}
-              onChange={handleChange}
-              disabled={isLoading}
-            />
-          </div>
-          <div className="form-group">
-            <label htmlFor="total_points">Всего очков</label>
-            <input
-              id="total_points"
-              type="number"
-              name="total_points"
-              value={formData.total_points}
-              onChange={handleChange}
-              disabled={isLoading}
-            />
-          </div>
-          <div className="form-group">
-            <label htmlFor="rating">Рейтинг</label>
-            <input
-              id="rating"
-              type="number"
-              name="rating"
-              value={formData.rating}
-              onChange={handleChange}
-              disabled={isLoading}
-            />
-          </div>
-          <div className="form-actions">
-            <button type="submit" className="save-btn" disabled={isLoading}>
-              {isLoading ? "Сохранение..." : "Сохранить изменения"}
+          
+          <div className="profile-actions">
+            <button 
+              className="btn btn-primary"
+              onClick={() => navigate('/edit-profile')}
+            >
+              Редактировать профиль
             </button>
-            <button type="button" onClick={() => setEditMode(false)} className="cancel-btn" disabled={isLoading}>
-              Отмена
+            
+            <button 
+              className="btn btn-danger"
+              onClick={handleLogout}
+            >
+              Выйти из системы
             </button>
           </div>
-        </form>
-      )}
+        </div>
+      </div>
     </div>
   );
 };
