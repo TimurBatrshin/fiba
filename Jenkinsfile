@@ -38,8 +38,6 @@ pipeline {
                 sh '''
                     export NVM_DIR="$HOME/.nvm"
                     [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-                    echo "Creating build script..."
-                    chmod +x build.sh ensure-dist.sh
                     echo "Starting build process..."
                     mkdir -p dist
                     touch dist/.gitkeep
@@ -47,12 +45,10 @@ pipeline {
                     # Попытка обычной сборки
                     echo "Attempting regular build..."
                     npm run build:prod || { 
-                        echo "Regular build failed, using CI build instead..."
-                        npm run build:ci
+                        echo "Regular build failed, using dev build instead..."
+                        npm run build
                     }
                     
-                    # Ensure dist directory exists with content
-                    ./ensure-dist.sh
                     echo "Build process completed"
                 '''
             }
@@ -63,7 +59,7 @@ pipeline {
                 sh '''
                     export NVM_DIR="$HOME/.nvm"
                     [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-                    npm run test:ci || echo "Tests failed but continuing"
+                    npm run test || echo "Tests failed but continuing"
                 '''
             }
         }
@@ -77,8 +73,6 @@ pipeline {
                     export NVM_DIR="$HOME/.nvm"
                     [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
                     echo "Preparing for deployment..."
-                    # Run ensure-dist script one more time to guarantee deployment files exist
-                    ./ensure-dist.sh
                     echo "Dist directory contents for deployment:"
                     ls -la dist/
                     echo "Deployment completed"
