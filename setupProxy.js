@@ -20,7 +20,7 @@ module.exports = function(app) {
         'Access-Control-Allow-Origin': '*',
       },
       pathRewrite: {
-        '^/static': '/apps/FIBA3x3/1.6.1'
+        '^/static': '/apps/FIBA3x3/1.6.3'
       },
       onProxyRes: function(proxyRes) {
         // Добавление CORS-заголовков к ответу

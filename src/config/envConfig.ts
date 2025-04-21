@@ -35,7 +35,7 @@ export const APP_BASE_URL = config.appBaseUrl;
 // App Settings
 export const APP_SETTINGS = {
   enableLogging: config.enableLogging,
-  buildVersion: process.env.VERSION || '1.6.1',
+  buildVersion: process.env.VERSION || '1.6.3',
   appName: 'fiba',
   tokenStorageKey: 'fiba_auth_token',
   userStorageKey: 'fiba_user_data',
