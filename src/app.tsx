@@ -20,10 +20,13 @@ import { APP_SETTINGS } from './config/envConfig';
 import "./styles/global.css";
 
 // Внешние скрипты для загрузки
-const EXTERNAL_SCRIPTS: string[] = []; // Пустой массив, чтобы не пытаться загружать внешние скрипты
+const EXTERNAL_SCRIPTS: string[] = [
+  // Отключаем скрипты, вызывающие CORS-ошибки
+  // Приложение может работать без этих скриптов
+];
 
-// Отключаем проблемные скрипты, вызывающие CORS-ошибки
-// Для корректной работы нужно настроить CORS на сервере или использовать локальные копии этих скриптов
+// Теперь вместо загрузки напрямую с удаленного сервера, мы запрашиваем через наш прокси
+// Для долгосрочного решения: скопируйте скрипт локально или настройте CORS на сервере
 
 const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated } = useAuth();
@@ -75,7 +78,6 @@ const App: React.FC = () => {
           urls={EXTERNAL_SCRIPTS}
           onLoad={handleScriptsLoaded}
           onError={handleScriptsError}
-          fallbackToProxy={true}
         >
           <AuthProvider>
             <Router>

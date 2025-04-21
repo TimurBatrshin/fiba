@@ -19,7 +19,7 @@ interface RegisterProps {
 const Register: React.FC<RegisterProps> = ({ tournamentId }) => {
   const [teamName, setTeamName] = useState('');
   const [players, setPlayers] = useState<string[]>(['', '', '', '']);
-  const [selectedUsers, setSelectedUsers] = useState<User[]>([null, null, null, null]);
+  const [selectedUsers, setSelectedUsers] = useState<(User | null)[]>([null, null, null, null]);
   const [errors, setErrors] = useState<{ teamName?: string; players?: string[]; }>({});
   const [isLoading, setIsLoading] = useState(false);
   const [success, setSuccess] = useState(false);

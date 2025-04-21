@@ -1,22 +1,19 @@
 import React, { useEffect, useState } from 'react';
-import { proxyService } from '../api';
 
 interface ScriptLoaderProps {
   urls: string | string[];
   onLoad?: () => void;
   onError?: (error: Error) => void;
-  fallbackToProxy?: boolean;
   children?: React.ReactNode;
 }
 
 /**
- * Компонент для безопасной загрузки внешних скриптов с отслеживанием состояния загрузки
+ * Компонент для загрузки внешних скриптов
  */
 const ScriptLoader: React.FC<ScriptLoaderProps> = ({
   urls,
   onLoad,
   onError,
-  fallbackToProxy = true,
   children
 }) => {
   const [loading, setLoading] = useState(true);
@@ -26,27 +23,19 @@ const ScriptLoader: React.FC<ScriptLoaderProps> = ({
     const scriptUrls = Array.isArray(urls) ? urls : [urls];
     let isMounted = true;
 
+    // Если массив скриптов пуст, считаем что всё загружено
+    if (scriptUrls.length === 0) {
+      setLoading(false);
+      onLoad?.();
+      return;
+    }
+
     const loadScript = async (url: string): Promise<void> => {
       try {
         // Проверяем, загружен ли скрипт уже
         const existingScript = document.querySelector(`script[src="${url}"]`);
         if (existingScript) {
           console.log(`Скрипт уже загружен: ${url}`);
-          return;
-        }
-
-        // Проверяем, является ли URL относительным или абсолютным
-        const isAbsoluteUrl = url.startsWith('http://') || url.startsWith('https://');
-        const isCorsError = isAbsoluteUrl && (
-          url.includes('static.bro-js.ru') || 
-          url.includes('dev.bro-js.ru') || 
-          url.includes('fiba3x3')
-        );
-        
-        // Для ресурсов с известными CORS-проблемами сразу используем прокси
-        if (isCorsError && fallbackToProxy) {
-          console.log(`Используем прокси для скрипта с известными CORS-проблемами: ${url}`);
-          await proxyService.loadScript(url);
           return;
         }
 
@@ -74,12 +63,7 @@ const ScriptLoader: React.FC<ScriptLoaderProps> = ({
         // Ожидаем загрузки
         await loadPromise;
       } catch (loadError) {
-        if (fallbackToProxy) {
-          console.log(`Пробуем загрузить через прокси: ${url}`);
-          await proxyService.loadScript(url);
-        } else {
-          throw loadError;
-        }
+        throw loadError;
       }
     };
 
@@ -98,6 +82,7 @@ const ScriptLoader: React.FC<ScriptLoaderProps> = ({
         const loadError = err instanceof Error ? err : new Error(String(err));
         
         if (isMounted) {
+          console.error('Ошибка загрузки скрипта:', loadError);
           setError(loadError);
           setLoading(false);
           onError?.(loadError);
@@ -110,7 +95,7 @@ const ScriptLoader: React.FC<ScriptLoaderProps> = ({
     return () => {
       isMounted = false;
     };
-  }, [urls, onLoad, onError, fallbackToProxy]);
+  }, [urls, onLoad, onError]);
 
   if (error) {
     return (

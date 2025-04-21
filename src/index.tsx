@@ -2,7 +2,7 @@
 /* eslint-disable react/display-name */
 import React from 'react';
 import ReactDOM from 'react-dom';
-import './app/styles/index.scss';
+import './styles/index.scss';
 import App from './app';
 import { APP_SETTINGS } from './config/envConfig';
 import { proxyService } from './api';
@@ -38,11 +38,20 @@ const loadExternalScript = (url: string): Promise<void> => {
     script.onerror = (error) => {
       console.error(`Ошибка загрузки скрипта: ${url}`, error);
       
-      // При ошибке пытаемся загрузить через прокси с mode: 'no-cors'
-      console.log(`Пробуем загрузить через прокси: ${url}`);
+      // При ошибке пытаемся загрузить через режим no-cors напрямую
+      console.log(`Пробуем загрузить через no-cors: ${url}`);
       fetch(url, { mode: 'no-cors', credentials: 'same-origin' })
-        .then(() => proxyService.loadScript(url))
-        .then(resolve)
+        .then(() => {
+          console.log(`Предварительный запрос с no-cors успешен: ${url}`);
+          // Создаем новый элемент script с crossOrigin
+          const scriptNoCorsFallback = document.createElement('script');
+          scriptNoCorsFallback.src = url;
+          scriptNoCorsFallback.crossOrigin = "anonymous";
+          document.head.appendChild(scriptNoCorsFallback);
+          
+          scriptNoCorsFallback.onload = () => resolve();
+          scriptNoCorsFallback.onerror = () => reject(new Error(`Не удалось загрузить скрипт даже с no-cors: ${url}`));
+        })
         .catch(reject);
     };
     
