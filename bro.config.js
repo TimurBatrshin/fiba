@@ -3,7 +3,7 @@ const pkg = require("./package");
 module.exports = {
   webpackConfig: {
     output: {
-      publicPath: `/apps/FIBA3x3/${process.env.VERSION || pkg.version}/`,
+      publicPath: `/static/fiba3x3/${process.env.VERSION || pkg.version}/`,
     },
     module: {
       rules: [
@@ -39,10 +39,10 @@ module.exports = {
   },
   config: {
     "fiba.api": "/api",
-    "fiba.static": "https://timurbatrshin-fiba-backend-e561.twc1.net/api/proxy/static-bro-js/",
+    "fiba.static": "https://timurbatrshin-fiba-backend-feef.twc1.net/api/proxy/static-bro-js/",
     "fiba.ms": "/ms",
     "fiba.version": "1.6.3"
   },
   port: 8099,
-  apiBaseUrl: 'https://timurbatrshin-fiba-backend-e561.twc1.net/api'
+  apiBaseUrl: 'https://timurbatrshin-fiba-backend-feef.twc1.net/api'
 };

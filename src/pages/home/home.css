@@ -1067,36 +1067,38 @@
 
 /* Секция лучших игроков */
 .gh-top-players {
-  padding: 64px 0;
-  background-color: #f6f8fa;
-  border-top: 1px solid #d0d7de;
-  border-bottom: 1px solid #d0d7de;
+  padding: 60px 0;
+  background-color: #f9fafb;
+  border-radius: 10px;
+  margin-bottom: 40px;
 }
 
 .gh-top-players-table {
-  background-color: #ffffff;
-  border: 1px solid #d0d7de;
-  border-radius: 6px;
+  background-color: #fff;
+  border-radius: 8px;
   overflow: hidden;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+  width: 100%;
 }
 
 .gh-table-header {
+  background-color: #f2f4f8;
   display: grid;
-  grid-template-columns: 60px 2fr 1fr 1fr 1fr;
-  background-color: #f6f8fa;
-  border-bottom: 1px solid #d0d7de;
-  padding: 8px 16px;
+  grid-template-columns: 80px 3fr 1fr 1fr 120px;
+  padding: 15px 20px;
   font-weight: 600;
-  color: #24292f;
+  color: #64748b;
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .gh-player-row {
   display: grid;
-  grid-template-columns: 60px 2fr 1fr 1fr 1fr;
-  padding: 12px 16px;
-  border-bottom: 1px solid #d0d7de;
+  grid-template-columns: 80px 3fr 1fr 1fr 120px;
+  padding: 16px 20px;
   align-items: center;
-  transition: background-color 0.2s ease;
+  transition: all 0.2s ease;
+  border-bottom: 1px solid #f1f5f9;
+  background-color: #fff;
 }
 
 .gh-player-row:last-child {
@@ -1104,45 +1106,55 @@
 }
 
 .gh-player-row:hover {
-  background-color: #f6f8fa;
+  background-color: #f8fafc;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
 }
 
 .gh-player-rank {
-  font-weight: 500;
-  color: #24292f;
+  font-weight: 700;
+  color: #334155;
+  font-size: 1.2rem;
 }
 
 .gh-player-info {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 15px;
 }
 
 .gh-player-avatar {
-  width: 32px;
-  height: 32px;
+  width: 45px;
+  height: 45px;
   border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
 .gh-player-name {
-  font-weight: 500;
-  color: #0969da;
+  font-weight: 600;
+  color: #0f172a;
+  margin-bottom: 4px;
 }
 
 .gh-player-team, .gh-player-position {
-  color: #57606a;
+  color: #64748b;
+  font-size: 0.875rem;
 }
 
 .gh-player-points {
+  font-weight: 700;
+  color: #0284c7;
   display: flex;
   align-items: center;
   gap: 8px;
-  font-weight: 500;
-  color: #24292f;
+  justify-content: flex-end;
 }
 
 .gh-points-icon {
-  color: #dba94e;
+  color: #f59e0b;
+  font-size: 1.1rem;
 }
 
 /* Секция с призывом к действию */
@@ -1371,4 +1383,33 @@
     grid-area: points;
     padding-left: 44px;
   }
+}
+
+/* Status badge for tournaments */
+.gh-tournament-status {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.gh-status-registration {
+  background-color: #22c55e;
+  color: white;
+}
+
+.gh-status-in-progress {
+  background-color: #f97316;
+  color: white;
+}
+
+.gh-status-completed {
+  background-color: #64748b;
+  color: white;
 }

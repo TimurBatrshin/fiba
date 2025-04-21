@@ -1,5 +1,5 @@
-import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
+import { BaseApiService } from './BaseApiService';
 import { APP_SETTINGS } from '../config/envConfig';
 import { API_CONFIG } from '../config/api';
 import { 
@@ -7,18 +7,27 @@ import {
   User, 
   LoginCredentials, 
   RegisterData, 
-  AuthResponse, 
   DecodedToken 
 } from '../interfaces/Auth';
 
-export class AuthService {
+export class AuthService extends BaseApiService {
   private static instance: AuthService;
-  private apiBaseUrl: string;
   private readonly TOKEN_KEY: string;
+  private refreshTimer: NodeJS.Timeout | null = null;
 
   private constructor() {
-    this.apiBaseUrl = API_CONFIG.baseUrl;
+    super(API_CONFIG.baseUrl);
     this.TOKEN_KEY = APP_SETTINGS.tokenStorageKey;
+    
+    // Инициализировать токен из хранилища
+    const token = this.getToken();
+    if (token) {
+      this.setAuthToken(token);
+      this.startTokenRefreshTimer();
+    }
+    
+    // Миграция старого токена
+    this.migrateTokenIfNeeded();
   }
 
   public static getInstance(): AuthService {
@@ -29,20 +38,34 @@ export class AuthService {
   }
 
   /**
+   * Миграция токена из старого хранилища
+   */
+  private migrateTokenIfNeeded(): void {
+    const legacyToken = localStorage.getItem('token');
+    const newToken = localStorage.getItem(this.TOKEN_KEY);
+    
+    if (legacyToken && !newToken) {
+      this.setToken(legacyToken);
+      localStorage.removeItem('token');
+    }
+  }
+
+  /**
    * Authenticates a user and stores their token
    */
   async login(email: string, password: string): Promise<LoginResponse> {
     try {
-      const response = await axios.post(`${this.apiBaseUrl}/auth/login`, { email, password });
+      const response = await this.post<LoginResponse>('/auth/login', { email, password });
       
-      if (response.data && response.data.token) {
-        this.setToken(response.data.token);
+      if (response && response.token) {
+        this.setToken(response.token);
+        this.setAuthToken(response.token);
         
         // Start the token refresh timer
         this.startTokenRefreshTimer();
       }
       
-      return response.data;
+      return response;
     } catch (error) {
       console.error('Login error:', error);
       throw error;
@@ -53,7 +76,7 @@ export class AuthService {
    * Registers a new user
    */
   async register(data: RegisterData): Promise<void> {
-    await axios.post(`${this.apiBaseUrl}/auth/register`, data);
+    await this.post('/auth/register', data);
   }
 
   /**
@@ -61,10 +84,11 @@ export class AuthService {
    */
   logout(): void {
     this.removeToken();
+    this.clearAuthToken();
     this.stopTokenRefreshTimer();
     
     // Redirect to login page с учетом базового пути для GitHub Pages
-    const basePath = process.env.NODE_ENV === 'production' ? '/fiba' : '';
+    const basePath = process.env.NODE_ENV === 'production' ? '/fiba3x3' : '';
     window.location.href = `${basePath}/login`;
   }
 
@@ -73,6 +97,7 @@ export class AuthService {
    */
   private setToken(token: string): void {
     localStorage.setItem(this.TOKEN_KEY, token);
+    // Больше не сохраняем в устаревшем месте
   }
 
   /**
@@ -80,7 +105,7 @@ export class AuthService {
    */
   private removeToken(): void {
     localStorage.removeItem(this.TOKEN_KEY);
-    // For backward compatibility, also remove from the legacy location
+    // Для обратной совместимости также удаляем из старого места
     localStorage.removeItem('token');
   }
 
@@ -122,8 +147,8 @@ export class AuthService {
         return;
       }
 
-      const response = await axios.post(
-        `${this.apiBaseUrl}/auth/refresh-token`,
+      const response = await this.post<{ token: string }>(
+        '/auth/refresh-token',
         {},
         {
           headers: {
@@ -132,8 +157,9 @@ export class AuthService {
         }
       );
       
-      if (response && response.data.token) {
-        this.setToken(response.data.token);
+      if (response && response.token) {
+        this.setToken(response.token);
+        this.setAuthToken(response.token);
         this.startTokenRefreshTimer();
       }
     } catch (error) {
@@ -141,9 +167,6 @@ export class AuthService {
       this.logout();
     }
   }
-
-  // Timer reference for token refresh
-  private refreshTimer: NodeJS.Timeout | null = null;
 
   /**
    * Starts a timer to refresh the token before it expires

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, ChangeEvent, FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { UserService } from "../../services/UserService";
@@ -16,7 +16,7 @@ interface RegisterProps {
   tournamentId: string;
 }
 
-const Register: React.FC<RegisterProps> = ({ tournamentId }) => {
+const Register = ({ tournamentId }: RegisterProps): React.ReactElement => {
   const [teamName, setTeamName] = useState('');
   const [players, setPlayers] = useState<string[]>(['', '', '', '']);
   const [selectedUsers, setSelectedUsers] = useState<(User | null)[]>([null, null, null, null]);
@@ -61,7 +61,7 @@ const Register: React.FC<RegisterProps> = ({ tournamentId }) => {
   };
 
   // Обработчик ввода в поле поиска
-  const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
+  const handleSearchInputChange = (e: ChangeEvent<HTMLInputElement>, index: number) => {
     const value = e.target.value;
     const newPlayers = [...players];
     newPlayers[index] = value;
@@ -126,7 +126,7 @@ const Register: React.FC<RegisterProps> = ({ tournamentId }) => {
     return isValid;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     
     if (!validateForm()) {
@@ -139,7 +139,7 @@ const Register: React.FC<RegisterProps> = ({ tournamentId }) => {
       // Подготавливаем данные пользователей для отправки
       const playerIds = selectedUsers
         .filter(user => user !== null)
-        .map(user => user.id);
+        .map(user => user!.id);
       
       const response = await axios.post(`${API_BASE_URL}/tournaments/${tournamentId}/register`, {
         teamName,
@@ -198,7 +198,7 @@ const Register: React.FC<RegisterProps> = ({ tournamentId }) => {
                 type="text"
                 className={`form-control ${errors.teamName ? 'is-invalid' : ''}`}
                 value={teamName}
-                onChange={(e) => {
+                onChange={(e: ChangeEvent<HTMLInputElement>) => {
                   setTeamName(e.target.value);
                   if (errors.teamName) {
                     setErrors({ ...errors, teamName: undefined });
@@ -227,7 +227,7 @@ const Register: React.FC<RegisterProps> = ({ tournamentId }) => {
                         type="text"
                         className={`form-control ${errors.players && errors.players[index] ? 'is-invalid' : ''}`}
                         value={player}
-                        onChange={(e) => handleSearchInputChange(e, index)}
+                        onChange={(e: ChangeEvent<HTMLInputElement>) => handleSearchInputChange(e, index)}
                         onFocus={() => {
                           setActiveSearchIndex(index);
                           if (player.length >= 2) {
@@ -276,7 +276,7 @@ const Register: React.FC<RegisterProps> = ({ tournamentId }) => {
                   )}
                   {selectedUsers[index] && (
                     <div className="selected-user-info">
-                      <span className="check-icon">✓</span> Выбран: {selectedUsers[index].fullName}
+                      <span className="check-icon">✓</span> Выбран: {selectedUsers[index]!.fullName}
                     </div>
                   )}
                 </div>

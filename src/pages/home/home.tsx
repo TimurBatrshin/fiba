@@ -26,6 +26,7 @@ interface Tournament {
   location: string;
   teamCount: number;
   image: string;
+  status: "registration" | "in_progress" | "completed";
 }
 
 interface Player {
@@ -67,7 +68,8 @@ const Home: React.FC = () => {
         date: "15 июля 2023",
         location: "Москва",
         teamCount: 16,
-        image: defaultTournamentImg
+        image: defaultTournamentImg,
+        status: "registration"
       },
       {
         id: 2,
@@ -75,7 +77,8 @@ const Home: React.FC = () => {
         date: "22 августа 2023",
         location: "Казань",
         teamCount: 12,
-        image: defaultTournamentImg
+        image: defaultTournamentImg,
+        status: "in_progress"
       },
       {
         id: 3,
@@ -83,7 +86,8 @@ const Home: React.FC = () => {
         date: "5 сентября 2023",
         location: "Санкт-Петербург",
         teamCount: 24,
-        image: defaultTournamentImg
+        image: defaultTournamentImg,
+        status: "completed"
       },
     ];
 
@@ -135,6 +139,34 @@ const Home: React.FC = () => {
     setIsLoading(false);
   }, []);
 
+  // Функция для получения текста статуса
+  const getStatusText = (status: string): string => {
+    switch (status) {
+      case "registration":
+        return "Регистрация";
+      case "in_progress":
+        return "В процессе";
+      case "completed":
+        return "Завершен";
+      default:
+        return "Неизвестно";
+    }
+  };
+
+  // Функция для определения класса статуса
+  const getStatusClass = (status: string): string => {
+    switch (status) {
+      case "registration":
+        return "gh-status-registration";
+      case "in_progress":
+        return "gh-status-in-progress";
+      case "completed":
+        return "gh-status-completed";
+      default:
+        return "";
+    }
+  };
+
   return (
     <div className="github-home">
       {/* Герой секция */}
@@ -155,16 +187,9 @@ const Home: React.FC = () => {
             </div>
             
             <div className="gh-hero-cta">
-              <Link to="/fiba/tournaments" className="gh-button gh-button-primary">
+              <Link to="/tournaments" className="gh-button gh-button-primary">
                 Найти турнир <FontAwesomeIcon icon={faChevronRight} />
               </Link>
-              {/* Функционал создания турниров отключен
-              {localStorage.getItem("token") && (
-                <Link to="/create-tournament" className="gh-button gh-button-outline">
-                  Создать турнир <FontAwesomeIcon icon={faTrophy} />
-                </Link>
-              )}
-              */}
             </div>
             
             <div className="gh-hero-stats">
@@ -194,7 +219,7 @@ const Home: React.FC = () => {
         <div className="gh-container">
           <div className="gh-section-header">
             <h2 className="gh-section-title">Популярные турниры</h2>
-            <Link to="/fiba/tournaments" className="gh-view-all">
+            <Link to="/tournaments" className="gh-view-all">
               Все турниры <FontAwesomeIcon icon={faChevronRight} />
             </Link>
           </div>
@@ -214,13 +239,16 @@ const Home: React.FC = () => {
           ) : (
             <div className="gh-tournaments-grid">
               {popularTournaments.map((tournament) => (
-                <Link to={`/fiba/tournament/${tournament.id}`} key={tournament.id} className="gh-tournament-card">
+                <Link to={`/tournament/${tournament.id}`} key={tournament.id} className="gh-tournament-card">
                   <div className="gh-tournament-img">
                     <img 
                       src={tournament.image} 
                       alt={tournament.name} 
                       onError={handleTournamentImageError}
                     />
+                    <div className={`gh-tournament-status ${getStatusClass(tournament.status)}`}>
+                      {getStatusText(tournament.status)}
+                    </div>
                   </div>
                   <div className="gh-tournament-content">
                     <h3 className="gh-tournament-title">{tournament.name}</h3>
@@ -251,7 +279,7 @@ const Home: React.FC = () => {
         <div className="gh-container">
           <div className="gh-section-header">
             <h2 className="gh-section-title">Лучшие игроки</h2>
-            <Link to="/fiba/top-players" className="gh-view-all">
+            <Link to="/top-players" className="gh-view-all">
               Все игроки <FontAwesomeIcon icon={faChevronRight} />
             </Link>
           </div>
@@ -277,7 +305,7 @@ const Home: React.FC = () => {
               </div>
               
               {topPlayers.map((player, index) => (
-                <div key={player.id} className="gh-player-row">
+                <div key={player.id} className="gh-table-row">
                   <div className="gh-player-rank">{index + 1}</div>
                   <div className="gh-player-info">
                     <img 
@@ -286,13 +314,13 @@ const Home: React.FC = () => {
                       className="gh-player-avatar" 
                       onError={handlePlayerImageError}
                     />
-                    <div className="gh-player-name">{player.name}</div>
+                    <span className="gh-player-name">{player.name}</span>
                   </div>
                   <div className="gh-player-team">{player.team}</div>
                   <div className="gh-player-position">{player.position}</div>
                   <div className="gh-player-points">
+                    <span className="gh-points-value">{player.points}</span>
                     <FontAwesomeIcon icon={faStar} className="gh-points-icon" />
-                    {player.points}
                   </div>
                 </div>
               ))}
@@ -301,26 +329,34 @@ const Home: React.FC = () => {
         </div>
       </section>
       
-      {/* Секция с призывом к действию - скрываем для авторизованных пользователей */}
-      {!isAuthenticated && (
-        <section className="gh-cta">
-          <div className="gh-container">
-            <div className="gh-cta-content">
-              <h2>Готовы стать частью сообщества FIBA 3x3?</h2>
-              <p>Присоединяйтесь к сотням игроков и команд, участвуйте в турнирах и развивайте баскетбол 3x3 в России!</p>
-              
+      {/* Секция призыва к действию */}
+      <section className="gh-cta-section">
+        <div className="gh-container">
+          <div className="gh-cta-content">
+            <h2 className="gh-cta-title">Присоединяйтесь к сообществу FIBA 3x3</h2>
+            <p className="gh-cta-text">
+              Создайте профиль, чтобы участвовать в турнирах, отслеживать статистику и быть в курсе всех событий баскетбола 3x3.
+            </p>
+            
+            {!isAuthenticated ? (
               <div className="gh-cta-buttons">
-                <Link to="/register-user" className="gh-button gh-button-primary">
+                <Link to="/fiba/register-user" className="gh-button gh-button-primary">
                   <FontAwesomeIcon icon={faUserPlus} /> Регистрация
                 </Link>
-                <Link to="/fiba/tournaments" className="gh-button gh-button-outline">
-                  <FontAwesomeIcon icon={faBasketballBall} /> Найти турнир
+                <Link to="/fiba/login" className="gh-button gh-button-outline">
+                  Вход в аккаунт
                 </Link>
               </div>
-            </div>
+            ) : (
+              <div className="gh-cta-buttons">
+                <Link to="/fiba/profile" className="gh-button gh-button-primary">
+                  <FontAwesomeIcon icon={faBasketballBall} /> Мой профиль
+                </Link>
+              </div>
+            )}
           </div>
-        </section>
-      )}
+        </div>
+      </section>
     </div>
   );
 };

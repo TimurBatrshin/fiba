@@ -27,6 +27,7 @@ interface FilterValues {
   date: string;
   location: string;
   level: string;
+  status?: string;
 }
 
 const Tournaments: React.FC = () => {
@@ -34,7 +35,7 @@ const Tournaments: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  const fetchTournaments = async (filters: FilterValues = { date: '', location: '', level: '' }) => {
+  const fetchTournaments = async (filters: FilterValues = { date: '', location: '', level: '', status: '' }) => {
     setIsLoading(true);
     setError(null);
     
@@ -46,10 +47,8 @@ const Tournaments: React.FC = () => {
       
       console.log("Запрос турниров с параметрами:", filteredParams);
       
-      // Use ApiService instead of direct axios call
-      const response = await ApiService.get('/tournaments', { 
-        params: filteredParams 
-      });
+      // Pass filteredParams directly, not inside a params object
+      const response = await ApiService.get('/tournaments', filteredParams);
       
       console.log("Получены данные:", response);
       
@@ -193,7 +192,7 @@ const Tournaments: React.FC = () => {
               {tournaments.length > 0 ? (
                 tournaments.map((tournament) => (
                   <Link 
-                    to={`/fiba/tournament/${tournament.id}`} 
+                    to={`/tournament/${tournament.id}`} 
                     key={tournament.id}
                     className={`tournament-card ${isBusinessTournament(tournament) ? 'business-tournament' : ''}`}
                   >

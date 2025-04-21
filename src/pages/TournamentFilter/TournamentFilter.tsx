@@ -1,7 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import './TournamentFilter.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faChevronDown, faChevronUp, faFilter, faCalendarAlt, faMapMarkerAlt, faTrophy } from '@fortawesome/free-solid-svg-icons';
+import { 
+  faChevronDown, 
+  faChevronUp, 
+  faFilter, 
+  faCalendarAlt, 
+  faMapMarkerAlt, 
+  faTrophy,
+  faListAlt
+} from '@fortawesome/free-solid-svg-icons';
 import { API_BASE_URL } from '../../config/envConfig';
 import ApiService from '../../services/ApiService';
 
@@ -13,6 +21,7 @@ interface FilterState {
   date: string;
   location: string;
   level: string;
+  status?: string;
 }
 
 const TournamentFilter: React.FC<FilterProps> = ({ onFilter }) => {
@@ -20,7 +29,8 @@ const TournamentFilter: React.FC<FilterProps> = ({ onFilter }) => {
   const [filters, setFilters] = useState<FilterState>({
     date: '',
     location: '',
-    level: ''
+    level: '',
+    status: ''
   });
   const [locations, setLocations] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -33,10 +43,10 @@ const TournamentFilter: React.FC<FilterProps> = ({ onFilter }) => {
         const response = await ApiService.get('/tournaments');
         if (Array.isArray(response)) {
           // Извлекаем уникальные локации и отфильтровываем пустые
-          const uniqueLocations = [...new Set(response
+          const uniqueLocations = Array.from(new Set(response
             .map(t => t.location)
             .filter(loc => loc && loc.trim() !== '')
-          )];
+          ));
           setLocations(uniqueLocations);
         }
       } catch (error) {
@@ -84,7 +94,8 @@ const TournamentFilter: React.FC<FilterProps> = ({ onFilter }) => {
     const emptyFilters = {
       date: '',
       location: '',
-      level: ''
+      level: '',
+      status: ''
     };
     setFilters(emptyFilters);
     onFilter(emptyFilters);
@@ -148,6 +159,24 @@ const TournamentFilter: React.FC<FilterProps> = ({ onFilter }) => {
               <option value="amateur">Любительский</option>
               <option value="professional">Профессиональный</option>
               <option value="international">Международный</option>
+            </select>
+          </div>
+          
+          <div className="filter-group">
+            <label htmlFor="status" className="filter-label">
+              <FontAwesomeIcon icon={faListAlt} /> Статус
+            </label>
+            <select
+              id="status"
+              name="status"
+              className="filter-control"
+              value={filters.status}
+              onChange={handleChange}
+            >
+              <option value="">Все статусы</option>
+              <option value="registration">Регистрация</option>
+              <option value="in_progress">В процессе</option>
+              <option value="completed">Завершен</option>
             </select>
           </div>
           

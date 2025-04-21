@@ -54,7 +54,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     // Set up event listener for storage changes
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'token' || e.key === 'auth_token') {
+      if (e.key === 'token' || e.key === 'auth_token' || e.key === 'fiba_auth_token') {
         checkAuth();
       }
     };

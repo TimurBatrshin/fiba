@@ -2,37 +2,41 @@ import { ErrorHandler } from '../utils/errorHandler';
 import { API_CONFIG } from '../config/api';
 
 /**
- * Сервис для работы с API
+ * Базовый класс для сервисов API
  */
-export class ApiService {
-  private static token: string | null = null;
-  private static baseUrl: string = API_CONFIG?.baseUrl || '';
+export abstract class BaseApiService {
+  protected baseUrl: string;
+  protected token: string | null = null;
+
+  constructor(baseUrl: string = API_CONFIG.baseUrl) {
+    this.baseUrl = baseUrl;
+  }
 
   /**
    * Установить токен авторизации
    */
-  public static setAuthToken(token: string): void {
-    ApiService.token = token;
+  public setAuthToken(token: string): void {
+    this.token = token;
   }
 
   /**
    * Очистить токен авторизации
    */
-  public static clearAuthToken(): void {
-    ApiService.token = null;
+  public clearAuthToken(): void {
+    this.token = null;
   }
 
   /**
    * Создать заголовки для запросов
    */
-  private static createHeaders(): Headers {
+  protected createHeaders(): Headers {
     const headers = new Headers({
       'Content-Type': 'application/json',
       'Accept': 'application/json',
     });
 
-    if (ApiService.token) {
-      headers.append('Authorization', `Bearer ${ApiService.token}`);
+    if (this.token) {
+      headers.append('Authorization', `Bearer ${this.token}`);
     }
 
     return headers;
@@ -41,7 +45,7 @@ export class ApiService {
   /**
    * Проверяет, требуется ли использовать прокси для запроса
    */
-  private static shouldUseProxy(url: string): boolean {
+  protected shouldUseProxy(url: string): boolean {
     // Проверяем, относится ли URL к статическим ресурсам bro-js
     return url.includes('static.bro-js.ru') || url.includes('dev.bro-js.ru');
   }
@@ -49,11 +53,11 @@ export class ApiService {
   /**
    * Преобразует URL для проксирования
    */
-  private static transformUrlForProxy(url: string): string {
+  protected transformUrlForProxy(url: string): string {
     try {
       const urlObj = new URL(url);
       
-      if (ApiService.shouldUseProxy(url)) {
+      if (this.shouldUseProxy(url)) {
         // Извлекаем путь после домена
         const path = urlObj.pathname;
         
@@ -79,13 +83,13 @@ export class ApiService {
   /**
    * Выполнить запрос к API
    */
-  private static async request<T>(url: string, options: RequestInit = {}): Promise<T> {
+  protected async request<T>(url: string, options: RequestInit = {}): Promise<T> {
     // Проверяем, нужно ли использовать прокси
-    const requestUrl = ApiService.transformUrlForProxy(url);
+    const requestUrl = this.transformUrlForProxy(url);
     
     const response = await fetch(requestUrl, {
       ...options,
-      headers: ApiService.createHeaders(),
+      headers: this.createHeaders(),
     });
 
     if (!response.ok) {
@@ -104,15 +108,15 @@ export class ApiService {
   /**
    * Выполнить GET-запрос
    */
-  public static async get<T = any>(endpoint: string, params: Record<string, any> = {}): Promise<T> {
-    const url = new URL(`${ApiService.baseUrl}${endpoint}`);
+  public async get<T = any>(endpoint: string, params: Record<string, any> = {}): Promise<T> {
+    const url = new URL(`${this.baseUrl}${endpoint}`);
     
     // Добавляем параметры запроса
     Object.entries(params).forEach(([key, value]) => {
       url.searchParams.append(key, String(value));
     });
 
-    return ApiService.request<T>(url.toString(), {
+    return this.request<T>(url.toString(), {
       method: 'GET',
     });
   }
@@ -120,10 +124,10 @@ export class ApiService {
   /**
    * Выполнить POST-запрос
    */
-  public static async post<T = any>(endpoint: string, data: any = {}, options: Record<string, any> = {}): Promise<T> {
-    const url = `${ApiService.baseUrl}${endpoint}`;
+  public async post<T = any>(endpoint: string, data: any = {}, options: Record<string, any> = {}): Promise<T> {
+    const url = `${this.baseUrl}${endpoint}`;
     
-    return ApiService.request<T>(url, {
+    return this.request<T>(url, {
       method: 'POST',
       body: JSON.stringify(data),
       ...options,
@@ -133,10 +137,10 @@ export class ApiService {
   /**
    * Выполнить PUT-запрос
    */
-  public static async put<T = any>(endpoint: string, data: any = {}): Promise<T> {
-    const url = `${ApiService.baseUrl}${endpoint}`;
+  public async put<T = any>(endpoint: string, data: any = {}): Promise<T> {
+    const url = `${this.baseUrl}${endpoint}`;
     
-    return ApiService.request<T>(url, {
+    return this.request<T>(url, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
@@ -145,10 +149,10 @@ export class ApiService {
   /**
    * Выполнить DELETE-запрос
    */
-  public static async delete<T = any>(endpoint: string): Promise<T> {
-    const url = `${ApiService.baseUrl}${endpoint}`;
+  public async delete<T = any>(endpoint: string): Promise<T> {
+    const url = `${this.baseUrl}${endpoint}`;
     
-    return ApiService.request<T>(url, {
+    return this.request<T>(url, {
       method: 'DELETE',
     });
   }

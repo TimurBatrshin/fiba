@@ -23,7 +23,7 @@ const RegisterUser: React.FC = () => {
   useEffect(() => {
     // Если пользователь уже авторизован, перенаправляем на страницу профиля
     if (AuthService.getInstance().isAuthenticated()) {
-      navigate("/fiba/profile");
+      navigate("/profile");
     }
   }, [navigate]);
 

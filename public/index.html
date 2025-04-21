@@ -7,53 +7,17 @@
     <meta name="description" content="FIBA3x3 Basketball Tournament Management System" />
     
     <!-- Настройка CSP для разрешения загрузки ресурсов -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://timurbatrshin-fiba-backend-e561.twc1.net https://static.bro-js.ru https://dev.bro-js.ru; img-src 'self' data: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://static.bro-js.ru https://dev.bro-js.ru https://timurbatrshin-fiba-backend-e561.twc1.net; style-src 'self' 'unsafe-inline' https:; font-src 'self' data: https:; connect-src 'self' https: http: ws: wss:;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://timurbatrshin-fiba-backend-feef.twc1.net; img-src 'self' data: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://timurbatrshin-fiba-backend-feef.twc1.net; style-src 'self' 'unsafe-inline' https:; font-src 'self' data: https:; connect-src 'self' https://timurbatrshin-fiba-backend-feef.twc1.net https: http: ws: wss:;">
     
     <!-- Используем относительные пути для ресурсов -->
     <link rel="icon" href="./favicon.ico" />
     <link rel="apple-touch-icon" href="./images/apple-touch-icon.png" />
     <link rel="manifest" href="./site.webmanifest" />
     
-    <!-- Скрипты для обнаружения и исправления CORS проблем -->
-    <script src="./cors-detector.js"></script>
-    <script src="./proxy-helper.js"></script>
-    
     <title>FIBA3x3 Tournament App</title>
 </head>
 <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
-    
-    <!-- Фикс для Module Federation и динамического импорта -->
-    <script>
-        // Перехват для window.__webpack_require__
-        (function() {
-            const originalWebpackRequire = window.__webpack_require__;
-            if (originalWebpackRequire) {
-                window.__webpack_require__ = function(moduleId) {
-                    // Проверяем, является ли moduleId URL-адресом
-                    if (typeof moduleId === 'string' && (moduleId.startsWith('http://') || moduleId.startsWith('https://'))) {
-                        if (moduleId.includes('static.bro-js.ru')) {
-                            try {
-                                const parsedUrl = new URL(moduleId);
-                                const proxyUrl = `https://timurbatrshin-fiba-backend-e561.twc1.net/api/proxy/static-bro-js${parsedUrl.pathname}${parsedUrl.search}`;
-                                console.log(`FIBA Module Federation: преобразование URL ${moduleId} -> ${proxyUrl}`);
-                                return originalWebpackRequire(proxyUrl);
-                            } catch (e) {
-                                console.error('FIBA Module Federation: ошибка при обработке URL', e);
-                            }
-                        }
-                    }
-                    
-                    return originalWebpackRequire(moduleId);
-                };
-                
-                // Копируем все свойства оригинального __webpack_require__
-                Object.keys(originalWebpackRequire).forEach(key => {
-                    window.__webpack_require__[key] = originalWebpackRequire[key];
-                });
-            }
-        })();
-    </script>
 </body>
 </html> 
