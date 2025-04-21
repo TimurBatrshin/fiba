@@ -1,5 +1,7 @@
 .admin-panel-container {
   padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .admin-panel-container h1 {
@@ -7,9 +9,13 @@
   color: #333;
 }
 
+.admin-dashboard {
+  margin-top: 20px;
+}
+
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   gap: 20px;
   margin-bottom: 30px;
 }
@@ -18,33 +24,34 @@
   background-color: #f8f9fa;
   border-radius: 8px;
   padding: 20px;
-  text-align: center;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: transform 0.3s ease;
+  text-align: center;
 }
 
-.stat-card:hover {
-  transform: translateY(-5px);
-}
-
-.stat-card h2 {
-  font-size: 2rem;
-  margin-bottom: 5px;
-  color: #007bff;
+.stat-card h3 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  font-size: 16px;
+  color: #666;
 }
 
 .stat-card p {
   margin: 0;
-  color: #6c757d;
-  font-weight: 500;
+  font-size: 24px;
+  font-weight: bold;
+  color: #333;
 }
 
 table {
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-top: 20px;
 }
 
 table th {
-  background-color: #f8f9fa;
+  background-color: #f0f0f0;
+}
+
+.alert {
+  margin-bottom: 20px;
 }
 
 @media (max-width: 768px) {

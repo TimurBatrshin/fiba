@@ -34,6 +34,32 @@ afterAll(() => {
   console.error = originalConsoleError;
 });
 
+// Компонент с ошибкой для тестирования
+const ThrowError = ({ errorMessage }: { errorMessage: string }) => {
+  throw new Error(errorMessage);
+};
+
+// Компонент с ошибкой не синтаксического характера
+const ThrowCustomError = () => {
+  // @ts-ignore
+  throw { 
+    name: 'CustomError', 
+    message: 'Это не стандартная ошибка JavaScript',
+    code: 'CUSTOM_ERROR' 
+  };
+};
+
+// Компонент с асинхронной ошибкой
+const AsyncErrorComponent = () => {
+  React.useEffect(() => {
+    setTimeout(() => {
+      throw new Error('Асинхронная ошибка');
+    }, 0);
+  }, []);
+  
+  return <div data-testid="async-component">Компонент с асинхронной ошибкой</div>;
+};
+
 describe('ErrorBoundary Component', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -135,5 +161,110 @@ describe('ErrorBoundary Component', () => {
     expect(screen.getByText('Что-то пошло не так')).toBeInTheDocument();
     
     spy.mockRestore();
+  });
+
+  test('должен рендерить children, если нет ошибок', () => {
+    render(
+      <ErrorBoundary>
+        <div data-testid="test-child">Test Content</div>
+      </ErrorBoundary>
+    );
+    
+    const childElement = screen.getByTestId('test-child');
+    expect(childElement).toBeInTheDocument();
+    expect(childElement).toHaveTextContent('Test Content');
+  });
+
+  test('должен отображать сообщение об ошибке, когда дочерний компонент выбрасывает исключение', () => {
+    // Подавляем консольные ошибки React, которые возникают в тестовой среде
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    
+    const errorMessage = 'Тестовая ошибка компонента';
+    
+    render(
+      <ErrorBoundary>
+        <ThrowError errorMessage={errorMessage} />
+      </ErrorBoundary>
+    );
+    
+    // Проверяем, что компонент отображает сообщение об ошибке
+    expect(screen.getByText(/произошла ошибка/i)).toBeInTheDocument();
+    expect(screen.getByText(new RegExp(errorMessage, 'i'))).toBeInTheDocument();
+  });
+
+  test('должен отображать fallback UI при обработке нестандартных ошибок', () => {
+    // Подавляем консольные ошибки React, которые возникают в тестовой среде
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    
+    render(
+      <ErrorBoundary>
+        <ThrowCustomError />
+      </ErrorBoundary>
+    );
+    
+    // Проверяем, что отображается резервный UI
+    expect(screen.getByText(/произошла ошибка/i)).toBeInTheDocument();
+    expect(screen.getByText(/не стандартная ошибка/i)).toBeInTheDocument();
+  });
+
+  test('должен предоставлять возможность повторить попытку (retry)', () => {
+    // Подавляем консольные ошибки React, которые возникают в тестовой среде
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    
+    // Мокаем window.location.reload
+    const originalReload = window.location.reload;
+    window.location.reload = jest.fn();
+    
+    render(
+      <ErrorBoundary>
+        <ThrowError errorMessage="Ошибка для теста повторной попытки" />
+      </ErrorBoundary>
+    );
+    
+    // Находим и кликаем на кнопку повторной попытки
+    const retryButton = screen.getByText(/попробовать снова/i);
+    expect(retryButton).toBeInTheDocument();
+    
+    retryButton.click();
+    
+    // Проверяем, что была вызвана перезагрузка
+    expect(window.location.reload).toHaveBeenCalled();
+    
+    // Восстанавливаем original reload
+    window.location.reload = originalReload;
+  });
+
+  test('должен проверять наличие подробностей об ошибке', () => {
+    // Подавляем консольные ошибки React, которые возникают в тестовой среде
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    
+    const errorMessage = 'Детализированная ошибка с трассировкой стека';
+    
+    render(
+      <ErrorBoundary>
+        <ThrowError errorMessage={errorMessage} />
+      </ErrorBoundary>
+    );
+    
+    // Проверяем наличие подробностей
+    expect(screen.getByText(/детали ошибки/i)).toBeInTheDocument();
+  });
+
+  test('должен вызывать onError callback, если он предоставлен', () => {
+    // Подавляем консольные ошибки React, которые возникают в тестовой среде
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    
+    const onErrorMock = jest.fn();
+    const errorMessage = 'Ошибка для тестирования колбэка';
+    
+    render(
+      <ErrorBoundary onError={onErrorMock}>
+        <ThrowError errorMessage={errorMessage} />
+      </ErrorBoundary>
+    );
+    
+    // Проверяем, был ли вызван колбэк
+    expect(onErrorMock).toHaveBeenCalled();
+    expect(onErrorMock).toHaveBeenCalledWith(expect.any(Error), expect.any(Object));
   });
 }); 

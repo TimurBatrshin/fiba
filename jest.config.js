@@ -22,6 +22,16 @@ module.exports = {
     '!src/reportWebVitals.ts',
     '!src/__mocks__/**',
     '!src/**/*.stories.{js,jsx,ts,tsx}',
+    '!src/**/*.mock.{ts,tsx}',
+    '!src/types/**/*',
+    '!src/constants/**/*',
+    '!**/node_modules/**',
+  ],
+  coveragePathIgnorePatterns: [
+    '/node_modules/',
+    '/dist/',
+    '/__mocks__/',
+    '/__fixtures__/',
   ],
   coverageThreshold: {
     global: {
@@ -30,6 +40,19 @@ module.exports = {
       lines: 30,
       statements: 30,
     },
+    // Рекомендуемые значения для критических компонентов
+    "src/components/AdminPanel.tsx": {
+      branches: 80,
+      functions: 80,
+      lines: 80,
+      statements: 80
+    },
+    "src/services/**/*.ts": {
+      branches: 70,
+      functions: 70,
+      lines: 70,
+      statements: 70
+    }
   },
   coverageReporters: ['json', 'lcov', 'text', 'clover', 'html'],
   reporters: process.env.CI 
@@ -39,4 +62,6 @@ module.exports = {
     '/node_modules/',
     '/dist/',
   ],
+  // Директория для сохранения отчетов о покрытии
+  coverageDirectory: '<rootDir>/coverage',
 }; 

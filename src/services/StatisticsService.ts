@@ -194,4 +194,9 @@ export class StatisticsService {
       throw error;
     }
   }
+
+  // Helper method for testing purposes
+  public setMockDataMode(useMock: boolean): void {
+    this.useMockData = useMock;
+  }
 } 

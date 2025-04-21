@@ -143,7 +143,7 @@ describe('Profile Component', () => {
     
     // Ждем редиректа
     await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith('/login');
+      expect(mockNavigate).toHaveBeenCalledWith('/fiba/login');
     });
   });
 
@@ -157,7 +157,7 @@ describe('Profile Component', () => {
     
     // Ждем редиректа
     await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith('/login');
+      expect(mockNavigate).toHaveBeenCalledWith('/fiba/login');
     });
   });
 

@@ -36,7 +36,8 @@ export const APP_SETTINGS = {
   requestTimeout: 15000, // 15 seconds
   notificationDuration: 5000, // 5 seconds
   maxUploadSize: 5 * 1024 * 1024, // 5MB
-  apiBaseUrl: config.apiUrl
+  apiBaseUrl: config.apiUrl,
+  basePath: '/fiba' // Base path for the application
 };
 
 // Service worker settings

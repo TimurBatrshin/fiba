@@ -149,7 +149,7 @@ describe('Navbar Component', () => {
     expect(tournamentsLink).toBeInTheDocument();
     
     // Проверяем атрибуты href
-    expect(homeLink.closest('a')).toHaveAttribute('href', '/');
-    expect(tournamentsLink.closest('a')).toHaveAttribute('href', '/tournaments');
+    expect(homeLink.closest('a')).toHaveAttribute('href', '/fiba');
+    expect(tournamentsLink.closest('a')).toHaveAttribute('href', '/fiba/tournaments');
   });
 }); 

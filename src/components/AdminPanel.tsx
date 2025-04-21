@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Tabs, Tab, Table, Button, Form, Badge } from 'react-bootstrap';
+import { Tabs, Tab, Table, Button, Form, Badge, Alert } from 'react-bootstrap';
 import { 
   getAdminStats, 
   getAdminUsers, 
@@ -27,6 +27,7 @@ const AdminPanel: React.FC = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
+      setError(null);
       const [statsData, usersData, tournamentsData] = await Promise.all([
         getAdminStats(),
         getAdminUsers(),
@@ -44,6 +45,7 @@ const AdminPanel: React.FC = () => {
 
   const handleRoleChange = async (userId: string, newRole: 'USER' | 'ADMIN') => {
     try {
+      setError(null);
       await updateUserRole(userId, newRole);
       setUsers(users.map(user => 
         user.id === userId ? { ...user, role: newRole } : user
@@ -55,6 +57,7 @@ const AdminPanel: React.FC = () => {
 
   const handleTournamentStatusChange = async (tournamentId: string, newStatus: 'registration' | 'in_progress' | 'completed') => {
     try {
+      setError(null);
       await updateTournamentStatus(tournamentId, newStatus);
       setTournaments(tournaments.map(tournament =>
         tournament.id === tournamentId ? { ...tournament, status: newStatus } : tournament
@@ -88,7 +91,7 @@ const AdminPanel: React.FC = () => {
   );
 
   const renderUsers = () => (
-    <Table striped bordered hover>
+    <Table striped bordered hover data-testid="users-table">
       <thead>
         <tr>
           <th>ID</th>
@@ -110,6 +113,7 @@ const AdminPanel: React.FC = () => {
             <td>
               <Form.Control
                 as="select"
+                data-testid={`user-role-select-${user.id}`}
                 value={user.role}
                 onChange={(e) => handleRoleChange(user.id, e.target.value as 'USER' | 'ADMIN')}
               >
@@ -124,7 +128,7 @@ const AdminPanel: React.FC = () => {
   );
 
   const renderTournaments = () => (
-    <Table striped bordered hover>
+    <Table striped bordered hover data-testid="tournaments-table">
       <thead>
         <tr>
           <th>ID</th>
@@ -154,6 +158,7 @@ const AdminPanel: React.FC = () => {
             <td>
               <Form.Control
                 as="select"
+                data-testid={`tournament-status-select-${tournament.id}`}
                 value={tournament.status}
                 onChange={(e) => handleTournamentStatusChange(tournament.id, e.target.value as 'registration' | 'in_progress' | 'completed')}
               >
@@ -172,9 +177,10 @@ const AdminPanel: React.FC = () => {
     <div className="admin-panel-container">
       <h1>Admin Panel</h1>
       
-      {error && <div className="alert alert-danger">{error}</div>}
+      {error && <Alert variant="danger">{error}</Alert>}
       
       <Tabs
+        id="admin-tabs"
         activeKey={activeTab}
         onSelect={(key) => setActiveTab(key || 'dashboard')}
         className="mb-4"

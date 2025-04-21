@@ -1,0 +1,21 @@
+# Игнорировать типы и интерфейсы
+src/**/*.d.ts
+src/types/
+
+# Файлы, которые не требуют тестирования
+src/constants/
+src/index.tsx
+src/reportWebVitals.ts
+
+# Мокнутые данные и истории Storybook
+src/__mocks__/
+src/__fixtures__/
+src/**/*.mock.ts
+src/**/*.mock.tsx
+src/**/*.stories.tsx
+src/**/*.stories.ts
+
+# Другие файлы, которые не требуют тестирования
+node_modules/
+dist/
+coverage/ 

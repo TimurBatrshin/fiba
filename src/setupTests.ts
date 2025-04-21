@@ -27,16 +27,16 @@ beforeEach(() => {
 
 // Отключаем консольные предупреждения в тестах
 // Это помогает сделать вывод тестов более чистым
+let consoleSpy: any = { warn: null, error: null };
+
 beforeAll(() => {
-  jest.spyOn(console, 'warn').mockImplementation(() => {});
-  jest.spyOn(console, 'error').mockImplementation(() => {});
+  consoleSpy.warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+  consoleSpy.error = jest.spyOn(console, 'error').mockImplementation(() => {});
 });
 
 afterAll(() => {
-  // @ts-ignore - TS не видит методы mockRestore, но они существуют
-  console.warn.mockRestore();
-  // @ts-ignore
-  console.error.mockRestore();
+  if (consoleSpy.warn) consoleSpy.warn.mockRestore();
+  if (consoleSpy.error) consoleSpy.error.mockRestore();
 });
 
 // Мокаем объект localStorage для тестов
@@ -49,3 +49,7 @@ Object.defineProperty(window, 'localStorage', {
   },
   writable: true,
 });
+
+// Настройка для jest-fetch-mock
+import fetchMock from 'jest-fetch-mock';
+fetchMock.enableMocks();

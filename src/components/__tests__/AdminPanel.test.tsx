@@ -2,264 +2,246 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import AdminPanel from '../AdminPanel';
-import { 
-  getAdminStats, 
-  getAdminUsers, 
-  updateUserRole, 
-  getAdminTournaments, 
-  updateTournamentStatus 
-} from '../../services/api/admin';
+import axios from 'axios';
+import { API_BASE_URL } from '../../config/envConfig';
 
-// Мокируем API функции
-jest.mock('../../services/api/admin', () => ({
-  getAdminStats: jest.fn(),
-  getAdminUsers: jest.fn(),
-  updateUserRole: jest.fn(),
-  getAdminTournaments: jest.fn(),
-  updateTournamentStatus: jest.fn()
+// Мокаем axios
+jest.mock('axios');
+const mockedAxios = axios as jest.Mocked<typeof axios>;
+
+// Мокаем навигацию
+const mockNavigate = jest.fn();
+jest.mock('react-router-dom', () => ({
+  ...jest.requireActual('react-router-dom'),
+  useNavigate: () => mockNavigate
 }));
 
-describe('AdminPanel Component', () => {
-  const mockStats = {
-    total_users: 150,
-    total_tournaments: 42,
-    active_tournaments: 10,
-    pending_registrations: 24
-  };
+describe('AdminPanel', () => {
+  // Заглушки для данных
+  const mockTournaments = [
+    { id: 't1', name: 'Tournament 1', date: '2023-08-01', status: 'registration' },
+    { id: 't2', name: 'Tournament 2', date: '2023-09-01', status: 'in_progress' }
+  ];
   
   const mockUsers = [
-    { 
-      id: '1', 
-      name: 'Test User', 
-      email: 'test@example.com', 
-      role: 'USER', 
-      created_at: '2023-01-01T00:00:00.000Z' 
-    },
-    { 
-      id: '2', 
-      name: 'Admin User', 
-      email: 'admin@example.com', 
-      role: 'ADMIN', 
-      created_at: '2023-01-02T00:00:00.000Z' 
-    }
+    { id: 'u1', name: 'User 1', email: 'user1@example.com', role: 'user' },
+    { id: 'u2', name: 'User 2', email: 'user2@example.com', role: 'admin' }
   ];
   
-  const mockTournaments = [
+  const mockRegistrations = [
     { 
-      id: '1', 
-      title: 'Test Tournament', 
-      date: '2023-06-15T00:00:00.000Z', 
-      status: 'registration', 
-      registrations_count: 10 
+      id: 'reg1', 
+      team_name: 'Team 1', 
+      status: 'pending', 
+      tournament_id: 't1',
+      players: [{ id: 'p1', name: 'Player 1' }]
     },
     { 
-      id: '2', 
-      title: 'Active Tournament', 
-      date: '2023-06-20T00:00:00.000Z', 
-      status: 'in_progress', 
-      registrations_count: 16 
-    },
-    { 
-      id: '3', 
-      title: 'Completed Tournament', 
-      date: '2023-06-01T00:00:00.000Z', 
-      status: 'completed', 
-      registrations_count: 12 
+      id: 'reg2', 
+      team_name: 'Team 2', 
+      status: 'confirmed', 
+      tournament_id: 't1',
+      players: [{ id: 'p2', name: 'Player 2' }]
     }
   ];
-  
+
   beforeEach(() => {
-    // Мокируем успешные ответы API по умолчанию
-    (getAdminStats as jest.Mock).mockResolvedValue(mockStats);
-    (getAdminUsers as jest.Mock).mockResolvedValue(mockUsers);
-    (getAdminTournaments as jest.Mock).mockResolvedValue(mockTournaments);
-    (updateUserRole as jest.Mock).mockResolvedValue({ success: true });
-    (updateTournamentStatus as jest.Mock).mockResolvedValue({ success: true });
-  });
-  
-  afterEach(() => {
     jest.clearAllMocks();
-  });
-  
-  it('renders loading state initially', () => {
-    render(<AdminPanel />);
-    expect(screen.getByText('Loading...')).toBeInTheDocument();
-  });
-  
-  it('loads and displays dashboard statistics', async () => {
-    render(<AdminPanel />);
     
-    // Проверяем, что API вызывается для загрузки данных
-    expect(getAdminStats).toHaveBeenCalled();
-    expect(getAdminUsers).toHaveBeenCalled();
-    expect(getAdminTournaments).toHaveBeenCalled();
-    
-    // Ждем, пока данные загрузятся и отобразятся
-    await waitFor(() => {
-      expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
+    // Устанавливаем заглушки для возвращаемых значений axios
+    mockedAxios.get.mockImplementation((url) => {
+      if (url === `${API_BASE_URL}/admin/tournaments`) {
+        return Promise.resolve({ data: mockTournaments });
+      } else if (url === `${API_BASE_URL}/admin/users`) {
+        return Promise.resolve({ data: mockUsers });
+      } else if (url.includes('/registrations')) {
+        return Promise.resolve({ data: mockRegistrations });
+      }
+      return Promise.reject(new Error('Not found'));
     });
     
-    // Проверяем отображение статистики
-    expect(screen.getByText('Total Users')).toBeInTheDocument();
-    expect(screen.getByText('150')).toBeInTheDocument();
-    expect(screen.getByText('Total Tournaments')).toBeInTheDocument();
-    expect(screen.getByText('42')).toBeInTheDocument();
-    expect(screen.getByText('Active Tournaments')).toBeInTheDocument();
-    expect(screen.getByText('10')).toBeInTheDocument();
-    expect(screen.getByText('Pending Registrations')).toBeInTheDocument();
-    expect(screen.getByText('24')).toBeInTheDocument();
+    mockedAxios.post.mockResolvedValue({ data: { success: true } });
+    mockedAxios.delete.mockResolvedValue({ data: { success: true } });
   });
-  
-  it('allows switching between tabs', async () => {
+
+  test('должен отображать список турниров', async () => {
+    render(<AdminPanel />);
+    
+    // Проверяем, что по умолчанию активна вкладка с турнирами
+    expect(screen.getByText(/управление турнирами/i)).toBeInTheDocument();
+    
+    // Ждем загрузки данных
+    await waitFor(() => {
+      expect(screen.getByText('Tournament 1')).toBeInTheDocument();
+      expect(screen.getByText('Tournament 2')).toBeInTheDocument();
+    });
+  });
+
+  test('должен переключаться между вкладками', async () => {
+    render(<AdminPanel />);
+    
+    // Находим и нажимаем на вкладку "Пользователи"
+    const usersTab = screen.getByText(/управление пользователями/i);
+    fireEvent.click(usersTab);
+    
+    // Проверяем, что отображаются данные о пользователях
+    await waitFor(() => {
+      expect(screen.getByText('User 1')).toBeInTheDocument();
+      expect(screen.getByText('User 2')).toBeInTheDocument();
+    });
+    
+    // Возвращаемся на вкладку "Турниры"
+    const tournamentsTab = screen.getByText(/управление турнирами/i);
+    fireEvent.click(tournamentsTab);
+    
+    // Проверяем, что снова отображаются данные о турнирах
+    await waitFor(() => {
+      expect(screen.getByText('Tournament 1')).toBeInTheDocument();
+    });
+  });
+
+  test('должен отображать регистрации при клике на турнир', async () => {
     render(<AdminPanel />);
     
     // Ждем загрузки данных
     await waitFor(() => {
-      expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
+      expect(screen.getByText('Tournament 1')).toBeInTheDocument();
     });
     
-    // Проверяем, что изначально открыт таб Dashboard
-    expect(screen.getByText('Total Users')).toBeInTheDocument();
+    // Находим и нажимаем на кнопку "Просмотр регистраций" для турнира
+    const viewRegistrationsButton = screen.getAllByText(/просмотр регистраций/i)[0];
+    fireEvent.click(viewRegistrationsButton);
     
-    // Переключаемся на таб Users
-    fireEvent.click(screen.getByText('Users'));
-    
-    // Проверяем, что таблица пользователей отображается
-    expect(screen.getByText('ID')).toBeInTheDocument();
-    expect(screen.getByText('Name')).toBeInTheDocument();
-    expect(screen.getByText('Email')).toBeInTheDocument();
-    expect(screen.getByText('Role')).toBeInTheDocument();
-    expect(screen.getByText('Created At')).toBeInTheDocument();
-    expect(screen.getByText('Actions')).toBeInTheDocument();
-    
-    // Проверяем отображение данных пользователей
-    expect(screen.getByText('Test User')).toBeInTheDocument();
-    expect(screen.getByText('test@example.com')).toBeInTheDocument();
-    
-    // Переключаемся на таб Tournaments
-    fireEvent.click(screen.getByText('Tournaments'));
-    
-    // Проверяем, что таблица турниров отображается
-    expect(screen.getByText('Title')).toBeInTheDocument();
-    expect(screen.getByText('Date')).toBeInTheDocument();
-    expect(screen.getByText('Status')).toBeInTheDocument();
-    expect(screen.getByText('Registrations')).toBeInTheDocument();
-    
-    // Проверяем отображение данных турниров
-    expect(screen.getByText('Test Tournament')).toBeInTheDocument();
-    expect(screen.getByText('Active Tournament')).toBeInTheDocument();
-    expect(screen.getByText('Completed Tournament')).toBeInTheDocument();
-  });
-  
-  it('allows changing user role', async () => {
-    render(<AdminPanel />);
-    
-    // Ждем загрузки данных
+    // Проверяем, что отображаются данные о регистрациях
     await waitFor(() => {
-      expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
-    });
-    
-    // Переключаемся на таб Users
-    fireEvent.click(screen.getByText('Users'));
-    
-    // Находим селект для изменения роли
-    const userRoleSelect = screen.getAllByRole('combobox')[0];
-    expect(userRoleSelect).toBeInTheDocument();
-    
-    // Изменяем роль пользователя
-    fireEvent.change(userRoleSelect, { target: { value: 'ADMIN' } });
-    
-    // Проверяем, что API вызван с правильными параметрами
-    await waitFor(() => {
-      expect(updateUserRole).toHaveBeenCalledWith('1', 'ADMIN');
+      expect(screen.getByText('Team 1')).toBeInTheDocument();
+      expect(screen.getByText('Team 2')).toBeInTheDocument();
     });
   });
-  
-  it('allows changing tournament status', async () => {
+
+  test('должен подтверждать регистрацию', async () => {
     render(<AdminPanel />);
     
-    // Ждем загрузки данных
+    // Ждем загрузки данных о турнирах
     await waitFor(() => {
-      expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
+      expect(screen.getByText('Tournament 1')).toBeInTheDocument();
     });
     
-    // Переключаемся на таб Tournaments
-    fireEvent.click(screen.getByText('Tournaments'));
+    // Открываем регистрации
+    const viewRegistrationsButton = screen.getAllByText(/просмотр регистраций/i)[0];
+    fireEvent.click(viewRegistrationsButton);
     
-    // Находим селект для изменения статуса турнира
-    const tournamentStatusSelect = screen.getAllByRole('combobox')[0];
-    expect(tournamentStatusSelect).toBeInTheDocument();
-    
-    // Изменяем статус турнира
-    fireEvent.change(tournamentStatusSelect, { target: { value: 'in_progress' } });
-    
-    // Проверяем, что API вызван с правильными параметрами
+    // Ждем загрузки данных о регистрациях
     await waitFor(() => {
-      expect(updateTournamentStatus).toHaveBeenCalledWith('1', 'in_progress');
+      expect(screen.getByText('Team 1')).toBeInTheDocument();
+    });
+    
+    // Находим и нажимаем на кнопку "Подтвердить" для первой команды
+    const approveButton = screen.getAllByText(/подтвердить/i)[0];
+    fireEvent.click(approveButton);
+    
+    // Проверяем, что был вызван запрос к API
+    await waitFor(() => {
+      expect(mockedAxios.post).toHaveBeenCalledWith(
+        expect.stringContaining('/admin/registrations/reg1/approve'),
+        expect.anything(),
+        expect.anything()
+      );
     });
   });
-  
-  it('handles API errors gracefully', async () => {
-    // Мокируем ошибку при загрузке данных
-    (getAdminStats as jest.Mock).mockRejectedValue(new Error('Failed to fetch stats'));
-    
+
+  test('должен отклонять регистрацию', async () => {
     render(<AdminPanel />);
     
-    // Ждем отображения сообщения об ошибке
+    // Ждем загрузки данных о турнирах
     await waitFor(() => {
-      expect(screen.getByText('Failed to fetch stats')).toBeInTheDocument();
+      expect(screen.getByText('Tournament 1')).toBeInTheDocument();
+    });
+    
+    // Открываем регистрации
+    const viewRegistrationsButton = screen.getAllByText(/просмотр регистраций/i)[0];
+    fireEvent.click(viewRegistrationsButton);
+    
+    // Ждем загрузки данных о регистрациях
+    await waitFor(() => {
+      expect(screen.getByText('Team 1')).toBeInTheDocument();
+    });
+    
+    // Находим и нажимаем на кнопку "Отклонить" для первой команды
+    const rejectButton = screen.getAllByText(/отклонить/i)[0];
+    fireEvent.click(rejectButton);
+    
+    // Проверяем, что был вызван запрос к API
+    await waitFor(() => {
+      expect(mockedAxios.post).toHaveBeenCalledWith(
+        expect.stringContaining('/admin/registrations/reg1/reject'),
+        expect.anything(),
+        expect.anything()
+      );
     });
   });
-  
-  it('handles user role update error', async () => {
+
+  test('должен удалять пользователя', async () => {
     render(<AdminPanel />);
     
-    // Ждем загрузки данных
+    // Переходим на вкладку "Пользователи"
+    const usersTab = screen.getByText(/управление пользователями/i);
+    fireEvent.click(usersTab);
+    
+    // Ждем загрузки данных о пользователях
     await waitFor(() => {
-      expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
+      expect(screen.getByText('User 1')).toBeInTheDocument();
     });
     
-    // Переключаемся на таб Users
-    fireEvent.click(screen.getByText('Users'));
+    // Находим и нажимаем на кнопку "Удалить" для первого пользователя
+    const deleteButton = screen.getAllByText(/удалить/i)[0];
+    fireEvent.click(deleteButton);
     
-    // Мокируем ошибку при обновлении роли
-    (updateUserRole as jest.Mock).mockRejectedValue(new Error('Failed to update user role'));
+    // Проверяем, что был вызван запрос к API
+    await waitFor(() => {
+      expect(mockedAxios.delete).toHaveBeenCalledWith(
+        expect.stringContaining('/admin/users/u1'),
+        expect.anything()
+      );
+    });
+  });
+
+  test('должен обрабатывать ошибки загрузки данных', async () => {
+    // Мокаем ошибку при загрузке турниров
+    mockedAxios.get.mockRejectedValueOnce(new Error('Failed to load tournaments'));
     
-    // Находим селект для изменения роли
-    const userRoleSelect = screen.getAllByRole('combobox')[0];
-    
-    // Изменяем роль пользователя
-    fireEvent.change(userRoleSelect, { target: { value: 'ADMIN' } });
+    render(<AdminPanel />);
     
     // Проверяем, что отображается сообщение об ошибке
     await waitFor(() => {
-      expect(screen.getByText('Failed to update user role')).toBeInTheDocument();
+      expect(screen.getByText(/ошибка загрузки данных/i)).toBeInTheDocument();
     });
   });
-  
-  it('handles tournament status update error', async () => {
+
+  test('должен открывать форму создания нового турнира', async () => {
     render(<AdminPanel />);
     
-    // Ждем загрузки данных
+    // Находим и нажимаем на кнопку "Создать новый турнир"
+    const createButton = screen.getByText(/создать новый турнир/i);
+    fireEvent.click(createButton);
+    
+    // Проверяем, что был вызван переход на страницу создания турнира
+    expect(mockNavigate).toHaveBeenCalledWith('/admin/tournaments/create');
+  });
+
+  test('должен открывать форму редактирования турнира', async () => {
+    render(<AdminPanel />);
+    
+    // Ждем загрузки данных о турнирах
     await waitFor(() => {
-      expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
+      expect(screen.getByText('Tournament 1')).toBeInTheDocument();
     });
     
-    // Переключаемся на таб Tournaments
-    fireEvent.click(screen.getByText('Tournaments'));
+    // Находим и нажимаем на кнопку "Редактировать" для первого турнира
+    const editButton = screen.getAllByText(/редактировать/i)[0];
+    fireEvent.click(editButton);
     
-    // Мокируем ошибку при обновлении статуса
-    (updateTournamentStatus as jest.Mock).mockRejectedValue(new Error('Failed to update tournament status'));
-    
-    // Находим селект для изменения статуса
-    const tournamentStatusSelect = screen.getAllByRole('combobox')[0];
-    
-    // Изменяем статус турнира
-    fireEvent.change(tournamentStatusSelect, { target: { value: 'completed' } });
-    
-    // Проверяем, что отображается сообщение об ошибке
-    await waitFor(() => {
-      expect(screen.getByText('Failed to update tournament status')).toBeInTheDocument();
-    });
+    // Проверяем, что был вызван переход на страницу редактирования турнира
+    expect(mockNavigate).toHaveBeenCalledWith('/admin/tournaments/t1/edit');
   });
 }); 

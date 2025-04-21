@@ -1,0 +1,62 @@
+name: Test Coverage
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+  push:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [16.x]
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Run tests with coverage
+      run: npm run test:ci
+    
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        directory: ./coverage/
+        fail_ci_if_error: true
+    
+    - name: Check coverage thresholds
+      run: |
+        COVERAGE_OUTPUT=$(npx jest --coverage --coverageReporters="json-summary")
+        
+        # Extract coverage numbers
+        LINES_PCT=$(cat coverage/coverage-summary.json | jq '.total.lines.pct')
+        STATEMENTS_PCT=$(cat coverage/coverage-summary.json | jq '.total.statements.pct')
+        FUNCTIONS_PCT=$(cat coverage/coverage-summary.json | jq '.total.functions.pct')
+        BRANCHES_PCT=$(cat coverage/coverage-summary.json | jq '.total.branches.pct')
+        
+        # Print coverage
+        echo "Lines: $LINES_PCT%"
+        echo "Statements: $STATEMENTS_PCT%"
+        echo "Functions: $FUNCTIONS_PCT%"
+        echo "Branches: $BRANCHES_PCT%"
+        
+        # Check against thresholds
+        if (( $(echo "$LINES_PCT < 30" | bc -l) )) || \
+           (( $(echo "$STATEMENTS_PCT < 30" | bc -l) )) || \
+           (( $(echo "$FUNCTIONS_PCT < 30" | bc -l) )) || \
+           (( $(echo "$BRANCHES_PCT < 30" | bc -l) )); then
+          echo "Coverage is below thresholds!"
+          exit 1
+        fi 

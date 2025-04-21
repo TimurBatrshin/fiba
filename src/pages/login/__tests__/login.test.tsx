@@ -173,7 +173,7 @@ describe('Login Component', () => {
     renderLoginComponent();
     
     // Проверяем, что был вызван редирект
-    expect(mockNavigate).toHaveBeenCalledWith('/profile');
+    expect(mockNavigate).toHaveBeenCalledWith('/fiba/profile');
   });
 
   it('clears error message when input values change', async () => {
