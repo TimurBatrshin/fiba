@@ -11,51 +11,47 @@ jobs:
 
     steps:
     - name: Checkout code
-      run: |
-        git clone https://github.com/${{ github.repository }}.git .
-        git checkout ${{ github.ref }}
+      uses: actions/checkout@v3
     
     - name: Setup Node.js
-      run: |
-        curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
-        export NVM_DIR="$HOME/.nvm"
-        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-        nvm install 20
-        nvm use 20
-        node --version
-        npm --version
-    
+      uses: actions/setup-node@v3
+      with:
+        node-version: '20'
+        cache: 'npm'
+
     - name: Install dependencies
-      run: |
-        echo "Disable prepare hook temporarily"
-        npm config set ignore-scripts true
-        npm ci --progress=false --loglevel=error --fetch-retries=3
-        npm config set ignore-scripts false
+      run: npm ci
     
+    - name: Install jest-junit
+      run: npm install --save-dev jest-junit
+
     - name: Build
-      run: |
-        npm run build:prod
-        mkdir -p dist
-        ls -la
-        ls -la dist || echo "No dist directory or it's empty"
+      run: npm run build:prod
     
-    - name: Archive build
-      run: |
-        mkdir -p /tmp/artifacts
-        cp -r dist/* /tmp/artifacts/ || echo "No files to archive"
-        echo "Build artifacts saved to /tmp/artifacts"
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: build-files
+        path: dist/
 
   deploy:
     needs: build
     runs-on: ubuntu-latest
-    
+    permissions:
+      contents: write
+      
     steps:
-    - name: Setup deployment environment
-      run: |
-        mkdir -p dist
-        echo "Preparing deployment environment"
+    - name: Download build artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: build-files
+        path: dist
     
-    - name: Deploy to server
-      run: |
-        echo "Deployment step would go here"
-        # Add your deployment commands here 
+    - name: Setup Pages
+      uses: actions/configure-pages@v3
+      
+    - name: Deploy to GitHub Pages
+      uses: JamesIves/github-pages-deploy-action@v4
+      with:
+        folder: dist
+        branch: gh-pages 
