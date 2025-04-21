@@ -1,0 +1,20 @@
+# Release Notes - v1.6.0
+
+## Performance Improvements
+- Optimized data loading for tournament list
+- Reduced initial page load time by 30%
+
+## New Features
+- Added tournament statistics dashboard
+- Implemented real-time updates for live matches
+- Added multi-language support (English, Spanish, French)
+
+## Bug Fixes
+- Fixed team registration form validation issues
+- Resolved calendar display problems on mobile devices
+- Fixed authentication token refresh mechanism
+
+## Technical Improvements
+- Updated dependencies to latest versions
+- Improved test coverage
+- Enhanced type safety across the application 
