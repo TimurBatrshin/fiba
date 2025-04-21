@@ -98,9 +98,9 @@ describe('Tournaments API', () => {
       });
       
       // Проверяем правильную обработку регистраций
-      expect(result.Registrations.length).toBe(1);
-      expect(result.Registrations[0].players.length).toBe(2);
-      expect(result.Registrations[0].players[0].is_captain).toBe(true);
+      expect(result.Registrations!.length).toBe(1);
+      expect(result.Registrations![0].players.length).toBe(2);
+      expect(result.Registrations![0].players[0].is_captain).toBe(true);
     });
 
     it('should handle missing fields and provide defaults', async () => {
@@ -421,7 +421,7 @@ describe('Tournaments API', () => {
     it('should throw error if token is missing', async () => {
       // Пользователь авторизован, но токен отсутствует
       mockAuthServiceInstance.isAuthenticated.mockReturnValueOnce(true);
-      mockAuthServiceInstance.getToken.mockReturnValueOnce(null);
+      mockAuthServiceInstance.getToken.mockReturnValueOnce('' as any);
 
       // Вызываем функцию и ожидаем ошибку
       await expect(registerTeam(tournamentId, teamName, playerIds))
@@ -522,7 +522,7 @@ describe('Tournaments API', () => {
     it('should throw error if token is missing', async () => {
       // Пользователь авторизован, но токен отсутствует
       mockAuthServiceInstance.isAuthenticated.mockReturnValueOnce(true);
-      mockAuthServiceInstance.getToken.mockReturnValueOnce(null);
+      mockAuthServiceInstance.getToken.mockReturnValueOnce('' as any);
 
       // Вызываем функцию и ожидаем ошибку
       await expect(updateMatchScore(tournamentId, matchId, score1, score2))

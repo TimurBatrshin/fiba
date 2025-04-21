@@ -63,8 +63,9 @@ export class AuthService {
     this.removeToken();
     this.stopTokenRefreshTimer();
     
-    // Redirect to login page
-    window.location.href = '/fiba/login';
+    // Redirect to login page с учетом базового пути для GitHub Pages
+    const basePath = process.env.NODE_ENV === 'production' ? '/fiba' : '';
+    window.location.href = `${basePath}/login`;
   }
 
   /**

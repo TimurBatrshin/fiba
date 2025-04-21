@@ -5,53 +5,38 @@ import ReactDOM from 'react-dom';
 import './styles/index.scss';
 import App from './app';
 import { APP_SETTINGS } from './config/envConfig';
-import { proxyService } from './api';
 
-// Конфигурация для скриптов - загрузка отключена, т.к. вызывает CORS-ошибки
+// Конфигурация приложения
 const APP_CONFIG = {
   version: APP_SETTINGS.buildVersion,
-  devURL: 'https://dev.bro-js.ru/fiba3x3/',
-  staticURL: 'https://static.bro-js.ru/fiba3x3/',
-  scripts: [
-    // Отключаем загрузку скриптов, которые вызывают CORS-ошибки
-    // `${APP_CONFIG.staticURL}${APP_SETTINGS.buildVersion}/index.js`,
-  ],
-  styles: [
-    // Список стилей для загрузки (если требуется)
-  ]
+  devURL: 'https://dev.bro-js.ru/fiba/',
+  staticURL: 'https://static.bro-js.ru/fiba/',
+  scripts: [],
+  styles: []
 };
 
-// Загрузка внешних скриптов стандартным способом через тег <script>
+// Загрузка внешних скриптов
 const loadExternalScript = (url: string): Promise<void> => {
   return new Promise((resolve, reject) => {
+    if (!url) {
+      resolve();
+      return;
+    }
+    
     const script = document.createElement('script');
     script.src = url;
     script.async = true;
     script.crossOrigin = "anonymous";
     
     script.onload = () => {
-      console.log(`Скрипт загружен успешно: ${url}`);
+      console.log(`Script loaded successfully: ${url}`);
       resolve();
     };
     
     script.onerror = (error) => {
-      console.error(`Ошибка загрузки скрипта: ${url}`, error);
-      
-      // При ошибке пытаемся загрузить через режим no-cors напрямую
-      console.log(`Пробуем загрузить через no-cors: ${url}`);
-      fetch(url, { mode: 'no-cors', credentials: 'same-origin' })
-        .then(() => {
-          console.log(`Предварительный запрос с no-cors успешен: ${url}`);
-          // Создаем новый элемент script с crossOrigin
-          const scriptNoCorsFallback = document.createElement('script');
-          scriptNoCorsFallback.src = url;
-          scriptNoCorsFallback.crossOrigin = "anonymous";
-          document.head.appendChild(scriptNoCorsFallback);
-          
-          scriptNoCorsFallback.onload = () => resolve();
-          scriptNoCorsFallback.onerror = () => reject(new Error(`Не удалось загрузить скрипт даже с no-cors: ${url}`));
-        })
-        .catch(reject);
+      console.error(`Script loading error: ${url}`, error);
+      console.warn(`Script not loaded, but application will continue: ${url}`);
+      resolve();
     };
     
     document.head.appendChild(script);
@@ -61,17 +46,15 @@ const loadExternalScript = (url: string): Promise<void> => {
 // Загрузка всех необходимых скриптов
 const loadAllScripts = async () => {
   try {
-    // Загружаем скрипты параллельно
     await Promise.all(APP_CONFIG.scripts.map(url => loadExternalScript(url)));
-    console.log('Все скрипты успешно загружены');
+    console.log('All scripts loaded successfully');
   } catch (error) {
-    console.error('Ошибка при загрузке скриптов:', error);
+    console.error('Error loading scripts:', error);
   }
 };
 
 // Инициализация приложения
 document.addEventListener('DOMContentLoaded', () => {
-  // Загружаем все необходимые скрипты только если они есть
   if (APP_CONFIG.scripts.length > 0) {
     loadAllScripts();
   }
@@ -79,9 +62,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Расширяем интерфейс Module для поддержки webpack hot module replacement
 declare global {
-  interface Module {
+  interface NodeModule {
     hot?: {
-      accept(path: string, callback: () => void): void;
+      accept(path?: string, callback?: () => void): void;
     };
   }
 }
@@ -100,12 +83,13 @@ export const mount = (Component: React.ComponentType<any>, element = document.ge
   rootElement = element;
   ReactDOM.render(<Component/>, element);
 
-  // Используем явное приведение типа для решения проблемы с module.hot
-  // @ts-ignore - игнорируем проверку типов для module.hot
+  // Поддержка hot module replacement
+  // @ts-ignore - Используем для обеспечения совместимости с Webpack HMR
   if (module.hot) {
-    // @ts-ignore - игнорируем проверку типов для module.hot.accept
+    // @ts-ignore - Используем для обеспечения совместимости с Webpack HMR
     module.hot.accept('./app', () => {
-      ReactDOM.render(<Component/>, element);
+      const NextApp = require('./app').default;
+      ReactDOM.render(<NextApp/>, element);
     });
   }
 };

@@ -2,6 +2,7 @@
     "name": "fiba3x3",
     "version": "1.5.0",
     "main": "./src/index.tsx",
+    "homepage": "https://timurbatrshin.github.io/fiba/",
     "scripts": {
         "eslint": "eslint src",
         "lint": "eslint --ext .js,.jsx,.ts,.tsx src",
@@ -22,11 +23,16 @@
         "clean": "rimraf dist",
         "webpack:build": "webpack --mode production",
         "webpack:start": "webpack serve --mode development --open",
+        "predeploy": "npm run build:prod",
+        "deploy": "gh-pages -d dist",
         "release:patch": "npm version patch -m \"chore(release): %s\"",
         "release:minor": "npm version minor -m \"chore(release): %s\"",
         "release:major": "npm version major -m \"chore(release): %s\"",
         "postversion": "git push && git push --tags",
-        "format": "prettier --write \"src/**/*.{js,jsx,ts,tsx,json,css,scss,md}\""
+        "format": "prettier --write \"src/**/*.{js,jsx,ts,tsx,json,css,scss,md}\"",
+        "ci:lint": "eslint src --max-warnings=0",
+        "ci:test": "jest --ci --coverage",
+        "ci:build": "npm run build:prod"
     },
     "author": "",
     "license": "ISC",
@@ -81,6 +87,7 @@
         "eslint": "^8.57.0",
         "eslint-plugin-react": "^7.33.2",
         "eslint-plugin-react-hooks": "^4.6.0",
+        "gh-pages": "^6.3.0",
         "html-entities": "^2.6.0",
         "html-webpack-plugin": "^5.6.0",
         "identity-obj-proxy": "^3.0.0",

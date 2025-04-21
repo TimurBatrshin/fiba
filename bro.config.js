@@ -24,7 +24,7 @@ module.exports = {
       }
     }
   },
-  /* use https://admin.bro-js.ru/ to create config, navigations and features */
+  /* Navigation routes for the application */
   navigations: {
     "fiba.main": "/fiba",
     "fiba.tournaments": "/fiba/tournaments",
@@ -33,7 +33,6 @@ module.exports = {
     "fiba.signin": "/fiba/signin",
     "fiba.signup": "/fiba/signup",
     "fiba.admin": "/fiba/admin",
-    "fiba.signin.signwithtelegram": "/fiba/signin/signwithtelegram",
   },
   features: {
     "fiba": {}

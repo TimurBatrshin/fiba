@@ -28,6 +28,9 @@ const EXTERNAL_SCRIPTS: string[] = [
 // Теперь вместо загрузки напрямую с удаленного сервера, мы запрашиваем через наш прокси
 // Для долгосрочного решения: скопируйте скрипт локально или настройте CORS на сервере
 
+// Обновляем базовый путь для GitHub Pages
+const basePath = process.env.NODE_ENV === 'production' ? '/fiba' : '';
+
 const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated } = useAuth();
   return isAuthenticated ? <>{children}</> : <Navigate to="/fiba" />;
@@ -80,60 +83,59 @@ const App: React.FC = () => {
           onError={handleScriptsError}
         >
           <AuthProvider>
-            <Router>
+            <Router basename={basePath}>
               <div className="app">
                 <Navbar isAuthenticated={isAuthenticated} />
                 <ErrorToast />
                 <Routes>
-                  <Route path="/fiba" element={
+                  <Route path="/" element={
                     <ErrorBoundary>
                       <Home />
                     </ErrorBoundary>
                   } />
-                  <Route path="/fiba/tournaments" element={
+                  <Route path="/tournaments" element={
                     <ErrorBoundary>
                       <Tournaments />
                     </ErrorBoundary>
                   } />
-                  <Route path="/fiba/login" element={
+                  <Route path="/login" element={
                     <ErrorBoundary>
                       <AuthRedirectRoute>
                         <Login setIsAuthenticated={setIsAuthenticated} />
                       </AuthRedirectRoute>
                     </ErrorBoundary>
                   } />
-                  <Route path="/fiba/register-user" element={
+                  <Route path="/register-user" element={
                     <ErrorBoundary>
                       <AuthRedirectRoute>
                         <RegisterUser />
                       </AuthRedirectRoute>
                     </ErrorBoundary>
                   } />
-                  <Route path="/fiba/profile" element={
+                  <Route path="/profile" element={
                     <ErrorBoundary>
                       <PrivateRoute>
                         <Profile isAuthenticated={isAuthenticated} />
                       </PrivateRoute>
                     </ErrorBoundary>
                   } />
-                  <Route path="/fiba/tournament/:id" element={
+                  <Route path="/tournament/:id" element={
                     <ErrorBoundary>
                       <Tournament />
                     </ErrorBoundary>
                   } />
-                  <Route path="/fiba/admin" element={
+                  <Route path="/admin" element={
                     <ErrorBoundary>
                       <AdminRoute>
                         <Admin />
                       </AdminRoute>
                     </ErrorBoundary>
                   } />
-                  <Route path="/fiba/top-players" element={
+                  <Route path="/top-players" element={
                     <ErrorBoundary>
                       <TopPlayers />
                     </ErrorBoundary>
                   } />
-                  <Route path="/" element={<Navigate to="/fiba" replace />} />
                 </Routes>
               </div>
             </Router>
@@ -141,60 +143,59 @@ const App: React.FC = () => {
         </ScriptLoader>
       ) : (
         <AuthProvider>
-          <Router>
+          <Router basename={basePath}>
             <div className="app">
               <Navbar isAuthenticated={isAuthenticated} />
               <ErrorToast />
               <Routes>
-                <Route path="/fiba" element={
+                <Route path="/" element={
                   <ErrorBoundary>
                     <Home />
                   </ErrorBoundary>
                 } />
-                <Route path="/fiba/tournaments" element={
+                <Route path="/tournaments" element={
                   <ErrorBoundary>
                     <Tournaments />
                   </ErrorBoundary>
                 } />
-                <Route path="/fiba/login" element={
+                <Route path="/login" element={
                   <ErrorBoundary>
                     <AuthRedirectRoute>
                       <Login setIsAuthenticated={setIsAuthenticated} />
                     </AuthRedirectRoute>
                   </ErrorBoundary>
                 } />
-                <Route path="/fiba/register-user" element={
+                <Route path="/register-user" element={
                   <ErrorBoundary>
                     <AuthRedirectRoute>
                       <RegisterUser />
                     </AuthRedirectRoute>
                   </ErrorBoundary>
                 } />
-                <Route path="/fiba/profile" element={
+                <Route path="/profile" element={
                   <ErrorBoundary>
                     <PrivateRoute>
                       <Profile isAuthenticated={isAuthenticated} />
                     </PrivateRoute>
                   </ErrorBoundary>
                 } />
-                <Route path="/fiba/tournament/:id" element={
+                <Route path="/tournament/:id" element={
                   <ErrorBoundary>
                     <Tournament />
                   </ErrorBoundary>
                 } />
-                <Route path="/fiba/admin" element={
+                <Route path="/admin" element={
                   <ErrorBoundary>
                     <AdminRoute>
                       <Admin />
                     </AdminRoute>
                   </ErrorBoundary>
                 } />
-                <Route path="/fiba/top-players" element={
+                <Route path="/top-players" element={
                   <ErrorBoundary>
                     <TopPlayers />
                   </ErrorBoundary>
                 } />
-                <Route path="/" element={<Navigate to="/fiba" replace />} />
               </Routes>
             </div>
           </Router>
