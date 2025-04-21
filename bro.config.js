@@ -4,10 +4,7 @@ module.exports = {
   apiPath: "stubs/api",
   webpackConfig: {
     output: {
-      publicPath: `/static/fire.app/${process.env.VERSION || pkg.version}/`,
-      filename: '[name].[fullhash].js',
-      chunkFilename: '[name].[chunkhash].js',
-      path: require('path').resolve(__dirname, 'dist')
+      publicPath: `/static/${pkg.name}/${process.env.VERSION || pkg.version}/`,
     },
     module: {
       rules: [
@@ -21,16 +18,29 @@ module.exports = {
         },
       ],
     },
+    resolve: {
+      fallback: {
+        "path": false,
+        "fs": false
+      }
+    }
   },
   /* use https://admin.bro-js.ru/ to create config, navigations and features */
   navigations: {
-    "fiba3x3.main": "/fiba3x3",
+    "fiba.main": "/fiba",
+    "fiba.tournaments": "/fiba/tournaments",
+    "fiba.teams": "/fiba/teams",
+    "fiba.profile": "/fiba/profile",
+    "fiba.signin": "/fiba/signin",
+    "fiba.signup": "/fiba/signup",
+    "fiba.admin": "/fiba/admin",
+    "fiba.signin.signwithtelegram": "/fiba/signin/signwithtelegram",
   },
   features: {
-    "fiba3x3": {},
+    "fiba": {}
   },
   config: {
-    "fiba3x3.api": "/api"
+    "fiba.api": "/api"
   },
   port: 8099,
   apiBaseUrl: 'https://timurbatrshin-fiba-backend-7cf2.twc1.net/api'

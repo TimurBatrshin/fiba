@@ -23,7 +23,7 @@ const RegisterUser: React.FC = () => {
   useEffect(() => {
     // Если пользователь уже авторизован, перенаправляем на страницу профиля
     if (AuthService.getInstance().isAuthenticated()) {
-      navigate("/profile");
+      navigate("/fiba/profile");
     }
   }, [navigate]);
 
@@ -107,7 +107,7 @@ const RegisterUser: React.FC = () => {
       if (response.status === 200) {
         setSuccess(true);
         setTimeout(() => {
-          navigate("/login");
+          navigate("/fiba/login");
         }, 3000);
       }
     } catch (err: any) {

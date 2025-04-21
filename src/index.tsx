@@ -10,12 +10,12 @@ import { proxyService } from './api';
 // Конфигурация для скриптов
 const APP_CONFIG = {
   version: APP_SETTINGS.buildVersion,
-  devURL: 'https://dev.bro-js.ru/fire.app/',
-  staticURL: 'https://static.bro-js.ru/fire.app/',
+  devURL: 'https://dev.bro-js.ru/fiba/',
+  staticURL: 'https://static.bro-js.ru/fiba/',
   scripts: [
-    // Список скриптов для загрузки
-    `https://static.bro-js.ru/fire.app/${APP_SETTINGS.buildVersion}/index.js`,
-    `https://dev.bro-js.ru/fire.app/1.6.3/index.js`
+    // Временно отключаем загрузку скриптов, которые вызывают ошибки
+    // `https://static.bro-js.ru/fiba/${APP_SETTINGS.buildVersion}/index.js`,
+    // `https://dev.bro-js.ru/fiba/${APP_SETTINGS.buildVersion}/index.js`
   ],
   styles: [
     // Список стилей для загрузки (если требуется)
@@ -63,8 +63,10 @@ const loadAllScripts = async () => {
 
 // Инициализация приложения
 document.addEventListener('DOMContentLoaded', () => {
-  // Загружаем все необходимые скрипты
-  loadAllScripts();
+  // Загружаем все необходимые скрипты только если они есть
+  if (APP_CONFIG.scripts.length > 0) {
+    loadAllScripts();
+  }
 });
 
 // Расширяем интерфейс Module для поддержки webpack hot module replacement

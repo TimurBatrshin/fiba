@@ -64,7 +64,7 @@ export class AuthService {
     this.stopTokenRefreshTimer();
     
     // Redirect to login page
-    window.location.href = '/login';
+    window.location.href = '/fiba/login';
   }
 
   /**

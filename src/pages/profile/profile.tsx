@@ -40,7 +40,7 @@ const Profile: React.FC<ProfileProps> = ({ isAuthenticated }) => {
       
       if (!token) {
         console.error("Токен не найден");
-        navigate("/login");
+        navigate("/fiba/login");
         return;
       }
 
@@ -59,7 +59,7 @@ const Profile: React.FC<ProfileProps> = ({ isAuthenticated }) => {
       } catch (err: any) {
         console.error("Ошибка при получении профиля", err);
         setError(true);
-        if (err.response?.status === 401) navigate("/login");
+        if (err.response?.status === 401) navigate("/fiba/login");
       } finally {
         setIsLoading(false);
       }
@@ -94,7 +94,7 @@ const Profile: React.FC<ProfileProps> = ({ isAuthenticated }) => {
     const token = authService.getToken();
     
     if (!token) {
-      navigate("/login");
+      navigate("/fiba/login");
       return;
     }
 

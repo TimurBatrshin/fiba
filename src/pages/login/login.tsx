@@ -17,7 +17,7 @@ const Login: React.FC<LoginProps> = ({ setIsAuthenticated }) => {
 
   useEffect(() => {
     if (AuthService.getInstance().isAuthenticated()) {
-      navigate("/profile");
+      navigate("/fiba/profile");
     }
   }, [navigate]);
 
@@ -43,7 +43,7 @@ const Login: React.FC<LoginProps> = ({ setIsAuthenticated }) => {
     try {
       await AuthService.getInstance().login(email, password);
       setIsAuthenticated(true);
-      navigate("/profile");
+      navigate("/fiba/profile");
     } catch (err: any) {
       console.error("Login error:", err);
       if (err.response?.status === 401) {
@@ -133,7 +133,7 @@ const Login: React.FC<LoginProps> = ({ setIsAuthenticated }) => {
                 <input type="checkbox" id="remember" />
                 <label htmlFor="remember">Запомнить меня</label>
               </div>
-              <Link to="/forgot-password" className="forgot-password">Забыли пароль?</Link>
+              <Link to="/fiba/forgot-password" className="forgot-password">Забыли пароль?</Link>
             </div>
             
             <button 
@@ -153,7 +153,7 @@ const Login: React.FC<LoginProps> = ({ setIsAuthenticated }) => {
           </form>
           
           <div className="auth-footer">
-            <p>Еще нет аккаунта? <Link to="/register-user">Зарегистрироваться</Link></p>
+            <p>Еще нет аккаунта? <Link to="/fiba/register-user">Зарегистрироваться</Link></p>
           </div>
           
           <div className="auth-background">

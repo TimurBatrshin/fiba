@@ -35,6 +35,7 @@ const Navbar: React.FC<NavbarProps> = ({ isAuthenticated: propIsAuthenticated })
   const handleLogout = () => {
     contextLogout();
     setIsAuthenticated(false);
+    navigate('/fiba/login');
   };
 
   const toggleStatsDropdown = () => {
@@ -42,7 +43,7 @@ const Navbar: React.FC<NavbarProps> = ({ isAuthenticated: propIsAuthenticated })
   };
 
   const isStatsPage = () => {
-    return ['/rankings/players', '/rankings/teams', '/top-players', '/players'].some(path => 
+    return ['/fiba/rankings/players', '/fiba/rankings/teams', '/fiba/top-players', '/fiba/players'].some(path => 
       location.pathname.startsWith(path)
     );
   };
@@ -51,7 +52,7 @@ const Navbar: React.FC<NavbarProps> = ({ isAuthenticated: propIsAuthenticated })
     <header className={`navbar ${isScrolled ? 'navbar-scrolled' : ''}`}>
       <div className="navbar-container">
         <div className="navbar-logo">
-          <Link to="/" className="logo-link">
+          <Link to="/fiba" className="logo-link">
             <img src={fibaLogo} alt="FIBA 3x3" className="logo-image" />
             <span className="logo-text">FIBA</span>
             <span className="logo-accent">3x3</span>
@@ -71,13 +72,13 @@ const Navbar: React.FC<NavbarProps> = ({ isAuthenticated: propIsAuthenticated })
         <nav className={`navbar-menu ${isMobileMenuOpen ? 'open' : ''}`}>
           <ul className="nav-list">
             <li className="nav-item">
-              <Link to="/" className={`nav-link ${location.pathname === '/' ? 'active' : ''}`}>
+              <Link to="/fiba" className={`nav-link ${location.pathname === '/fiba' ? 'active' : ''}`}>
                 <FontAwesomeIcon icon={faHome} className="nav-icon" />
                 <span>Главная</span>
               </Link>
             </li>
             <li className="nav-item">
-              <Link to="/tournaments" className={`nav-link ${location.pathname === '/tournaments' ? 'active' : ''}`}>
+              <Link to="/fiba/tournaments" className={`nav-link ${location.pathname === '/fiba/tournaments' ? 'active' : ''}`}>
                 <FontAwesomeIcon icon={faTrophy} className="nav-icon" />
                 <span>Турниры</span>
               </Link>
@@ -93,7 +94,7 @@ const Navbar: React.FC<NavbarProps> = ({ isAuthenticated: propIsAuthenticated })
                 </button>
                 {showStatsDropdown && (
                   <div className="nav-dropdown-content">
-                    <Link to="/top-players">
+                    <Link to="/fiba/top-players">
                       <FontAwesomeIcon icon={faUser} />
                       <span>Топ игроки</span>
                     </Link>
@@ -104,8 +105,8 @@ const Navbar: React.FC<NavbarProps> = ({ isAuthenticated: propIsAuthenticated })
             {isAuthenticated && (
               <li className="nav-item">
                 <Link 
-                  to="/profile" 
-                  className={`nav-link ${location.pathname === '/profile' ? 'active' : ''}`}
+                  to="/fiba/profile" 
+                  className={`nav-link ${location.pathname === '/fiba/profile' ? 'active' : ''}`}
                 >
                   <FontAwesomeIcon icon={faUser} className="nav-icon" />
                   <span>Профиль</span>
@@ -126,10 +127,10 @@ const Navbar: React.FC<NavbarProps> = ({ isAuthenticated: propIsAuthenticated })
                 </button>
               ) : (
                 <div className="auth-buttons">
-                  <Link to="/login" className="btn-login">
+                  <Link to="/fiba/login" className="btn-login">
                     <span>Войти</span>
                   </Link>
-                  <Link to="/register-user" className="btn-signup">
+                  <Link to="/fiba/register-user" className="btn-signup">
                     <span>Регистрация</span>
                   </Link>
                 </div>

@@ -155,7 +155,7 @@ const Home: React.FC = () => {
             </div>
             
             <div className="gh-hero-cta">
-              <Link to="/tournaments" className="gh-button gh-button-primary">
+              <Link to="/fiba/tournaments" className="gh-button gh-button-primary">
                 Найти турнир <FontAwesomeIcon icon={faChevronRight} />
               </Link>
               {/* Функционал создания турниров отключен
@@ -194,7 +194,7 @@ const Home: React.FC = () => {
         <div className="gh-container">
           <div className="gh-section-header">
             <h2 className="gh-section-title">Популярные турниры</h2>
-            <Link to="/tournaments" className="gh-view-all">
+            <Link to="/fiba/tournaments" className="gh-view-all">
               Все турниры <FontAwesomeIcon icon={faChevronRight} />
             </Link>
           </div>
@@ -214,7 +214,7 @@ const Home: React.FC = () => {
           ) : (
             <div className="gh-tournaments-grid">
               {popularTournaments.map((tournament) => (
-                <Link to={`/tournament/${tournament.id}`} key={tournament.id} className="gh-tournament-card">
+                <Link to={`/fiba/tournament/${tournament.id}`} key={tournament.id} className="gh-tournament-card">
                   <div className="gh-tournament-img">
                     <img 
                       src={tournament.image} 
@@ -251,7 +251,7 @@ const Home: React.FC = () => {
         <div className="gh-container">
           <div className="gh-section-header">
             <h2 className="gh-section-title">Лучшие игроки</h2>
-            <Link to="/top-players" className="gh-view-all">
+            <Link to="/fiba/top-players" className="gh-view-all">
               Все игроки <FontAwesomeIcon icon={faChevronRight} />
             </Link>
           </div>
@@ -313,7 +313,7 @@ const Home: React.FC = () => {
                 <Link to="/register-user" className="gh-button gh-button-primary">
                   <FontAwesomeIcon icon={faUserPlus} /> Регистрация
                 </Link>
-                <Link to="/tournaments" className="gh-button gh-button-outline">
+                <Link to="/fiba/tournaments" className="gh-button gh-button-outline">
                   <FontAwesomeIcon icon={faBasketballBall} /> Найти турнир
                 </Link>
               </div>

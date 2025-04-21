@@ -193,7 +193,7 @@ const Tournaments: React.FC = () => {
               {tournaments.length > 0 ? (
                 tournaments.map((tournament) => (
                   <Link 
-                    to={`/tournament/${tournament.id}`} 
+                    to={`/fiba/tournament/${tournament.id}`} 
                     key={tournament.id}
                     className={`tournament-card ${isBusinessTournament(tournament) ? 'business-tournament' : ''}`}
                   >

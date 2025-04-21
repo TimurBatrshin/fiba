@@ -154,7 +154,7 @@ const Register: React.FC<RegisterProps> = ({ tournamentId }) => {
       if (response.status === 200 || response.status === 201) {
         setSuccess(true);
         setTimeout(() => {
-          navigate(`/tournament/${tournamentId}`);
+          navigate(`/fiba/tournament/${tournamentId}`);
         }, 2000);
       }
     } catch (error: any) {
@@ -287,7 +287,7 @@ const Register: React.FC<RegisterProps> = ({ tournamentId }) => {
               <button 
                 type="button" 
                 className="btn btn-outline"
-                onClick={() => navigate(`/tournament/${tournamentId}`)}
+                onClick={() => navigate(`/fiba/tournament/${tournamentId}`)}
                 disabled={isLoading}
               >
                 Отмена

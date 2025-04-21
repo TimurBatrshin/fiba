@@ -20,14 +20,15 @@ import { APP_SETTINGS } from './config/envConfig';
 import "./styles/global.css";
 
 // Внешние скрипты для загрузки
-const EXTERNAL_SCRIPTS = [
-  `https://static.bro-js.ru/fire.app/${APP_SETTINGS.buildVersion}/index.js`,
-  `https://dev.bro-js.ru/fire.app/1.6.3/index.js`
+const EXTERNAL_SCRIPTS: string[] = [
+  // Временно отключаем загрузку скриптов, которые вызывают ошибки
+  // `https://static.bro-js.ru/fiba/${APP_SETTINGS.buildVersion}/index.js`,
+  // `https://dev.bro-js.ru/fiba/${APP_SETTINGS.buildVersion}/index.js`
 ];
 
 const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated } = useAuth();
-  return isAuthenticated ? <>{children}</> : <Navigate to="/" />;
+  return isAuthenticated ? <>{children}</> : <Navigate to="/fiba" />;
 };
 
 const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -38,12 +39,12 @@ const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 // Новый компонент для перенаправления авторизованных пользователей
 const AuthRedirectRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated } = useAuth();
-  return isAuthenticated ? <Navigate to="/profile" /> : <>{children}</>;
+  return isAuthenticated ? <Navigate to="/fiba/profile" /> : <>{children}</>;
 };
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(AuthService.getInstance().isAuthenticated());
-  const [scriptsLoaded, setScriptsLoaded] = useState(false);
+  const [scriptsLoaded, setScriptsLoaded] = useState(true);
 
   useEffect(() => {
     const handleStorageChange = () => {
@@ -70,71 +71,134 @@ const App: React.FC = () => {
 
   return (
     <ErrorBoundary>
-      <ScriptLoader 
-        urls={EXTERNAL_SCRIPTS}
-        onLoad={handleScriptsLoaded}
-        onError={handleScriptsError}
-        fallbackToProxy={true}
-      >
+      {EXTERNAL_SCRIPTS.length > 0 ? (
+        <ScriptLoader 
+          urls={EXTERNAL_SCRIPTS}
+          onLoad={handleScriptsLoaded}
+          onError={handleScriptsError}
+          fallbackToProxy={true}
+        >
+          <AuthProvider>
+            <Router>
+              <div className="app">
+                <Navbar isAuthenticated={isAuthenticated} />
+                <ErrorToast />
+                <Routes>
+                  <Route path="/fiba" element={
+                    <ErrorBoundary>
+                      <Home />
+                    </ErrorBoundary>
+                  } />
+                  <Route path="/fiba/tournaments" element={
+                    <ErrorBoundary>
+                      <Tournaments />
+                    </ErrorBoundary>
+                  } />
+                  <Route path="/fiba/login" element={
+                    <ErrorBoundary>
+                      <AuthRedirectRoute>
+                        <Login setIsAuthenticated={setIsAuthenticated} />
+                      </AuthRedirectRoute>
+                    </ErrorBoundary>
+                  } />
+                  <Route path="/fiba/register-user" element={
+                    <ErrorBoundary>
+                      <AuthRedirectRoute>
+                        <RegisterUser />
+                      </AuthRedirectRoute>
+                    </ErrorBoundary>
+                  } />
+                  <Route path="/fiba/profile" element={
+                    <ErrorBoundary>
+                      <PrivateRoute>
+                        <Profile isAuthenticated={isAuthenticated} />
+                      </PrivateRoute>
+                    </ErrorBoundary>
+                  } />
+                  <Route path="/fiba/tournament/:id" element={
+                    <ErrorBoundary>
+                      <Tournament />
+                    </ErrorBoundary>
+                  } />
+                  <Route path="/fiba/admin" element={
+                    <ErrorBoundary>
+                      <AdminRoute>
+                        <Admin />
+                      </AdminRoute>
+                    </ErrorBoundary>
+                  } />
+                  <Route path="/fiba/top-players" element={
+                    <ErrorBoundary>
+                      <TopPlayers />
+                    </ErrorBoundary>
+                  } />
+                  <Route path="/" element={<Navigate to="/fiba" replace />} />
+                </Routes>
+              </div>
+            </Router>
+          </AuthProvider>
+        </ScriptLoader>
+      ) : (
         <AuthProvider>
           <Router>
             <div className="app">
               <Navbar isAuthenticated={isAuthenticated} />
               <ErrorToast />
               <Routes>
-                <Route path="/" element={
+                <Route path="/fiba" element={
                   <ErrorBoundary>
                     <Home />
                   </ErrorBoundary>
                 } />
-                <Route path="/tournaments" element={
+                <Route path="/fiba/tournaments" element={
                   <ErrorBoundary>
                     <Tournaments />
                   </ErrorBoundary>
                 } />
-                <Route path="/login" element={
+                <Route path="/fiba/login" element={
                   <ErrorBoundary>
                     <AuthRedirectRoute>
                       <Login setIsAuthenticated={setIsAuthenticated} />
                     </AuthRedirectRoute>
                   </ErrorBoundary>
                 } />
-                <Route path="/register-user" element={
+                <Route path="/fiba/register-user" element={
                   <ErrorBoundary>
                     <AuthRedirectRoute>
                       <RegisterUser />
                     </AuthRedirectRoute>
                   </ErrorBoundary>
                 } />
-                <Route path="/profile" element={
+                <Route path="/fiba/profile" element={
                   <ErrorBoundary>
                     <PrivateRoute>
                       <Profile isAuthenticated={isAuthenticated} />
                     </PrivateRoute>
                   </ErrorBoundary>
                 } />
-                <Route path="/tournament/:id" element={
+                <Route path="/fiba/tournament/:id" element={
                   <ErrorBoundary>
                     <Tournament />
                   </ErrorBoundary>
                 } />
-                <Route path="/admin" element={
+                <Route path="/fiba/admin" element={
                   <ErrorBoundary>
                     <AdminRoute>
                       <Admin />
                     </AdminRoute>
                   </ErrorBoundary>
                 } />
-                <Route path="/top-players" element={
+                <Route path="/fiba/top-players" element={
                   <ErrorBoundary>
                     <TopPlayers />
                   </ErrorBoundary>
                 } />
+                <Route path="/" element={<Navigate to="/fiba" replace />} />
               </Routes>
             </div>
           </Router>
         </AuthProvider>
-      </ScriptLoader>
+      )}
     </ErrorBoundary>
   );
 };
