@@ -12,14 +12,14 @@ const ENV_CONFIG = {
   development: {
     apiUrl: 'https://timurbatrshin-fiba-backend-e561.twc1.net/api',
     enableLogging: true,
-    staticUrl: 'https://static.bro-js.ru/',
+    staticUrl: 'https://timurbatrshin-fiba-backend-e561.twc1.net/api/proxy/static-bro-js/',
     appBaseUrl: 'https://dev.bro-js.ru/',
     msPath: '/ms'
   },
   production: {
     apiUrl: 'https://timurbatrshin-fiba-backend-e561.twc1.net/api',
     enableLogging: false,
-    staticUrl: 'https://static.bro-js.ru/',
+    staticUrl: 'https://timurbatrshin-fiba-backend-e561.twc1.net/api/proxy/static-bro-js/',
     appBaseUrl: 'https://dev.bro-js.ru/',
     msPath: '/ms'
   }

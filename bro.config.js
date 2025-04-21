@@ -39,7 +39,7 @@ module.exports = {
   },
   config: {
     "fiba.api": "/api",
-    "fiba.static": "https://static.bro-js.ru/",
+    "fiba.static": "https://timurbatrshin-fiba-backend-e561.twc1.net/api/proxy/static-bro-js/",
     "fiba.ms": "/ms",
     "fiba.version": "1.6.3"
   },

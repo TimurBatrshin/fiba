@@ -10,7 +10,7 @@ import { APP_SETTINGS } from './config/envConfig';
 const APP_CONFIG = {
   version: APP_SETTINGS.buildVersion,
   devURL: 'https://dev.bro-js.ru/fiba/',
-  staticURL: 'https://static.bro-js.ru/fiba/',
+  staticURL: 'https://timurbatrshin-fiba-backend-e561.twc1.net/api/proxy/static-bro-js/fiba/',
   scripts: [],
   styles: []
 };

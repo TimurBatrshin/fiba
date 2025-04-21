@@ -213,30 +213,23 @@ export const transformURL = (url: string): string => {
         // Логируем попытку преобразования URL
         console.log(`Перехватили запрос к static.bro-js.ru: ${url}`);
         
-        // Получаем текущий хост
-        const currentHost = window.location.hostname;
-        
-        // Если мы уже на домене bro-js.ru, не меняем URL,
-        // но всегда используем no-cors режим для запроса
-        if (currentHost.includes('bro-js.ru')) {
-          console.log(`Оставляем URL без изменений для ${currentHost}: ${url}`);
-          return url;
-        } else {
-          // На других доменах пробуем использовать локальный сервер разработки
-          const localUrl = `/static${new URL(url).pathname}`;
-          console.log(`Преобразовали URL с ${url} на ${localUrl}`);
-          return localUrl;
-        }
+        // Преобразуем URL для работы через прокси
+        const parsedUrl = new URL(url);
+        const newUrl = `https://timurbatrshin-fiba-backend-e561.twc1.net/api/proxy/static-bro-js${parsedUrl.pathname}`;
+        console.log(`Преобразовали URL с ${url} на ${newUrl}`);
+        return newUrl;
       }
     }
     
     // Проверяем, относится ли URL к нашим доменам
     const isSameDomain = url.includes(window.location.hostname);
     if (!isSameDomain) {
-      // Для bro-js.ru используем прямой URL
+      // Для bro-js.ru используем прокси URL
       if (url.includes('bro-js.ru')) {
-        // Возвращаем URL как есть, потому что мы будем использовать no-cors режим
-        return url;
+        const parsedUrl = new URL(url);
+        if (parsedUrl.hostname === 'static.bro-js.ru') {
+          return `https://timurbatrshin-fiba-backend-e561.twc1.net/api/proxy/static-bro-js${parsedUrl.pathname}`;
+        }
       }
     }
   }
