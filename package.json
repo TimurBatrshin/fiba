@@ -1,6 +1,6 @@
 {
     "name": "fiba3x3",
-    "version": "1.6.1",
+    "version": "1.6.4",
     "main": "./src/index.tsx",
     "homepage": "https://timurbatrshin.github.io/fiba/",
     "scripts": {
