@@ -30,17 +30,8 @@ export interface Player {
 // Получение турнира по ID
 export const getTournamentById = async (id: string): Promise<TournamentData> => {
   try {
-    const authService = AuthService.getInstance();
-    const token = authService.getToken();
-    const headers: Record<string, string> = {};
-    
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-
-    const response = await axios.get(`${API_BASE_URL}/tournaments/${id}`, {
-      headers
-    });
+    // Не требуем авторизации для получения данных о турнире
+    const response = await axios.get(`${API_BASE_URL}/tournaments/${id}`);
     
     if (!response.data) {
       throw new Error("Данные о турнире не получены от сервера");
@@ -65,56 +56,14 @@ export const getTournamentById = async (id: string): Promise<TournamentData> => 
       business_type: response.data.business_type || ''
     };
 
-    // Обрабатываем регистрации и добавляем информацию об игроках
-    if (response.data.Registrations && Array.isArray(response.data.Registrations)) {
-      result.Registrations = response.data.Registrations.map((reg: any) => {
-        const registration = {
-          id: reg.id,
-          team_name: reg.team_name || reg.teamName || `Команда без названия`,
-          status: reg.status || 'pending',
-          tournament_id: reg.tournament_id || reg.tournamentId || id,
-          user_id: reg.user_id || reg.userId || '',
-          players: []
-        };
-
-        // Добавляем информацию о капитане как первом игроке
-        if (reg.captain_id || reg.captainId) {
-          registration.players.push({
-            id: reg.captain_id || reg.captainId,
-            name: reg.captain_name || 'Капитан',
-            is_captain: true
-          });
-        }
-
-        // Добавляем других игроков, если они есть
-        if (reg.players && Array.isArray(reg.players)) {
-          const players = reg.players.map((player: any) => ({
-            id: player.id,
-            name: player.name || 'Игрок',
-            is_captain: player.is_captain || (reg.captain_id && player.id === reg.captain_id)
-          }));
-          
-          // Объединяем игроков, избегая дублирования
-          const existingPlayerIds = registration.players.map(p => p.id);
-          const uniquePlayers = players.filter(p => !existingPlayerIds.includes(p.id));
-          registration.players = [...registration.players, ...uniquePlayers];
-        }
-
-        return registration;
-      });
+    // Если в ответе есть данные о регистрациях - копируем их
+    if (response.data.Registrations) {
+      result.Registrations = response.data.Registrations;
     }
 
     return result;
-  } catch (error) {
-    console.error("Ошибка при получении данных о турнире:", error);
-    
-    if (error.response && error.response.status === 401) {
-      // If unauthorized and we're expecting authenticated access, redirect to login
-      if (AuthService.getInstance().isAuthenticated()) {
-        AuthService.getInstance().logout();
-      }
-    }
-    
+  } catch (error: any) {
+    console.error("Ошибка при получении данных турнира:", error);
     throw error;
   }
 };

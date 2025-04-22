@@ -1,1 +1,1 @@
-export const API_BASE_URL = 'https://timurbatrshin-fiba-backend-e32e.twc1.net/api'; 
+export const API_BASE_URL = 'https://timurbatrshin-fiba-backend-1aa7.twc1.net/api'; 

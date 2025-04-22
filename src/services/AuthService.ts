@@ -7,17 +7,20 @@ import {
   User, 
   LoginCredentials, 
   RegisterData, 
-  DecodedToken 
+  DecodedToken,
+  UserProfile
 } from '../interfaces/Auth';
 
 export class AuthService extends BaseApiService {
   private static instance: AuthService;
   private readonly TOKEN_KEY: string;
+  private readonly REFRESH_TOKEN_KEY: string;
   private refreshTimer: NodeJS.Timeout | null = null;
 
   private constructor() {
     super(API_CONFIG.baseUrl);
     this.TOKEN_KEY = APP_SETTINGS.tokenStorageKey;
+    this.REFRESH_TOKEN_KEY = APP_SETTINGS.refreshTokenStorageKey;
     
     // Инициализировать токен из хранилища
     const token = this.getToken();
@@ -55,7 +58,7 @@ export class AuthService extends BaseApiService {
    */
   async login(email: string, password: string): Promise<LoginResponse> {
     try {
-      const response = await this.post<LoginResponse>('/auth/login', { email, password });
+      const response = await this.post<LoginResponse>('/api/auth/login', { email, password });
       
       if (response && response.token) {
         this.setToken(response.token);
@@ -75,8 +78,23 @@ export class AuthService extends BaseApiService {
   /**
    * Registers a new user
    */
-  async register(data: RegisterData): Promise<void> {
-    await this.post('/auth/register', data);
+  async register(data: RegisterData): Promise<LoginResponse> {
+    try {
+      const response = await this.post<LoginResponse>('/api/auth/register', data);
+      
+      if (response && response.token) {
+        this.setToken(response.token);
+        this.setAuthToken(response.token);
+        
+        // Start the token refresh timer
+        this.startTokenRefreshTimer();
+      }
+      
+      return response;
+    } catch (error) {
+      console.error('Registration error:', error);
+      throw error;
+    }
   }
 
   /**
@@ -84,6 +102,7 @@ export class AuthService extends BaseApiService {
    */
   logout(): void {
     this.removeToken();
+    this.removeRefreshToken();
     this.clearAuthToken();
     this.stopTokenRefreshTimer();
     
@@ -97,7 +116,13 @@ export class AuthService extends BaseApiService {
    */
   private setToken(token: string): void {
     localStorage.setItem(this.TOKEN_KEY, token);
-    // Больше не сохраняем в устаревшем месте
+  }
+
+  /**
+   * Sets the refresh token
+   */
+  private setRefreshToken(refreshToken: string): void {
+    localStorage.setItem(this.REFRESH_TOKEN_KEY, refreshToken);
   }
 
   /**
@@ -105,8 +130,14 @@ export class AuthService extends BaseApiService {
    */
   private removeToken(): void {
     localStorage.removeItem(this.TOKEN_KEY);
-    // Для обратной совместимости также удаляем из старого места
-    localStorage.removeItem('token');
+    localStorage.removeItem('token'); // Legacy storage
+  }
+
+  /**
+   * Removes the refresh token
+   */
+  private removeRefreshToken(): void {
+    localStorage.removeItem(this.REFRESH_TOKEN_KEY);
   }
 
   /**
@@ -121,9 +152,9 @@ export class AuthService extends BaseApiService {
       const decoded = jwtDecode<DecodedToken>(token);
       const isValid = decoded.exp > Date.now() / 1000;
       
-      // If token is expired, clean up
+      // If token is expired, try to refresh
       if (!isValid) {
-        this.logout();
+        this.refreshToken().catch(() => this.logout());
         return false;
       }
       
@@ -139,7 +170,7 @@ export class AuthService extends BaseApiService {
   /**
    * Refreshes the authentication token
    */
-  private async refreshToken(): Promise<void> {
+  async refreshToken(): Promise<void> {
     try {
       const currentToken = this.getToken();
       if (!currentToken) {
@@ -148,7 +179,7 @@ export class AuthService extends BaseApiService {
       }
 
       const response = await this.post<{ token: string }>(
-        '/auth/refresh-token',
+        '/api/auth/refresh-token',
         {},
         {
           headers: {
@@ -206,7 +237,7 @@ export class AuthService extends BaseApiService {
   /**
    * Checks if the user has a specific role
    */
-  hasRole(role: string): boolean {
+  hasRole(role: 'ADMIN' | 'USER' | 'COACH' | 'ORGANIZER'): boolean {
     if (!this.isAuthenticated()) return false;
     
     try {
@@ -223,7 +254,7 @@ export class AuthService extends BaseApiService {
   /**
    * Gets the current user's role
    */
-  getCurrentUserRole(): string | null {
+  getCurrentUserRole(): 'ADMIN' | 'USER' | 'COACH' | 'ORGANIZER' | null {
     try {
       const token = this.getToken();
       if (!token) return null;
@@ -244,24 +275,74 @@ export class AuthService extends BaseApiService {
   }
 
   /**
+   * Get the refresh token from storage
+   */
+  getRefreshToken(): string | null {
+    return localStorage.getItem(this.REFRESH_TOKEN_KEY);
+  }
+
+  /**
    * Gets the current authenticated user
    */
-  getCurrentUser(): User {
-    const token = this.getToken();
-    if (!token) {
-      throw new Error('No authenticated user');
-    }
-
+  async getCurrentUser(): Promise<User> {
     try {
-      const decoded = jwtDecode<DecodedToken>(token);
-      return {
-        id: decoded.sub,
-        username: '',  // These fields aren't in the token, would need to be fetched from API
-        email: '',     // or stored separately
-        role: decoded.role
-      };
+      const token = this.getToken();
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      const response = await this.get<User>('/api/users/me');
+      return response;
     } catch (error) {
-      throw new Error('Invalid token');
+      console.error('Error getting current user:', error);
+      throw error;
     }
+  }
+
+  /**
+   * Gets the profile for the current user
+   */
+  async getUserProfile(userId: string): Promise<UserProfile> {
+    try {
+      const response = await this.get<UserProfile>(`/api/profiles/${userId}`);
+      return response;
+    } catch (error) {
+      console.error('Error getting user profile:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Updates the user profile
+   */
+  async updateUserProfile(userId: string, profileData: Partial<UserProfile>): Promise<UserProfile> {
+    try {
+      const response = await this.put<UserProfile>(`/api/profiles/${userId}`, profileData);
+      return response;
+    } catch (error) {
+      console.error('Error updating user profile:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Checks if the user is an admin
+   */
+  isAdmin(): boolean {
+    return this.hasRole('ADMIN');
+  }
+
+  /**
+   * Checks if the user is a coach
+   */
+  isCoach(): boolean {
+    return this.hasRole('COACH');
+  }
+
+  /**
+   * Checks if the user is an organizer
+   */
+  isOrganizer(): boolean {
+    return this.hasRole('ORGANIZER');
   }
 } 

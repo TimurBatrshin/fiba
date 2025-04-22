@@ -31,7 +31,7 @@ interface MockPlayer {
 const Tournament = () => {
   const { id } = useParams(); 
   const navigate = useNavigate();
-  const { currentRole } = useAuth();
+  const { currentRole, isAuthenticated } = useAuth();
   const isAdmin = currentRole === 'admin';
   const [tournament, setTournament] = useState<TournamentData | null>(null);
   const [advertisement, setAdvertisement] = useState<any>(null);
@@ -95,50 +95,28 @@ const Tournament = () => {
   // Генерация данных для примера
   const mockTeams = Array.from({ length: 6 }, (_, i) => generateMockTeam(i));
 
+  // Загрузка данных о турнире
   useEffect(() => {
-    const loadData = async () => {
-      setIsLoading(true);
-      setError(null);
+    const fetchTournament = async () => {
+      if (!id) return;
       
+      setIsLoading(true);
       try {
-        // Загружаем данные о турнире
-        if (id) {
-          const tournamentData = await getTournamentById(id);
-          
-          // Проверяем структуру данных для отладки
-          console.log("Данные о турнире:", tournamentData);
-          
-          if (tournamentData.Registrations && tournamentData.Registrations.length > 0) {
-            console.log("Данные о регистрациях:", tournamentData.Registrations);
-            console.log("Пример первой регистрации:", tournamentData.Registrations[0]);
-            
-            // Проверяем наличие данных об игроках
-            if (tournamentData.Registrations[0].players) {
-              console.log("Данные об игроках:", tournamentData.Registrations[0].players);
-            } else {
-              console.log("Данные об игроках отсутствуют в API ответе");
-            }
-          }
-          
-          setTournament(tournamentData);
-        } else {
-          setError("ID турнира не указан");
-        }
+        const tournamentData = await getTournamentById(id);
+        console.log("Полученные данные турнира:", tournamentData);
+        setTournament(tournamentData);
         
-        // Загружаем рекламу
-        const adData = await getAdvertisement();
-        if (adData) {
-          setAdvertisement(adData);
-        }
-      } catch (error) {
-        console.error("Ошибка при загрузке данных:", error);
+        // Сбрасываем ошибку, если она была ранее
+        setError(null);
+      } catch (err: any) {
+        console.error("Ошибка при загрузке данных турнира:", err);
         setError("Не удалось загрузить информацию о турнире. Пожалуйста, попробуйте позже.");
       } finally {
         setIsLoading(false);
       }
     };
-
-    loadData();
+    
+    fetchTournament();
   }, [id]);
 
   // Функция для форматирования даты

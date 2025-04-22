@@ -25,15 +25,16 @@ const PrivateRoute = ({ children }: { children: React.ReactNode }): React.ReactE
   return isAuthenticated ? <>{children}</> : <Navigate to={`${basePath}`} />;
 };
 
-const AdminRoute = ({ children }: { children: React.ReactNode }): React.ReactElement => {
-  const { isAuthenticated, currentRole } = useAuth();
-  return isAuthenticated && currentRole === 'admin' ? <>{children}</> : <Navigate to="/" />;
-};
-
 // Новый компонент для перенаправления авторизованных пользователей
 const AuthRedirectRoute = ({ children }: { children: React.ReactNode }): React.ReactElement => {
   const { isAuthenticated } = useAuth();
   return isAuthenticated ? <Navigate to={`${basePath}/profile`} /> : <>{children}</>;
+};
+
+// Компонент для защиты маршрутов администратора
+const AdminRoute = ({ children }: { children: React.ReactNode }): React.ReactElement => {
+  const { isAuthenticated, currentRole } = useAuth();
+  return isAuthenticated && currentRole === 'admin' ? <>{children}</> : <Navigate to={`${basePath}`} />;
 };
 
 const App = (): React.ReactElement => {

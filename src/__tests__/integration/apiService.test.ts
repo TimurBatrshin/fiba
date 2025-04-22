@@ -36,9 +36,11 @@ const handlers = [
         description: 'Annual summer tournament',
         status: 'UPCOMING',
         maxTeams: 16,
-        currentTeams: 8,
         entryFee: 200,
-        prizePool: 5000
+        prizePool: '5000 руб.',
+        businessType: 'OFFICIAL',
+        level: 'PRO',
+        registrationOpen: true
       });
     }
     return new HttpResponse(null, { status: 404 });
@@ -65,7 +67,6 @@ const handlers = [
     return HttpResponse.json({
       id: 'new-id',
       ...tournamentData as object,
-      currentTeams: 0,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     }, { status: 201 });
@@ -77,7 +78,7 @@ const handlers = [
     const data = await request.json() as { status?: string };
     
     // Проверяем валидность данных
-    if (!data.status || !['APPROVED', 'REJECTED', 'PENDING', 'COMPLETED'].includes(data.status)) {
+    if (!data.status || !['CONFIRMED', 'REJECTED', 'PENDING', 'COMPLETED'].includes(data.status)) {
       return new HttpResponse(
         JSON.stringify({ message: 'Invalid status value' }), 
         { status: 400 }
@@ -113,9 +114,70 @@ const handlers = [
     
     return HttpResponse.json({
       id: 'user-123',
-      username: 'testuser',
+      name: 'testuser',
       email: 'test@example.com',
-      role: 'user'
+      role: 'USER'
+    });
+  }),
+
+  // Обработчик для POST /api/auth/login
+  http.post('*/api/auth/login', async ({ request }) => {
+    const credentials = await request.json() as { email?: string; password?: string };
+    
+    if (!credentials.email || !credentials.password) {
+      return new HttpResponse(
+        JSON.stringify({ message: 'Email and password are required' }),
+        { status: 400 }
+      );
+    }
+    
+    if (credentials.email === 'test@example.com' && credentials.password === 'password') {
+      return HttpResponse.json({
+        token: 'test-jwt-token',
+        userId: 'user-123',
+        name: 'Test User',
+        email: 'test@example.com',
+        role: 'USER'
+      });
+    }
+    
+    return new HttpResponse(
+      JSON.stringify({ message: 'Invalid email or password' }),
+      { status: 401 }
+    );
+  }),
+
+  // Обработчик для POST /api/auth/register
+  http.post('*/api/auth/register', async ({ request }) => {
+    const userData = await request.json() as { name?: string; email?: string; password?: string };
+    
+    if (!userData.name || !userData.email || !userData.password) {
+      return new HttpResponse(
+        JSON.stringify({ 
+          message: 'Validation error', 
+          errors: {
+            name: !userData.name ? 'Name is required' : undefined,
+            email: !userData.email ? 'Email is required' : undefined,
+            password: !userData.password ? 'Password is required' : undefined
+          } 
+        }),
+        { status: 400 }
+      );
+    }
+    
+    if (userData.email === 'existing@example.com') {
+      return new HttpResponse(
+        JSON.stringify({ message: 'Email already in use' }),
+        { status: 409 }
+      );
+    }
+    
+    return HttpResponse.json({
+      token: 'new-user-jwt-token',
+      userId: 'new-user-123',
+      name: userData.name,
+      email: userData.email,
+      role: 'USER'
     });
   })
 ];
@@ -191,17 +253,19 @@ describe('ApiService Integration Tests', () => {
       date: '2024-05-15',
       location: 'Sports Arena',
       description: 'A new test tournament',
-      status: 'PLANNED',
+      status: 'UPCOMING',
+      level: 'AMATEUR',
       maxTeams: 16,
       entryFee: 100,
-      prizePool: 5000
+      prizePool: '5000 руб.',
+      businessType: 'COMMUNITY',
+      registrationOpen: true
     };
     
     const createdTournament = await apiService.createTournament(newTournament);
     expect(createdTournament).toBeDefined();
     expect(createdTournament.id).toBe('new-id');
     expect(createdTournament.name).toBe(newTournament.name);
-    expect(createdTournament.currentTeams).toBe(0);
   });
   
   it('should handle validation errors when creating a tournament', async () => {
@@ -209,22 +273,22 @@ describe('ApiService Integration Tests', () => {
       // name is missing
       date: '2024-05-15',
       // location is missing
-      status: 'PLANNED'
+      status: 'UPCOMING'
     };
     
     await expect(apiService.createTournament(invalidTournament)).rejects.toThrow();
   });
   
   it('should update team status successfully', async () => {
-    const result = await apiService.updateTeamStatus('tournament-123', 'team-456', 'APPROVED');
+    const result = await apiService.updateTeamStatus('tournament-123', 'team-456', 'CONFIRMED');
     expect(result).toBeDefined();
     expect(result.success).toBe(true);
-    expect(result.status).toBe('APPROVED');
+    expect(result.status).toBe('CONFIRMED');
   });
   
   it('should handle 404 errors when updating status for nonexistent tournament', async () => {
     await expect(
-      apiService.updateTeamStatus('invalid-id', 'team-456', 'APPROVED')
+      apiService.updateTeamStatus('invalid-id', 'team-456', 'CONFIRMED')
     ).rejects.toThrow();
   });
   
@@ -240,6 +304,34 @@ describe('ApiService Integration Tests', () => {
     // Теперь запрос должен пройти успешно
     const user = await apiService.getCurrentUser();
     expect(user).toBeDefined();
-    expect(user.username).toBe('testuser');
+    expect(user.name).toBe('testuser');
+  });
+
+  it('should authenticate user with valid credentials', async () => {
+    const credentials = { email: 'test@example.com', password: 'password' };
+    const response = await apiService.login(credentials);
+    
+    expect(response).toBeDefined();
+    expect(response.token).toBe('test-jwt-token');
+    expect(response.userId).toBe('user-123');
+    expect(response.email).toBe('test@example.com');
+    expect(response.role).toBe('USER');
+  });
+
+  it('should register a new user', async () => {
+    const userData = { 
+      name: 'New User',
+      email: 'new@example.com',
+      password: 'password123'
+    };
+    
+    const response = await apiService.register(userData);
+    
+    expect(response).toBeDefined();
+    expect(response.token).toBe('new-user-jwt-token');
+    expect(response.userId).toBe('new-user-123');
+    expect(response.name).toBe('New User');
+    expect(response.email).toBe('new@example.com');
+    expect(response.role).toBe('USER');
   });
 }); 

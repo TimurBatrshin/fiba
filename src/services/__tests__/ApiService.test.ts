@@ -152,7 +152,7 @@ describe('ApiService', () => {
 
     it('should store token after successful registration', async () => {
       // Arrange
-      const userData = { email: 'new@example.com', password: 'password123', firstName: 'John', lastName: 'Doe' };
+      const userData = { name: 'John Doe', email: 'new@example.com', password: 'password123' };
       const mockResponse = { data: { token: 'jwt-token-new', user: { id: '2', email: 'new@example.com' } } };
       mockAxiosInstance.post.mockResolvedValue(mockResponse);
 
@@ -336,7 +336,7 @@ describe('ApiService', () => {
       // Arrange
       const tournamentId = '123';
       const teamId = '456';
-      const status = 'APPROVED';
+      const status = 'CONFIRMED';
       const mockResponse = { data: { success: true } };
       mockAxiosInstance.put.mockResolvedValue(mockResponse);
 
@@ -428,8 +428,8 @@ describe('ApiService', () => {
     it('should call get with correct parameters for getTournamentTeams', async () => {
       // Arrange
       const tournamentId = '123';
-      const status = 'APPROVED';
-      const mockTeams = [{ id: '1', name: 'Team 1', status: 'APPROVED' }];
+      const status = 'CONFIRMED';
+      const mockTeams = [{ id: '1', name: 'Team 1', status: 'CONFIRMED' }];
       const mockResponse = { data: mockTeams };
       mockAxiosInstance.get.mockResolvedValue(mockResponse);
 
@@ -448,7 +448,7 @@ describe('ApiService', () => {
       // Arrange
       const tournamentId = '123';
       const mockTeams = [
-        { id: '1', name: 'Team 1', status: 'APPROVED' },
+        { id: '1', name: 'Team 1', status: 'CONFIRMED' },
         { id: '2', name: 'Team 2', status: 'PENDING' }
       ];
       const mockResponse = { data: mockTeams };
