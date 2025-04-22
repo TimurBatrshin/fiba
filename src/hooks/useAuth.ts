@@ -1,11 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { AuthService } from '../services/AuthService';
-import { RegisterData } from '../interfaces/Auth';
-import { User } from '../services/UserService';
+import { RegisterData, User, UserProfile } from '../interfaces/Auth';
 import { setUser, setToken, clearUser } from '../store/slices/authSlice';
 import { RootState } from '../store';
-import apiService from '../services/ApiService';
 
 // Create an interface for the auth slice state
 interface AuthState {
@@ -29,59 +27,7 @@ interface UseAuthResult {
   login: (email: string, password: string) => Promise<any>;
   register: (name: string, email: string, password: string) => Promise<any>;
   logout: () => Promise<void>;
-  updateUser: (id: string, userData: Partial<User>) => Promise<User>;
-}
-
-// Helper function to convert from Auth role to UserService role
-function mapAuthToUserRole(role: 'ADMIN' | 'USER' | 'COACH' | 'ORGANIZER'): 'admin' | 'user' | 'business' {
-  switch (role) {
-    case 'ADMIN': return 'admin';
-    case 'USER': return 'user';
-    case 'COACH':
-    case 'ORGANIZER':
-    default:
-      return 'business';
-  }
-}
-
-// Helper function to convert between interfaces/Auth.User to services/UserService.User
-function convertToUserServiceUser(user: any): User {
-  return {
-    id: user.id,
-    username: user.name || user.username || '',
-    email: user.email,
-    role: mapAuthToUserRole(user.role),
-    createdAt: user.createdAt || new Date().toISOString(),
-    updatedAt: user.updatedAt || new Date().toISOString(),
-    avatar: user.avatar,
-    teams: user.teams,
-    tournaments_played: user.tournaments_played,
-    total_points: user.total_points,
-    rating: user.rating
-  };
-}
-
-// Helper function to convert UserService.User data to format expected by API
-function convertToApiUser(userData: Partial<User>): any {
-  // Map fields that need conversion
-  const result: any = { ...userData };
-  
-  // Map role if present
-  if (userData.role) {
-    switch (userData.role) {
-      case 'admin': result.role = 'ADMIN'; break;
-      case 'user': result.role = 'USER'; break;
-      case 'business': result.role = 'COACH'; break;
-    }
-  }
-  
-  // Map username to name if present
-  if (userData.username) {
-    result.name = userData.username;
-    delete result.username;
-  }
-  
-  return result;
+  updateUser: (id: string, userData: Partial<UserProfile>) => Promise<User>;
 }
 
 export function useAuth(): UseAuthResult {
@@ -109,9 +55,7 @@ export function useAuth(): UseAuthResult {
         try {
           setIsLoading(true);
           const currentUser = await authService.getCurrentUser();
-          // Convert to UserService.User format
-          const userForStore = convertToUserServiceUser(currentUser);
-          dispatch(setUser(userForStore));
+          dispatch(setUser(currentUser));
         } catch (err) {
           console.error('Failed to load user:', err);
           // Clear token if user load fails
@@ -136,14 +80,13 @@ export function useAuth(): UseAuthResult {
         const response = await authService.login(email, password);
         if (response && response.token) {
           dispatch(setToken(response.token));
-          // Create user object from response and convert to UserService.User format
-          const userForStore = convertToUserServiceUser({
+          const currentUser: User = {
             id: response.userId,
             name: response.name,
             email: response.email,
             role: response.role
-          });
-          dispatch(setUser(userForStore));
+          };
+          dispatch(setUser(currentUser));
         }
         return response;
       } catch (err) {
@@ -165,14 +108,13 @@ export function useAuth(): UseAuthResult {
         const response = await authService.register(registerData);
         if (response && response.token) {
           dispatch(setToken(response.token));
-          // Create user object from response and convert to UserService.User format
-          const userForStore = convertToUserServiceUser({
+          const currentUser: User = {
             id: response.userId,
             name: response.name,
             email: response.email,
             role: response.role
-          });
-          dispatch(setUser(userForStore));
+          };
+          dispatch(setUser(currentUser));
         }
         return response;
       } catch (err) {
@@ -200,21 +142,19 @@ export function useAuth(): UseAuthResult {
   }, [dispatch]);
 
   const updateUser = useCallback(
-    async (id: string, userData: Partial<User>) => {
+    async (id: string, userData: Partial<UserProfile>) => {
       setIsLoading(true);
       setError(null);
       try {
-        // Convert to format expected by API
-        const apiUserData = convertToApiUser(userData);
+        // Use AuthService's updateUserProfile method
+        const updatedProfile = await authService.updateUserProfile(id, userData);
         
-        // Call API
-        const updatedUserFromApi = await apiService.updateUser(id, apiUserData);
+        // Get the updated user data
+        const updatedUser = await authService.getCurrentUser();
         
-        // Convert response to UserService.User format
-        const userForStore = convertToUserServiceUser(updatedUserFromApi);
-        
-        dispatch(setUser(userForStore));
-        return userForStore;
+        // Update the user in the store
+        dispatch(setUser(updatedUser));
+        return updatedUser;
       } catch (err) {
         setError(err as Error);
         throw err;

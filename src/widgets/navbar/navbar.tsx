@@ -28,7 +28,6 @@ const Navbar: React.FC = () => {
 
   const handleLogout = () => {
     contextLogout();
-    navigate('/login');
   };
 
   const toggleStatsDropdown = () => {

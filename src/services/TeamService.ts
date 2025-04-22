@@ -1,84 +1,107 @@
-import apiService from './ApiService';
-import { Team, Player, TeamPlayer } from '../interfaces/Team';
+import { BaseApiService } from './BaseApiService';
+import { API_CONFIG } from '../config/api';
+import { Team } from '../interfaces/Team';
+import { Player } from './PlayerService';
 import { RegistrationStatus } from '../interfaces/Tournament';
 
-export class TeamService {
-  /**
-   * Gets all teams
-   */
-  async getAllTeams(): Promise<Team[]> {
-    return apiService.getAllTeams();
+export interface TeamPlayer {
+  teamId: string;
+  playerId: string;
+  joinedAt: Date;
+  role: 'CAPTAIN' | 'PLAYER' | 'COACH';
+}
+
+export class TeamService extends BaseApiService {
+  constructor() {
+    super(API_CONFIG.baseUrl, API_CONFIG.mockUrl, API_CONFIG.useMockByDefault);
   }
 
   /**
-   * Gets a team by ID
+   * Get all teams
    */
-  async getTeamById(id: string): Promise<Team> {
-    return apiService.getTeamById(id);
+  public async getAllTeams(): Promise<Team[]> {
+    const response = await this.get<Team[]>('/teams');
+    return response.data;
   }
 
   /**
-   * Searches teams by name
+   * Get a team by ID
    */
-  async searchTeamsByName(name: string): Promise<Team[]> {
-    return apiService.searchTeamsByName(name);
+  public async getTeamById(id: string): Promise<Team> {
+    const response = await this.get<Team>(`/teams/${id}`);
+    return response.data;
   }
 
   /**
-   * Gets top teams by rating
+   * Search teams by name
    */
-  async getTopTeams(limit: number = 10): Promise<Team[]> {
-    return apiService.getTopTeams(limit);
+  public async searchTeamsByName(name: string): Promise<Team[]> {
+    const response = await this.get<Team[]>('/teams/search', { name });
+    return response.data;
   }
 
   /**
-   * Gets teams in a tournament
+   * Get top teams by rating
    */
-  async getTournamentTeams(tournamentId: string, status?: RegistrationStatus): Promise<any[]> {
-    return apiService.getTournamentTeams(tournamentId, status);
+  public async getTopTeams(limit: number = 10): Promise<Team[]> {
+    const response = await this.get<Team[]>('/teams/top', { limit });
+    return response.data;
   }
 
   /**
-   * Gets players in a team
+   * Get teams in a tournament
    */
-  async getTeamPlayers(teamId: string): Promise<Player[]> {
-    return apiService.get<Player[]>(`/api/teams/${teamId}/players`);
+  public async getTournamentTeams(tournamentId: string, status?: RegistrationStatus): Promise<Team[]> {
+    const response = await this.get<Team[]>(`/tournaments/${tournamentId}/teams`, { status });
+    return response.data;
   }
 
   /**
-   * Adds a player to a team
+   * Get players in a team
    */
-  async addPlayerToTeam(teamId: string, playerId: string): Promise<TeamPlayer> {
-    return apiService.post<TeamPlayer>(`/api/teams/${teamId}/players`, { playerId });
+  public async getTeamPlayers(teamId: string): Promise<Player[]> {
+    const response = await this.get<Player[]>(`/teams/${teamId}/players`);
+    return response.data;
   }
 
   /**
-   * Removes a player from a team
+   * Add a player to a team
    */
-  async removePlayerFromTeam(teamId: string, playerId: string): Promise<void> {
-    return apiService.delete<void>(`/api/teams/${teamId}/players/${playerId}`);
+  public async addPlayerToTeam(teamId: string, playerId: string): Promise<TeamPlayer> {
+    const response = await this.post<TeamPlayer>(`/teams/${teamId}/players`, { playerId });
+    return response.data;
   }
 
   /**
-   * Creates a new team
+   * Remove a player from a team
    */
-  async createTeam(teamData: Partial<Team>): Promise<Team> {
-    return apiService.post<Team>('/api/teams', teamData);
+  public async removePlayerFromTeam(teamId: string, playerId: string): Promise<void> {
+    await this.delete<void>(`/teams/${teamId}/players/${playerId}`);
   }
 
   /**
-   * Updates a team
+   * Create a new team
    */
-  async updateTeam(teamId: string, teamData: Partial<Team>): Promise<Team> {
-    return apiService.put<Team>(`/api/teams/${teamId}`, teamData);
+  public async createTeam(team: Partial<Team>): Promise<Team> {
+    const response = await this.post<Team>('/teams', team);
+    return response.data;
   }
 
   /**
-   * Deletes a team
+   * Update a team
    */
-  async deleteTeam(teamId: string): Promise<void> {
-    return apiService.delete<void>(`/api/teams/${teamId}`);
+  public async updateTeam(teamId: string, team: Partial<Team>): Promise<Team> {
+    const response = await this.put<Team>(`/teams/${teamId}`, team);
+    return response.data;
+  }
+
+  /**
+   * Delete a team
+   */
+  public async deleteTeam(teamId: string): Promise<void> {
+    await this.delete<void>(`/teams/${teamId}`);
   }
 }
 
-export default new TeamService(); 
+// Create and export a singleton instance
+export const teamService = new TeamService(); 

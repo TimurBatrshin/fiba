@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useRef, ChangeEvent, FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { UserService } from "../../services/UserService";
+import { userService } from "../../services/UserService";
 import "./register.css";
 import { API_BASE_URL } from '../../config/envConfig';
+import { User as AuthUser } from '../../interfaces/Auth';
 
 interface User {
   id: string;
-  username: string;
+  name: string;
   fullName: string;
   photoUrl?: string;
 }
@@ -52,7 +53,14 @@ const Register = ({ tournamentId }: RegisterProps): React.ReactElement => {
     }
 
     try {
-      const results = await UserService.searchUsers(query);
+      const authUsers = await userService.searchUsers(query);
+      // Convert AuthUser to local User interface
+      const results: User[] = authUsers.map(user => ({
+        id: user.id,
+        name: user.name,
+        fullName: user.name, // Use name as fullName
+        photoUrl: undefined // User doesn't have avatar in Auth.ts
+      }));
       setSearchResults(results);
     } catch (error) {
       console.error("Ошибка при поиске пользователей:", error);

@@ -1,131 +1,119 @@
-import apiService from './ApiService';
-import { 
-  Tournament, 
-  TournamentStatus, 
-  TournamentLevel, 
-  BusinessType, 
-  TournamentTeam, 
-  Registration, 
-  RegistrationStatus 
-} from '../interfaces/Tournament';
+import { BaseApiService, ApiResponse } from './BaseApiService';
+import { Tournament, TournamentLevel, TournamentStatus } from '../interfaces/Tournament';
+import { API_CONFIG } from '../config/api';
 
-export interface TournamentCreateInput {
-  name: string;
-  date: string;
-  startTime: string;
-  location: string;
-  description: string;
-  status: TournamentStatus;
-  level: TournamentLevel;
-  imageUrl?: string;
-  businessType: BusinessType;
-  maxTeams: number;
-  entryFee: number;
-  prizePool: string;
-  isBusinessTournament: boolean;
-  sponsorName?: string;
-  sponsorLogo?: string;
-  rules?: string;
-  registrationOpen: boolean;
+export interface TournamentFilter {
+  status?: TournamentStatus;
+  location?: string;
+  startDate?: string;
+  endDate?: string;
+  level?: TournamentLevel;
 }
 
-export interface TeamStatusUpdate {
-  tournamentId: string;
-  teamId: string;
-  status: RegistrationStatus;
-}
-
-export class TournamentService {
-  /**
-   * Retrieves all tournaments
-   */
-  async getAllTournaments(): Promise<Tournament[]> {
-    return apiService.getAllTournaments();
+export class TournamentService extends BaseApiService {
+  constructor() {
+    super(API_CONFIG.baseUrl, API_CONFIG.mockUrl, API_CONFIG.useMockByDefault);
   }
 
   /**
-   * Gets tournament by ID
+   * Get all tournaments
    */
-  async getTournamentById(id: string): Promise<Tournament> {
-    return apiService.getTournamentById(id);
+  public async getAllTournaments(): Promise<Tournament[]> {
+    const response = await this.get<Tournament[]>('/tournaments');
+    return response.data;
   }
 
   /**
-   * Gets upcoming tournaments
+   * Get tournaments filtered by criteria
    */
-  async getUpcomingTournaments(): Promise<Tournament[]> {
-    return apiService.getUpcomingTournaments();
+  public async getTournaments(filter: TournamentFilter): Promise<Tournament[]> {
+    const response = await this.get<Tournament[]>('/tournaments', filter);
+    return response.data;
   }
 
   /**
-   * Gets completed tournaments
+   * Get tournament by ID
    */
-  async getCompletedTournaments(): Promise<Tournament[]> {
-    return apiService.getCompletedTournaments();
+  public async getTournamentById(id: string): Promise<Tournament> {
+    const response = await this.get<Tournament>(`/tournaments/${id}`);
+    return response.data;
   }
 
   /**
-   * Searches tournaments by location
+   * Get upcoming tournaments
    */
-  async searchTournamentsByLocation(location: string): Promise<Tournament[]> {
-    return apiService.searchTournamentsByLocation(location);
+  public async getUpcomingTournaments(limit?: number): Promise<Tournament[]> {
+    const params: Record<string, any> = { status: 'upcoming' };
+    if (limit) {
+      params.limit = limit;
+    }
+    const response = await this.get<Tournament[]>('/tournaments', params);
+    return response.data;
   }
 
   /**
-   * Gets business tournaments
+   * Get ongoing tournaments
    */
-  async getBusinessTournaments(): Promise<Tournament[]> {
-    return apiService.getBusinessTournaments();
+  public async getOngoingTournaments(limit?: number): Promise<Tournament[]> {
+    const params: Record<string, any> = { status: 'ongoing' };
+    if (limit) {
+      params.limit = limit;
+    }
+    const response = await this.get<Tournament[]>('/tournaments', params);
+    return response.data;
   }
 
   /**
-   * Creates a new tournament
+   * Get completed tournaments
    */
-  async createTournament(tournamentData: TournamentCreateInput): Promise<Tournament> {
-    return apiService.createTournament(tournamentData);
+  public async getCompletedTournaments(limit?: number): Promise<Tournament[]> {
+    const params: Record<string, any> = { status: 'completed' };
+    if (limit) {
+      params.limit = limit;
+    }
+    const response = await this.get<Tournament[]>('/tournaments', params);
+    return response.data;
   }
 
   /**
-   * Updates team status in a tournament
+   * Get tournament locations
    */
-  async updateTeamStatus({ tournamentId, teamId, status }: TeamStatusUpdate): Promise<any> {
-    return apiService.updateTeamStatus(tournamentId, teamId, status);
+  public async getTournamentLocations(): Promise<string[]> {
+    const response = await this.get<string[]>('/tournaments/locations');
+    return response.data;
   }
 
   /**
-   * Gets teams in a tournament
+   * Register user for tournament
    */
-  async getTournamentTeams(tournamentId: string, status?: RegistrationStatus): Promise<TournamentTeam[]> {
-    return apiService.getTournamentTeams(tournamentId, status);
+  public async registerForTournament(tournamentId: string, userId: string): Promise<any> {
+    const response = await this.post<any>(`/tournaments/${tournamentId}/register`, { userId });
+    return response.data;
   }
 
   /**
-   * Gets registrations for a tournament
+   * Create new tournament
    */
-  async getRegistrations(tournamentId: string, status?: RegistrationStatus): Promise<Registration[]> {
-    return apiService.getTournamentRegistrations(tournamentId, status);
+  public async createTournament(tournament: Omit<Tournament, 'id'>): Promise<Tournament> {
+    const response = await this.post<Tournament>('/tournaments', tournament);
+    return response.data;
   }
 
   /**
-   * Registers a team for a tournament
+   * Update tournament
    */
-  async registerTeam(tournamentId: string, teamName: string): Promise<Registration> {
-    return apiService.registerTeamForTournament(tournamentId, teamName);
+  public async updateTournament(id: string, tournament: Partial<Tournament>): Promise<Tournament> {
+    const response = await this.put<Tournament>(`/tournaments/${id}`, tournament);
+    return response.data;
   }
 
   /**
-   * Adds a player to a registration
+   * Delete tournament
    */
-  async addPlayerToRegistration(registrationId: string, userId: string): Promise<any> {
-    return apiService.addPlayerToRegistration(registrationId, userId);
-  }
-
-  /**
-   * Removes a player from a registration
-   */
-  async removePlayerFromRegistration(registrationId: string, userId: string): Promise<any> {
-    return apiService.removePlayerFromRegistration(registrationId, userId);
+  public async deleteTournament(id: string): Promise<void> {
+    await this.delete<void>(`/tournaments/${id}`);
   }
 }
 
-export default new TournamentService(); 
+// Create and export a singleton instance
+export const tournamentService = new TournamentService(); 

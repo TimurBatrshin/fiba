@@ -60,15 +60,15 @@ export class AuthService extends BaseApiService {
     try {
       const response = await this.post<LoginResponse>('/api/auth/login', { email, password });
       
-      if (response && response.token) {
-        this.setToken(response.token);
-        this.setAuthToken(response.token);
+      if (response && response.data.token) {
+        this.setToken(response.data.token);
+        this.setAuthToken(response.data.token);
         
         // Start the token refresh timer
         this.startTokenRefreshTimer();
       }
       
-      return response;
+      return response.data;
     } catch (error) {
       console.error('Login error:', error);
       throw error;
@@ -82,15 +82,15 @@ export class AuthService extends BaseApiService {
     try {
       const response = await this.post<LoginResponse>('/api/auth/register', data);
       
-      if (response && response.token) {
-        this.setToken(response.token);
-        this.setAuthToken(response.token);
+      if (response && response.data.token) {
+        this.setToken(response.data.token);
+        this.setAuthToken(response.data.token);
         
         // Start the token refresh timer
         this.startTokenRefreshTimer();
       }
       
-      return response;
+      return response.data;
     } catch (error) {
       console.error('Registration error:', error);
       throw error;
@@ -108,7 +108,15 @@ export class AuthService extends BaseApiService {
     
     // Redirect to login page с учетом базового пути для GitHub Pages
     const basePath = process.env.NODE_ENV === 'production' ? '/fiba3x3' : '';
-    window.location.href = `${basePath}/login`;
+    
+    // Формируем корректный URL для редиректа с учетом базового пути
+    if (basePath && !window.location.pathname.startsWith(basePath)) {
+      // Если мы не в baseUrl, то используем абсолютный путь
+      window.location.href = `${window.location.origin}${basePath}/login`;
+    } else {
+      // Используем относительный путь
+      window.location.href = `${basePath}/login`;
+    }
   }
 
   /**
@@ -188,9 +196,9 @@ export class AuthService extends BaseApiService {
         }
       );
       
-      if (response && response.token) {
-        this.setToken(response.token);
-        this.setAuthToken(response.token);
+      if (response && response.data.token) {
+        this.setToken(response.data.token);
+        this.setAuthToken(response.data.token);
         this.startTokenRefreshTimer();
       }
     } catch (error) {
@@ -286,13 +294,8 @@ export class AuthService extends BaseApiService {
    */
   async getCurrentUser(): Promise<User> {
     try {
-      const token = this.getToken();
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-
       const response = await this.get<User>('/api/users/me');
-      return response;
+      return response.data;
     } catch (error) {
       console.error('Error getting current user:', error);
       throw error;
@@ -305,7 +308,7 @@ export class AuthService extends BaseApiService {
   async getUserProfile(userId: string): Promise<UserProfile> {
     try {
       const response = await this.get<UserProfile>(`/api/profiles/${userId}`);
-      return response;
+      return response.data;
     } catch (error) {
       console.error('Error getting user profile:', error);
       throw error;
@@ -318,7 +321,7 @@ export class AuthService extends BaseApiService {
   async updateUserProfile(userId: string, profileData: Partial<UserProfile>): Promise<UserProfile> {
     try {
       const response = await this.put<UserProfile>(`/api/profiles/${userId}`, profileData);
-      return response;
+      return response.data;
     } catch (error) {
       console.error('Error updating user profile:', error);
       throw error;

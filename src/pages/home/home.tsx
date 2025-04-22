@@ -17,18 +17,10 @@ import defaultTournamentImg from '../../assets/images/default-tournament.jpg';
 import defaultAvatar from '../../assets/images/default-avatar.png';
 import heroBanner from '../../assets/images/hero-basketball.jpg';
 import { AuthService } from '../../services/AuthService';
+import { tournamentService } from '../../services/TournamentService';
+import { Tournament as TournamentType } from '../../interfaces/Tournament';
 
-// Добавим типы данных
-interface Tournament {
-  id: number;
-  name: string;
-  date: string;
-  location: string;
-  teamCount: number;
-  image: string;
-  status: "registration" | "in_progress" | "completed";
-}
-
+// Интерфейс для игрока
 interface Player {
   id: number;
   name: string;
@@ -39,14 +31,78 @@ interface Player {
 }
 
 const Home: React.FC = () => {
-  const [popularTournaments, setPopularTournaments] = useState<Tournament[]>([]);
+  const [upcomingTournaments, setUpcomingTournaments] = useState<TournamentType[]>([]);
   const [topPlayers, setTopPlayers] = useState<Player[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isError, setIsError] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
     // Проверяем авторизацию
     setIsAuthenticated(AuthService.getInstance().isAuthenticated());
+
+    // Загружаем данные о предстоящих турнирах
+    const fetchTournaments = async () => {
+      try {
+        setIsLoading(true);
+        setIsError(false);
+        const tournaments = await tournamentService.getUpcomingTournaments();
+        setUpcomingTournaments(tournaments.slice(0, 3)); // Берем только 3 ближайших турнира
+        
+        // Временно используем моковые данные для игроков
+        const players: Player[] = [
+          {
+            id: 1,
+            name: "Александр Иванов",
+            points: 456,
+            team: "Moscow Stars",
+            position: "Guard",
+            avatar: defaultAvatar
+          },
+          {
+            id: 2,
+            name: "Михаил Петров",
+            points: 445,
+            team: "Kazan Tigers",
+            position: "Forward",
+            avatar: defaultAvatar
+          },
+          {
+            id: 3,
+            name: "Дмитрий Сидоров",
+            points: 432,
+            team: "St. Petersburg Knights",
+            position: "Center",
+            avatar: defaultAvatar
+          },
+          {
+            id: 4,
+            name: "Игорь Смирнов",
+            points: 428,
+            team: "Novosibirsk Wolves",
+            position: "Forward",
+            avatar: defaultAvatar
+          },
+          {
+            id: 5,
+            name: "Сергей Волков",
+            points: 415,
+            team: "Ekaterinburg Eagles",
+            position: "Guard",
+            avatar: defaultAvatar
+          }
+        ];
+        
+        setTopPlayers(players);
+      } catch (error) {
+        console.error("Ошибка при загрузке турниров:", error);
+        setIsError(true);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchTournaments();
   }, []);
 
   const handleTournamentImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
@@ -59,95 +115,35 @@ const Home: React.FC = () => {
     e.currentTarget.onerror = null; // Prevent infinite loop
   };
 
-  useEffect(() => {
-    // Здесь будет запрос к API, сейчас используем моковые данные
-    const tournaments: Tournament[] = [
-      {
-        id: 1,
-        name: "FIBA 3x3 Moscow Open",
-        date: "15 июля 2023",
-        location: "Москва",
-        teamCount: 16,
-        image: defaultTournamentImg,
-        status: "registration"
-      },
-      {
-        id: 2,
-        name: "FIBA 3x3 Kazan Cup",
-        date: "22 августа 2023",
-        location: "Казань",
-        teamCount: 12,
-        image: defaultTournamentImg,
-        status: "in_progress"
-      },
-      {
-        id: 3,
-        name: "FIBA 3x3 Saint Petersburg Championship",
-        date: "5 сентября 2023",
-        location: "Санкт-Петербург",
-        teamCount: 24,
-        image: defaultTournamentImg,
-        status: "completed"
-      },
-    ];
-
-    const players: Player[] = [
-      {
-        id: 1,
-        name: "Александр Иванов",
-        points: 456,
-        team: "Moscow Stars",
-        position: "Guard",
-        avatar: defaultAvatar
-      },
-      {
-        id: 2,
-        name: "Михаил Петров",
-        points: 445,
-        team: "Kazan Tigers",
-        position: "Forward",
-        avatar: defaultAvatar
-      },
-      {
-        id: 3,
-        name: "Дмитрий Сидоров",
-        points: 432,
-        team: "St. Petersburg Knights",
-        position: "Center",
-        avatar: defaultAvatar
-      },
-      {
-        id: 4,
-        name: "Игорь Смирнов",
-        points: 428,
-        team: "Novosibirsk Wolves",
-        position: "Forward",
-        avatar: defaultAvatar
-      },
-      {
-        id: 5,
-        name: "Сергей Волков",
-        points: 415,
-        team: "Ekaterinburg Eagles",
-        position: "Guard",
-        avatar: defaultAvatar
+  // Функция для форматирования даты
+  const formatDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        return "Дата не указана";
       }
-    ];
-
-    setPopularTournaments(tournaments);
-    setTopPlayers(players);
-    setIsLoading(false);
-  }, []);
+      return date.toLocaleDateString('ru-RU', { 
+        day: 'numeric', 
+        month: 'long', 
+        year: 'numeric' 
+      });
+    } catch (e) {
+      console.error("Ошибка форматирования даты:", e);
+      return "Дата не указана";
+    }
+  };
 
   // Функция для получения текста статуса
   const getStatusText = (status: string): string => {
     switch (status) {
-      case "registration":
+      case "UPCOMING":
         return "Регистрация";
-      case "in_progress":
+      case "ONGOING":
         return "В процессе";
-      case "completed":
+      case "COMPLETED":
         return "Завершен";
+      case "CANCELLED":
+        return "Отменен";
       default:
         return "Неизвестно";
     }
@@ -156,12 +152,14 @@ const Home: React.FC = () => {
   // Функция для определения класса статуса
   const getStatusClass = (status: string): string => {
     switch (status) {
-      case "registration":
+      case "UPCOMING":
         return "gh-status-registration";
-      case "in_progress":
+      case "ONGOING":
         return "gh-status-in-progress";
-      case "completed":
+      case "COMPLETED":
         return "gh-status-completed";
+      case "CANCELLED":
+        return "gh-status-cancelled";
       default:
         return "";
     }
@@ -218,7 +216,7 @@ const Home: React.FC = () => {
       <section className="gh-tournaments">
         <div className="gh-container">
           <div className="gh-section-header">
-            <h2 className="gh-section-title">Популярные турниры</h2>
+            <h2 className="gh-section-title">Ближайшие турниры</h2>
             <Link to="/tournaments" className="gh-view-all">
               Все турниры <FontAwesomeIcon icon={faChevronRight} />
             </Link>
@@ -236,34 +234,47 @@ const Home: React.FC = () => {
                 </div>
               ))}
             </div>
+          ) : isError ? (
+            <div className="gh-error-message">
+              <p>Не удалось загрузить данные о турнирах. Пожалуйста, попробуйте позже.</p>
+            </div>
+          ) : upcomingTournaments.length === 0 ? (
+            <div className="gh-empty-state">
+              <p>На данный момент нет запланированных турниров</p>
+            </div>
           ) : (
             <div className="gh-tournaments-grid">
-              {popularTournaments.map((tournament) => (
+              {upcomingTournaments.map((tournament) => (
                 <Link to={`/tournament/${tournament.id}`} key={tournament.id} className="gh-tournament-card">
                   <div className="gh-tournament-img">
                     <img 
-                      src={tournament.image} 
+                      src={tournament.imageUrl || defaultTournamentImg} 
                       alt={tournament.name} 
                       onError={handleTournamentImageError}
                     />
                     <div className={`gh-tournament-status ${getStatusClass(tournament.status)}`}>
                       {getStatusText(tournament.status)}
                     </div>
+                    {tournament.isBusinessTournament && (
+                      <div className="gh-tournament-business-badge">
+                        Бизнес-турнир
+                      </div>
+                    )}
                   </div>
                   <div className="gh-tournament-content">
                     <h3 className="gh-tournament-title">{tournament.name}</h3>
                     <div className="gh-tournament-meta">
                       <div className="gh-meta-item">
-                        <FontAwesomeIcon icon={faCalendarAlt} className="gh-meta-icon" />
-                        <span>{tournament.date}</span>
+                        <FontAwesomeIcon icon={faCalendarAlt} />
+                        <span>{formatDate(tournament.date)}</span>
                       </div>
                       <div className="gh-meta-item">
-                        <FontAwesomeIcon icon={faMapMarkerAlt} className="gh-meta-icon" />
+                        <FontAwesomeIcon icon={faMapMarkerAlt} />
                         <span>{tournament.location}</span>
                       </div>
                       <div className="gh-meta-item">
-                        <FontAwesomeIcon icon={faUsers} className="gh-meta-icon" />
-                        <span>{tournament.teamCount} команд</span>
+                        <FontAwesomeIcon icon={faTrophy} />
+                        <span>{tournament.prizePool}</span>
                       </div>
                     </div>
                   </div>

@@ -10,8 +10,8 @@ import {
   faTrophy,
   faListAlt
 } from '@fortawesome/free-solid-svg-icons';
-import { API_BASE_URL } from '../../config/envConfig';
-import ApiService from '../../services/ApiService';
+import { tournamentService } from '../../services/TournamentService';
+import { TournamentLevel } from '../../interfaces/Tournament';
 
 interface FilterProps {
   onFilter: (filters: FilterState) => void;
@@ -40,10 +40,10 @@ const TournamentFilter: React.FC<FilterProps> = ({ onFilter }) => {
     const fetchLocations = async () => {
       try {
         setIsLoading(true);
-        const response = await ApiService.get('/tournaments');
-        if (Array.isArray(response)) {
+        const tournaments = await tournamentService.getAllTournaments();
+        if (Array.isArray(tournaments)) {
           // Извлекаем уникальные локации и отфильтровываем пустые
-          const uniqueLocations = Array.from(new Set(response
+          const uniqueLocations = Array.from(new Set(tournaments
             .map(t => t.location)
             .filter(loc => loc && loc.trim() !== '')
           ));
@@ -51,6 +51,16 @@ const TournamentFilter: React.FC<FilterProps> = ({ onFilter }) => {
         }
       } catch (error) {
         console.error('Ошибка при загрузке локаций:', error);
+        // При ошибке загрузки используем моковые данные локаций
+        const mockLocations = [
+          'Москва', 
+          'Санкт-Петербург', 
+          'Казань', 
+          'Екатеринбург', 
+          'Сочи', 
+          'Новосибирск'
+        ];
+        setLocations(mockLocations);
       } finally {
         setIsLoading(false);
       }
@@ -82,6 +92,20 @@ const TournamentFilter: React.FC<FilterProps> = ({ onFilter }) => {
       // API может ожидать определенный формат даты, оставляем как есть
       // так как input type="date" возвращает строку в формате YYYY-MM-DD
       console.log(`Применяем фильтр по дате: ${filterParams.date}`);
+    }
+    
+    // Конвертируем status в формат API, если задан
+    if (filterParams.status) {
+      // Преобразуем в формат, ожидаемый API
+      switch (filterParams.status) {
+        case 'registration':
+          filterParams.status = 'upcoming';
+          break;
+        case 'in_progress':
+          filterParams.status = 'ongoing';
+          break;
+        // для completed оставляем как есть
+      }
     }
     
     // Логируем отправляемые параметры фильтра
@@ -156,9 +180,10 @@ const TournamentFilter: React.FC<FilterProps> = ({ onFilter }) => {
               onChange={handleChange}
             >
               <option value="">Все уровни</option>
-              <option value="amateur">Любительский</option>
-              <option value="professional">Профессиональный</option>
-              <option value="international">Международный</option>
+              <option value="AMATEUR">Любительский</option>
+              <option value="PRO">Профессиональный</option>
+              <option value="BUSINESS">Бизнес</option>
+              <option value="YOUTH">Молодежный</option>
             </select>
           </div>
           

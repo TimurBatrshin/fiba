@@ -206,8 +206,9 @@ const Tournament = () => {
       } else {
         setRegistrationStatus("Ошибка при регистрации команды: Неожиданный ответ сервера");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Ошибка при регистрации команды:", error);
+      setRegistrationStatus("Ошибка при регистрации команды");
       
       let errorMessage = "Ошибка при регистрации команды.";
       
