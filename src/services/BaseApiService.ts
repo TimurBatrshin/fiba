@@ -1,6 +1,15 @@
 import { ErrorHandler } from '../utils/errorHandler';
 import { API_CONFIG } from '../config/api';
 
+// Declare the global type for window.authService
+declare global {
+  interface Window {
+    authService?: {
+      refreshToken: () => Promise<void>;
+    };
+  }
+}
+
 /**
  * Базовый класс для сервисов API
  */
@@ -62,7 +71,7 @@ export abstract class BaseApiService {
         const path = urlObj.pathname;
         
         // Используем полный URL с нашим доменом API для прокси
-        const baseProxyUrl = 'https://timurbatrshin-fiba-backend-e32e.twc1.net/api/proxy/static-bro-js';
+        const baseProxyUrl = 'https://timurbatrshin-fiba-backend-1aa7.twc1.net/api/proxy/static-bro-js';
         
         // Если это JS файл, добавляем метку времени для предотвращения кэширования
         if (path.endsWith('.js')) {
@@ -89,8 +98,24 @@ export abstract class BaseApiService {
     
     const response = await fetch(requestUrl, {
       ...options,
+      credentials: 'include', // Always include credentials for CORS
       headers: this.createHeaders(),
     });
+
+    // Handle 401 Unauthorized - potentially token expired
+    if (response.status === 401) {
+      // Try to refresh token or redirect to login
+      if (window.authService) {
+        try {
+          await window.authService.refreshToken();
+          // Retry the request with new token
+          return this.request<T>(url, options);
+        } catch (refreshError) {
+          console.error('Failed to refresh token:', refreshError);
+          // Continue with error handling below
+        }
+      }
+    }
 
     if (!response.ok) {
       const data = await response.json().catch(() => ({}));
@@ -113,7 +138,9 @@ export abstract class BaseApiService {
     
     // Добавляем параметры запроса
     Object.entries(params).forEach(([key, value]) => {
-      url.searchParams.append(key, String(value));
+      if (value !== undefined && value !== null) {
+        url.searchParams.append(key, String(value));
+      }
     });
 
     return this.request<T>(url.toString(), {
@@ -124,36 +151,86 @@ export abstract class BaseApiService {
   /**
    * Выполнить POST-запрос
    */
-  public async post<T = any>(endpoint: string, data: any = {}, options: Record<string, any> = {}): Promise<T> {
+  public async post<T = any>(endpoint: string, data: any = {}, options: RequestInit & Record<string, any> = {}): Promise<T> {
+    const url = `${this.baseUrl}${endpoint}`;
+    
+    const requestOptions: RequestInit = {
+      method: 'POST',
+      body: JSON.stringify(data),
+      ...options,
+    };
+
+    // If headers are provided in options, merge them with defaults
+    if (options.headers) {
+      const headers = new Headers(this.createHeaders());
+      
+      // Add the custom headers
+      if (options.headers instanceof Headers) {
+        options.headers.forEach((value, key) => {
+          headers.set(key, value);
+        });
+      } else if (typeof options.headers === 'object') {
+        Object.entries(options.headers).forEach(([key, value]) => {
+          headers.set(key, String(value));
+        });
+      }
+      
+      // Override the headers in request options
+      requestOptions.headers = headers;
+    }
+    
+    return this.request<T>(url, requestOptions);
+  }
+
+  /**
+   * Выполнить PUT-запрос
+   */
+  public async put<T = any>(endpoint: string, data: any = {}, options: RequestInit = {}): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
     
     return this.request<T>(url, {
-      method: 'POST',
+      method: 'PUT',
       body: JSON.stringify(data),
       ...options,
     });
   }
 
   /**
-   * Выполнить PUT-запрос
-   */
-  public async put<T = any>(endpoint: string, data: any = {}): Promise<T> {
-    const url = `${this.baseUrl}${endpoint}`;
-    
-    return this.request<T>(url, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
-  }
-
-  /**
    * Выполнить DELETE-запрос
    */
-  public async delete<T = any>(endpoint: string): Promise<T> {
+  public async delete<T = any>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
     
     return this.request<T>(url, {
       method: 'DELETE',
+      ...options,
+    });
+  }
+
+  /**
+   * Загрузка файла на сервер
+   */
+  public async uploadFile<T = any>(endpoint: string, file: File, additionalData: Record<string, any> = {}): Promise<T> {
+    const url = `${this.baseUrl}${endpoint}`;
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    // Add additional data to form if needed
+    Object.entries(additionalData).forEach(([key, value]) => {
+      formData.append(key, String(value));
+    });
+    
+    // Use different headers for file upload (no Content-Type)
+    const headers = new Headers();
+    if (this.token) {
+      headers.append('Authorization', `Bearer ${this.token}`);
+    }
+    
+    return this.request<T>(url, {
+      method: 'POST',
+      body: formData,
+      headers,
     });
   }
 } 

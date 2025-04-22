@@ -2,7 +2,15 @@ import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import { API_CONFIG } from '../config/api';
 import { ErrorHandler, ApiError, ValidationError, AuthError } from '../utils/errorHandler';
 import logger from '../utils/logger';
-import { User, UserUpdateInput } from './UserService';
+import { User } from '../interfaces/Auth';
+import { 
+  Tournament, 
+  TournamentStatus, 
+  TournamentTeam, 
+  Registration, 
+  RegistrationStatus 
+} from '../interfaces/Tournament';
+import { Team, Player } from '../interfaces/Team';
 
 /**
  * Сервис для работы с API
@@ -15,7 +23,7 @@ class ApiService {
     this.api = axios.create({
       baseURL: API_CONFIG.baseUrl,
       timeout: API_CONFIG.timeout,
-      withCredentials: API_CONFIG.withCredentials,
+      withCredentials: true, // Always include credentials for CORS
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json'
@@ -31,7 +39,7 @@ class ApiService {
           config.headers.Authorization = `Bearer ${token}`;
         }
         
-        // Add CORS settings to all requests
+        // Always ensure credentials are included for CORS
         config.withCredentials = true;
         
         return config;
@@ -44,7 +52,14 @@ class ApiService {
       (error) => {
         if (error.response && error.response.status === 401) {
           localStorage.removeItem('token');
-          // Handle unauthorized access
+          // Try to refresh token if available
+          const authService = require('./AuthService').AuthService.getInstance();
+          if (authService) {
+            authService.refreshToken().catch(() => {
+              // If refresh fails, logout
+              authService.logout();
+            });
+          }
         }
         return Promise.reject(error);
       }
@@ -156,112 +171,149 @@ class ApiService {
   }
   
   // Tournament specific methods
-  async getAllTournaments() {
-    return this.get<any[]>('/tournaments');
+  async getAllTournaments(): Promise<Tournament[]> {
+    return this.get<Tournament[]>('/api/tournaments');
   }
   
-  async getTournamentById(id: string) {
-    return this.get<any>(`/tournaments/${id}`);
+  async getTournamentById(id: string): Promise<Tournament> {
+    return this.get<Tournament>(`/api/tournaments/${id}`);
   }
   
-  async getUpcomingTournaments() {
-    return this.get('/tournaments/upcoming');
+  async getUpcomingTournaments(): Promise<Tournament[]> {
+    return this.get<Tournament[]>('/api/tournaments/upcoming');
   }
   
-  async getCompletedTournaments() {
-    return this.get('/tournaments/completed');
+  async getCompletedTournaments(): Promise<Tournament[]> {
+    return this.get<Tournament[]>('/api/tournaments/completed');
   }
   
-  async searchTournamentsByLocation(location: string) {
-    return this.get('/tournaments/search', { params: { location } });
+  async searchTournamentsByLocation(location: string): Promise<Tournament[]> {
+    return this.get<Tournament[]>('/api/tournaments/search', { params: { location } });
   }
   
-  async getBusinessTournaments() {
-    return this.get('/tournaments/business');
+  async getBusinessTournaments(): Promise<Tournament[]> {
+    return this.get<Tournament[]>('/api/tournaments/business');
   }
   
   // Admin methods for tournament management
-  async createTournament(tournamentData: any) {
-    return this.post<any>('/admin/tournaments', tournamentData);
+  async createTournament(tournamentData: any): Promise<Tournament> {
+    return this.post<Tournament>('/api/admin/tournaments', tournamentData);
   }
   
-  async updateTournament(id: string, tournamentData: any) {
-    return this.put<any>(`/admin/tournaments/${id}`, tournamentData);
+  async updateTournament(id: string, tournamentData: any): Promise<Tournament> {
+    return this.put<Tournament>(`/api/admin/tournaments/${id}`, tournamentData);
   }
   
-  async deleteTournament(id: string) {
-    return this.delete<void>(`/admin/tournaments/${id}`);
+  async deleteTournament(id: string): Promise<void> {
+    return this.delete<void>(`/api/admin/tournaments/${id}`);
   }
   
-  async updateTeamStatus(tournamentId: string, teamId: string, status: 'APPROVED' | 'REJECTED' | 'PENDING' | 'COMPLETED') {
-    return this.put<any>(`/admin/tournaments/${tournamentId}/teams/${teamId}`, { status });
+  async updateTeamStatus(tournamentId: string, teamId: string, status: RegistrationStatus): Promise<any> {
+    return this.put<any>(`/api/admin/tournaments/${tournamentId}/teams/${teamId}`, { status });
   }
   
   // Team methods
-  async getAllTeams() {
-    return this.get<any[]>('/teams');
+  async getAllTeams(): Promise<Team[]> {
+    return this.get<Team[]>('/api/teams');
   }
   
-  async getTeamById(id: string) {
-    return this.get<any>(`/teams/${id}`);
+  async getTeamById(id: string): Promise<Team> {
+    return this.get<Team>(`/api/teams/${id}`);
   }
   
-  async searchTeamsByName(name: string) {
-    return this.get('/teams/search', { params: { name } });
+  async searchTeamsByName(name: string): Promise<Team[]> {
+    return this.get<Team[]>('/api/teams/search', { params: { name } });
   }
   
-  async getTopTeams(limit: number = 10) {
-    return this.get('/teams/top', { params: { limit } });
+  async getTopTeams(limit: number = 10): Promise<Team[]> {
+    return this.get<Team[]>('/api/teams/top', { params: { limit } });
   }
   
-  async getTournamentTeams(tournamentId: string, status?: string) {
-    const params = status ? { status } : undefined;
-    return this.get(`/tournaments/${tournamentId}/teams`, status ? { params } : undefined);
+  async getTournamentTeams(tournamentId: string, status?: RegistrationStatus): Promise<TournamentTeam[]> {
+    return this.get<TournamentTeam[]>(`/api/tournaments/${tournamentId}/teams`, status ? { params: { status } } : undefined);
   }
   
-  // User-related methods
-  async getCurrentUser(): Promise<any> {
-    return this.get('/users/me');
+  // Registration methods
+  async getTournamentRegistrations(tournamentId: string, status?: RegistrationStatus): Promise<Registration[]> {
+    return this.get<Registration[]>(`/api/registrations`, { params: { tournamentId, ...(status ? { status } : {}) } });
   }
-
-  async getUserById(userId: string): Promise<any> {
-    return this.get(`/users/${userId}`);
+  
+  async registerTeamForTournament(tournamentId: string, teamName: string): Promise<Registration> {
+    return this.post<Registration>(`/api/registrations`, { tournamentId, teamName });
   }
-
-  async updateUser(userId: string, userData: any): Promise<any> {
-    return this.put(`/users/${userId}`, userData);
+  
+  async addPlayerToRegistration(registrationId: string, userId: string): Promise<any> {
+    return this.post<any>(`/api/registrations/${registrationId}/players`, { userId });
   }
-
+  
+  async removePlayerFromRegistration(registrationId: string, userId: string): Promise<any> {
+    return this.delete<any>(`/api/registrations/${registrationId}/players/${userId}`);
+  }
+  
+  // User methods
+  async getCurrentUser(): Promise<User> {
+    return this.get<User>('/api/users/me');
+  }
+  
+  async getUserById(userId: string): Promise<User> {
+    return this.get<User>(`/api/users/${userId}`);
+  }
+  
+  async updateUser(userId: string, userData: Partial<User>): Promise<User> {
+    return this.put<User>(`/api/users/${userId}`, userData);
+  }
+  
+  async searchUsers(query: string): Promise<User[]> {
+    return this.get<User[]>('/api/users/search', { params: { query } });
+  }
+  
+  // Auth methods
   async login(credentials: { email: string; password: string }): Promise<any> {
-    const response = await this.post<{token: string}>('/auth/login', credentials);
-    if (response && response.token) {
-      localStorage.setItem('token', response.token);
+    try {
+      const response = await this.post<any>('/api/auth/login', credentials);
+      if (response && response.token) {
+        localStorage.setItem('token', response.token);
+      }
+      return response;
+    } catch (error) {
+      this.handleError(error);
+      throw error;
     }
-    return response;
   }
-
+  
   async register(userData: { 
+    name: string; 
     email: string; 
     password: string; 
-    firstName: string; 
-    lastName: string 
   }): Promise<any> {
-    const response = await this.post<{token: string}>('/auth/register', userData);
-    if (response && response.token) {
-      localStorage.setItem('token', response.token);
+    try {
+      const response = await this.post<any>('/api/auth/register', userData);
+      if (response && response.token) {
+        localStorage.setItem('token', response.token);
+      }
+      return response;
+    } catch (error) {
+      this.handleError(error);
+      throw error;
     }
-    return response;
   }
-
+  
+  async refreshToken(token: string): Promise<any> {
+    return this.post<any>('/api/auth/refresh-token', {}, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+  }
+  
   async logout(): Promise<any> {
     localStorage.removeItem('token');
-    return this.post('/auth/logout', {});
+    return this.post<void>('/api/auth/logout', {});
   }
   
   clearAuthToken() {
-    // Method to clear auth token
+    localStorage.removeItem('token');
   }
 }
 
-// Экспортируем экземпляр для упрощения импорта
 export default ApiService.getInstance(); 

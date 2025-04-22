@@ -4,7 +4,7 @@ module.exports = function(app) {
   app.use(
     '/api',
     createProxyMiddleware({
-      target: 'https://timurbatrshin-fiba-backend-e32e.twc1.net',
+      target: 'https://timurbatrshin-fiba-backend-1aa7.twc1.net',
       changeOrigin: true,
       secure: false,
       headers: {
