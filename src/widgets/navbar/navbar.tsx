@@ -2,31 +2,25 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import "./navbar.css";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faChartBar, faUser, faHome, faTrophy } from "@fortawesome/free-solid-svg-icons";
+import { faChartBar, faUser, faHome, faTrophy, faPlus } from "@fortawesome/free-solid-svg-icons";
 import fibaLogo from '../../assets/images/fiba-logo.png';
 import { useAuth } from "../../contexts/AuthContext";
 
-interface NavbarProps {
-  isAuthenticated: boolean;
-}
-
-const Navbar: React.FC<NavbarProps> = ({ isAuthenticated: propIsAuthenticated }) => {
+const Navbar: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { logout: contextLogout } = useAuth();
+  const { isAuthenticated, logout: contextLogout, currentRole } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(propIsAuthenticated);
   const [showStatsDropdown, setShowStatsDropdown] = useState(false);
+  const isAdmin = currentRole === 'admin';
 
   useEffect(() => {
-    setIsAuthenticated(propIsAuthenticated || !!localStorage.getItem("token"));
-    
     const handleScroll = () => setIsScrolled(window.pageYOffset > 10);
     window.addEventListener("scroll", handleScroll);
     
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [propIsAuthenticated]);
+  }, []);
 
   useEffect(() => {
     setIsMobileMenuOpen(false);
@@ -34,7 +28,6 @@ const Navbar: React.FC<NavbarProps> = ({ isAuthenticated: propIsAuthenticated })
 
   const handleLogout = () => {
     contextLogout();
-    setIsAuthenticated(false);
     navigate('/login');
   };
 
@@ -83,6 +76,14 @@ const Navbar: React.FC<NavbarProps> = ({ isAuthenticated: propIsAuthenticated })
                 <span>Турниры</span>
               </Link>
             </li>
+            {isAdmin && isAuthenticated && (
+              <li className="nav-item">
+                <Link to="/create-tournament" className="nav-link admin-link">
+                  <FontAwesomeIcon icon={faPlus} className="nav-icon" />
+                  <span>Создать турнир</span>
+                </Link>
+              </li>
+            )}
             <li className="nav-item stats-dropdown">
               <div className="nav-dropdown">
                 <button 

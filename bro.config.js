@@ -39,10 +39,10 @@ module.exports = {
   },
   config: {
     "fiba.api": "/api",
-    "fiba.static": "https://timurbatrshin-fiba-backend-feef.twc1.net/api/proxy/static-bro-js/",
+    "fiba.static": "https://timurbatrshin-fiba-backend-e32e.twc1.net/api/proxy/static-bro-js/",
     "fiba.ms": "/ms",
     "fiba.version": "1.6.3"
   },
   port: 8099,
-  apiBaseUrl: 'https://timurbatrshin-fiba-backend-feef.twc1.net/api'
+  apiBaseUrl: 'https://timurbatrshin-fiba-backend-e32e.twc1.net/api'
 };

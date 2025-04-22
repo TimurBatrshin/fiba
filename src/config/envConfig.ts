@@ -10,16 +10,16 @@ export const isDevelopment = !isProduction;
 // Environment-specific configurations
 const ENV_CONFIG = {
   development: {
-    apiUrl: 'https://timurbatrshin-fiba-backend-feef.twc1.net/api',
+    apiUrl: 'https://timurbatrshin-fiba-backend-e32e.twc1.net/api',
     enableLogging: true,
-    staticUrl: 'https://timurbatrshin-fiba-backend-feef.twc1.net/static/',
+    staticUrl: 'https://timurbatrshin-fiba-backend-e32e.twc1.net/static/',
     appBaseUrl: '/',
     msPath: '/ms'
   },
   production: {
-    apiUrl: 'https://timurbatrshin-fiba-backend-feef.twc1.net/api',
+    apiUrl: 'https://timurbatrshin-fiba-backend-e32e.twc1.net/api',
     enableLogging: false,
-    staticUrl: 'https://timurbatrshin-fiba-backend-feef.twc1.net/static/',
+    staticUrl: 'https://timurbatrshin-fiba-backend-e32e.twc1.net/static/',
     appBaseUrl: '/',
     msPath: '/ms'
   }

@@ -2,6 +2,8 @@ import axios from 'axios';
 import { ApiService, mockApiClient } from '../__mocks__/ApiService';
 import { ApiError, ValidationError, AuthError } from '../../utils/errorHandler';
 import { APP_SETTINGS } from '../../config/envConfig';
+import apiService from '../ApiService';
+import { API_CONFIG } from '../../config/api';
 
 // Мокаем модули
 jest.mock('axios');
@@ -49,6 +51,8 @@ Object.defineProperty(window, 'location', {
 });
 
 describe('ApiService', () => {
+  let mockAxiosInstance: any;
+
   beforeEach(() => {
     jest.clearAllMocks();
     localStorageMock.clear();
@@ -61,6 +65,542 @@ describe('ApiService', () => {
     mockApiClient.post.mockClear();
     mockApiClient.put.mockClear();
     mockApiClient.delete.mockClear();
+
+    // Получаем созданный axios инстанс из мока
+    mockAxiosInstance = (axios.create as jest.Mock).mock.results[0].value;
+  });
+
+  describe('Core HTTP methods', () => {
+    it('should make a GET request with correct parameters', async () => {
+      // Arrange
+      const mockResponse = { data: { id: '1', name: 'Test' } };
+      mockAxiosInstance.get.mockResolvedValue(mockResponse);
+
+      // Act
+      const result = await apiService.get('/test');
+
+      // Assert
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/test', expect.objectContaining({
+        withCredentials: true
+      }));
+      expect(result).toEqual(mockResponse.data);
+    });
+
+    it('should make a POST request with correct parameters', async () => {
+      // Arrange
+      const mockData = { name: 'Test', value: 123 };
+      const mockResponse = { data: { id: '1', ...mockData } };
+      mockAxiosInstance.post.mockResolvedValue(mockResponse);
+
+      // Act
+      const result = await apiService.post('/test', mockData);
+
+      // Assert
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/test', mockData, expect.objectContaining({
+        withCredentials: true
+      }));
+      expect(result).toEqual(mockResponse.data);
+    });
+
+    it('should make a PUT request with correct parameters', async () => {
+      // Arrange
+      const mockData = { id: '1', name: 'Updated Test' };
+      const mockResponse = { data: mockData };
+      mockAxiosInstance.put.mockResolvedValue(mockResponse);
+
+      // Act
+      const result = await apiService.put('/test/1', mockData);
+
+      // Assert
+      expect(mockAxiosInstance.put).toHaveBeenCalledWith('/test/1', mockData, expect.objectContaining({
+        withCredentials: true
+      }));
+      expect(result).toEqual(mockResponse.data);
+    });
+
+    it('should make a DELETE request with correct parameters', async () => {
+      // Arrange
+      const mockResponse = { data: { success: true } };
+      mockAxiosInstance.delete.mockResolvedValue(mockResponse);
+
+      // Act
+      const result = await apiService.delete('/test/1');
+
+      // Assert
+      expect(mockAxiosInstance.delete).toHaveBeenCalledWith('/test/1', expect.objectContaining({
+        withCredentials: true
+      }));
+      expect(result).toEqual(mockResponse.data);
+    });
+  });
+
+  describe('Authentication methods', () => {
+    it('should store token after successful login', async () => {
+      // Arrange
+      const credentials = { email: 'test@example.com', password: 'password123' };
+      const mockResponse = { data: { token: 'jwt-token-123', user: { id: '1', email: 'test@example.com' } } };
+      mockAxiosInstance.post.mockResolvedValue(mockResponse);
+
+      // Act
+      const result = await apiService.login(credentials);
+
+      // Assert
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/auth/login', credentials, expect.anything());
+      expect(localStorage.getItem('token')).toBe('jwt-token-123');
+      expect(result).toEqual(mockResponse.data);
+    });
+
+    it('should store token after successful registration', async () => {
+      // Arrange
+      const userData = { email: 'new@example.com', password: 'password123', firstName: 'John', lastName: 'Doe' };
+      const mockResponse = { data: { token: 'jwt-token-new', user: { id: '2', email: 'new@example.com' } } };
+      mockAxiosInstance.post.mockResolvedValue(mockResponse);
+
+      // Act
+      const result = await apiService.register(userData);
+
+      // Assert
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/auth/register', userData, expect.anything());
+      expect(localStorage.getItem('token')).toBe('jwt-token-new');
+      expect(result).toEqual(mockResponse.data);
+    });
+
+    it('should remove token after logout', async () => {
+      // Arrange
+      localStorage.setItem('token', 'existing-token');
+      const mockResponse = { data: { success: true } };
+      mockAxiosInstance.post.mockResolvedValue(mockResponse);
+
+      // Act
+      await apiService.logout();
+
+      // Assert
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/auth/logout', {}, expect.anything());
+      expect(localStorage.getItem('token')).toBeNull();
+    });
+  });
+
+  describe('Tournament methods', () => {
+    it('should call get for getAllTournaments', async () => {
+      // Arrange
+      const mockTournaments = [
+        { id: '1', name: 'Tournament 1' }, 
+        { id: '2', name: 'Tournament 2' }
+      ];
+      const mockResponse = { data: mockTournaments };
+      mockAxiosInstance.get.mockResolvedValue(mockResponse);
+
+      // Act
+      const result = await apiService.getAllTournaments();
+
+      // Assert
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/tournaments', expect.anything());
+      expect(result).toEqual(mockTournaments);
+    });
+
+    it('should call get with correct ID for getTournamentById', async () => {
+      // Arrange
+      const tournamentId = '123';
+      const mockTournament = { id: tournamentId, name: 'Test Tournament' };
+      const mockResponse = { data: mockTournament };
+      mockAxiosInstance.get.mockResolvedValue(mockResponse);
+
+      // Act
+      const result = await apiService.getTournamentById(tournamentId);
+
+      // Assert
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith(`/tournaments/${tournamentId}`, expect.anything());
+      expect(result).toEqual(mockTournament);
+    });
+
+    it('should call get for getUpcomingTournaments', async () => {
+      // Arrange
+      const mockTournaments = [
+        { id: '1', name: 'Tournament 1', startDate: new Date(Date.now() + 86400000).toISOString() }
+      ];
+      const mockResponse = { data: mockTournaments };
+      mockAxiosInstance.get.mockResolvedValue(mockResponse);
+
+      // Act
+      const result = await apiService.getUpcomingTournaments();
+
+      // Assert
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/tournaments/upcoming', expect.anything());
+      expect(result).toEqual(mockTournaments);
+    });
+
+    it('should call get for getCompletedTournaments', async () => {
+      // Arrange
+      const mockTournaments = [
+        { id: '1', name: 'Tournament 1', status: 'COMPLETED' }
+      ];
+      const mockResponse = { data: mockTournaments };
+      mockAxiosInstance.get.mockResolvedValue(mockResponse);
+
+      // Act
+      const result = await apiService.getCompletedTournaments();
+
+      // Assert
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/tournaments/completed', expect.anything());
+      expect(result).toEqual(mockTournaments);
+    });
+
+    it('should call get with correct parameters for searchTournamentsByLocation', async () => {
+      // Arrange
+      const location = 'New York';
+      const mockTournaments = [
+        { id: '1', name: 'Tournament 1', location: 'New York' }
+      ];
+      const mockResponse = { data: mockTournaments };
+      mockAxiosInstance.get.mockResolvedValue(mockResponse);
+
+      // Act
+      const result = await apiService.searchTournamentsByLocation(location);
+
+      // Assert
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/tournaments/search', { 
+        params: { location },
+        withCredentials: true
+      });
+      expect(result).toEqual(mockTournaments);
+    });
+
+    it('should call get for getBusinessTournaments', async () => {
+      // Arrange
+      const mockTournaments = [
+        { id: '1', name: 'Tournament 1', type: 'business' }
+      ];
+      const mockResponse = { data: mockTournaments };
+      mockAxiosInstance.get.mockResolvedValue(mockResponse);
+
+      // Act
+      const result = await apiService.getBusinessTournaments();
+
+      // Assert
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/tournaments/business', expect.anything());
+      expect(result).toEqual(mockTournaments);
+    });
+
+    it('should call post with correct data for createTournament', async () => {
+      // Arrange
+      const tournamentData = { 
+        name: 'New Tournament', 
+        location: 'Chicago', 
+        startDate: '2023-10-15', 
+        endDate: '2023-10-20' 
+      };
+      const mockResponse = { data: { id: 'new-id', ...tournamentData } };
+      mockAxiosInstance.post.mockResolvedValue(mockResponse);
+
+      // Act
+      const result = await apiService.createTournament(tournamentData);
+
+      // Assert
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/admin/tournaments', tournamentData, expect.anything());
+      expect(result).toEqual(mockResponse.data);
+    });
+
+    it('should call put with correct data for updateTournament', async () => {
+      // Arrange
+      const tournamentId = '123';
+      const tournamentData = { 
+        name: 'Updated Tournament', 
+        location: 'Miami' 
+      };
+      const mockResponse = { data: { id: tournamentId, ...tournamentData } };
+      mockAxiosInstance.put.mockResolvedValue(mockResponse);
+
+      // Act
+      const result = await apiService.updateTournament(tournamentId, tournamentData);
+
+      // Assert
+      expect(mockAxiosInstance.put).toHaveBeenCalledWith(`/admin/tournaments/${tournamentId}`, tournamentData, expect.anything());
+      expect(result).toEqual(mockResponse.data);
+    });
+
+    it('should call delete with correct ID for deleteTournament', async () => {
+      // Arrange
+      const tournamentId = '123';
+      const mockResponse = { data: { success: true } };
+      mockAxiosInstance.delete.mockResolvedValue(mockResponse);
+
+      // Act
+      const result = await apiService.deleteTournament(tournamentId);
+
+      // Assert
+      expect(mockAxiosInstance.delete).toHaveBeenCalledWith(`/admin/tournaments/${tournamentId}`, expect.anything());
+      expect(result).toEqual(mockResponse.data);
+    });
+
+    it('should call put with correct data for updateTeamStatus', async () => {
+      // Arrange
+      const tournamentId = '123';
+      const teamId = '456';
+      const status = 'APPROVED';
+      const mockResponse = { data: { success: true } };
+      mockAxiosInstance.put.mockResolvedValue(mockResponse);
+
+      // Act
+      const result = await apiService.updateTeamStatus(tournamentId, teamId, status);
+
+      // Assert
+      expect(mockAxiosInstance.put).toHaveBeenCalledWith(
+        `/admin/tournaments/${tournamentId}/teams/${teamId}`, 
+        { status }, 
+        expect.anything()
+      );
+      expect(result).toEqual(mockResponse.data);
+    });
+  });
+
+  describe('Team methods', () => {
+    it('should call get for getAllTeams', async () => {
+      // Arrange
+      const mockTeams = [{ id: '1', name: 'Team 1' }, { id: '2', name: 'Team 2' }];
+      const mockResponse = { data: mockTeams };
+      mockAxiosInstance.get.mockResolvedValue(mockResponse);
+
+      // Act
+      const result = await apiService.getAllTeams();
+
+      // Assert
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/teams', expect.anything());
+      expect(result).toEqual(mockTeams);
+    });
+
+    it('should call get with correct ID for getTeamById', async () => {
+      // Arrange
+      const teamId = '123';
+      const mockTeam = { id: teamId, name: 'Test Team' };
+      const mockResponse = { data: mockTeam };
+      mockAxiosInstance.get.mockResolvedValue(mockResponse);
+
+      // Act
+      const result = await apiService.getTeamById(teamId);
+
+      // Assert
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith(`/teams/${teamId}`, expect.anything());
+      expect(result).toEqual(mockTeam);
+    });
+
+    it('should call get with correct parameters for searchTeamsByName', async () => {
+      // Arrange
+      const searchName = 'Lakers';
+      const mockTeams = [{ id: '1', name: 'LA Lakers' }];
+      const mockResponse = { data: mockTeams };
+      mockAxiosInstance.get.mockResolvedValue(mockResponse);
+
+      // Act
+      const result = await apiService.searchTeamsByName(searchName);
+
+      // Assert
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/teams/search', { 
+        params: { name: searchName },
+        withCredentials: true 
+      });
+      expect(result).toEqual(mockTeams);
+    });
+
+    it('should call get with correct parameters for getTopTeams', async () => {
+      // Arrange
+      const limit = 5;
+      const mockTeams = [
+        { id: '1', name: 'Team 1' }, 
+        { id: '2', name: 'Team 2' },
+        { id: '3', name: 'Team 3' },
+        { id: '4', name: 'Team 4' },
+        { id: '5', name: 'Team 5' }
+      ];
+      const mockResponse = { data: mockTeams };
+      mockAxiosInstance.get.mockResolvedValue(mockResponse);
+
+      // Act
+      const result = await apiService.getTopTeams(limit);
+
+      // Assert
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/teams/top', { 
+        params: { limit },
+        withCredentials: true 
+      });
+      expect(result).toEqual(mockTeams);
+    });
+
+    it('should call get with correct parameters for getTournamentTeams', async () => {
+      // Arrange
+      const tournamentId = '123';
+      const status = 'APPROVED';
+      const mockTeams = [{ id: '1', name: 'Team 1', status: 'APPROVED' }];
+      const mockResponse = { data: mockTeams };
+      mockAxiosInstance.get.mockResolvedValue(mockResponse);
+
+      // Act
+      const result = await apiService.getTournamentTeams(tournamentId, status);
+
+      // Assert
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith(`/tournaments/${tournamentId}/teams`, { 
+        params: { status },
+        withCredentials: true 
+      });
+      expect(result).toEqual(mockTeams);
+    });
+
+    it('should call get with correct parameters for getTournamentTeams without status', async () => {
+      // Arrange
+      const tournamentId = '123';
+      const mockTeams = [
+        { id: '1', name: 'Team 1', status: 'APPROVED' },
+        { id: '2', name: 'Team 2', status: 'PENDING' }
+      ];
+      const mockResponse = { data: mockTeams };
+      mockAxiosInstance.get.mockResolvedValue(mockResponse);
+
+      // Act
+      const result = await apiService.getTournamentTeams(tournamentId);
+
+      // Assert
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith(`/tournaments/${tournamentId}/teams`, expect.anything());
+      expect(result).toEqual(mockTeams);
+    });
+  });
+
+  describe('User methods', () => {
+    it('should call get for getCurrentUser', async () => {
+      // Arrange
+      const mockUser = { id: '123', username: 'testuser', email: 'test@example.com' };
+      const mockResponse = { data: mockUser };
+      mockAxiosInstance.get.mockResolvedValue(mockResponse);
+
+      // Act
+      const result = await apiService.getCurrentUser();
+
+      // Assert
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/users/me', expect.anything());
+      expect(result).toEqual(mockUser);
+    });
+
+    it('should call get with correct ID for getUserById', async () => {
+      // Arrange
+      const userId = '123';
+      const mockUser = { id: userId, username: 'testuser', email: 'test@example.com' };
+      const mockResponse = { data: mockUser };
+      mockAxiosInstance.get.mockResolvedValue(mockResponse);
+
+      // Act
+      const result = await apiService.getUserById(userId);
+
+      // Assert
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith(`/users/${userId}`, expect.anything());
+      expect(result).toEqual(mockUser);
+    });
+
+    it('should call put with correct data for updateUser', async () => {
+      // Arrange
+      const userId = '123';
+      const userData = { 
+        username: 'newusername', 
+        email: 'newemail@example.com' 
+      };
+      const mockResponse = { data: { id: userId, ...userData } };
+      mockAxiosInstance.put.mockResolvedValue(mockResponse);
+
+      // Act
+      const result = await apiService.updateUser(userId, userData);
+
+      // Assert
+      expect(mockAxiosInstance.put).toHaveBeenCalledWith(`/users/${userId}`, userData, expect.anything());
+      expect(result).toEqual(mockResponse.data);
+    });
+
+    it('should call post for logout', async () => {
+      // Arrange
+      const mockResponse = { data: { success: true } };
+      mockAxiosInstance.post.mockResolvedValue(mockResponse);
+
+      // Act
+      const result = await apiService.logout();
+
+      // Assert
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/auth/logout', {}, expect.anything());
+      expect(result).toEqual(mockResponse.data);
+    });
+  });
+
+  describe('Request interceptors', () => {
+    it('should add authorization header when token exists', async () => {
+      // Arrange
+      localStorage.setItem('token', 'test-token');
+      
+      // We need to extract the request interceptor function
+      const requestInterceptor = mockAxiosInstance.interceptors.request.use.mock.calls[0][0];
+      
+      // Create a mock config object
+      const config = { headers: {} };
+      
+      // Act
+      const result = requestInterceptor(config);
+      
+      // Assert
+      expect(result.headers.Authorization).toBe('Bearer test-token');
+    });
+    
+    it('should not add authorization header when token does not exist', async () => {
+      // Arrange
+      localStorage.removeItem('token');
+      
+      // We need to extract the request interceptor function
+      const requestInterceptor = mockAxiosInstance.interceptors.request.use.mock.calls[0][0];
+      
+      // Create a mock config object
+      const config = { headers: {} };
+      
+      // Act
+      const result = requestInterceptor(config);
+      
+      // Assert
+      expect(result.headers.Authorization).toBeUndefined();
+    });
+  });
+
+  describe('Response interceptors', () => {
+    it('should remove token when receiving 401 response', async () => {
+      // Arrange
+      localStorage.setItem('token', 'test-token');
+      
+      // Extract the response error interceptor function
+      const responseErrorInterceptor = mockAxiosInstance.interceptors.response.use.mock.calls[0][1];
+      
+      // Create a mock error object with 401 response
+      const error = {
+        response: {
+          status: 401,
+          data: { message: 'Unauthorized' }
+        }
+      };
+      
+      // Act & Assert
+      await expect(responseErrorInterceptor(error)).rejects.toEqual(error);
+      expect(localStorage.getItem('token')).toBeNull();
+    });
+    
+    it('should propagate error for non-401 responses', async () => {
+      // Arrange
+      localStorage.setItem('token', 'test-token');
+      
+      // Extract the response error interceptor function
+      const responseErrorInterceptor = mockAxiosInstance.interceptors.response.use.mock.calls[0][1];
+      
+      // Create a mock error object with 500 response
+      const error = {
+        response: {
+          status: 500,
+          data: { message: 'Server error' }
+        }
+      };
+      
+      // Act & Assert
+      await expect(responseErrorInterceptor(error)).rejects.toEqual(error);
+      expect(localStorage.getItem('token')).toBe('test-token'); // Token should not be removed
+    });
   });
 
   describe('GET requests', () => {

@@ -305,3 +305,18 @@
     margin-top: 8px;
   }
 }
+
+.admin-link {
+  background-color: rgba(255, 94, 58, 0.1);
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.admin-link:hover {
+  background-color: rgba(255, 94, 58, 0.2);
+  transform: translateY(-2px);
+}
+
+.navbar-scrolled .admin-link {
+  background-color: rgba(255, 94, 58, 0.15);
+}

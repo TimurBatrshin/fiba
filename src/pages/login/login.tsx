@@ -1,25 +1,27 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { AuthService } from '../../services/AuthService';
+import { useAuth } from "../../contexts/AuthContext";
 import "./login.css";  // Импортируем стили
 
-interface LoginProps {
-  setIsAuthenticated: (isAuthenticated: boolean) => void;
-}
-
-const Login: React.FC<LoginProps> = ({ setIsAuthenticated }) => {
+const Login: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [localError, setLocalError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
+  const { login, isAuthenticated, isLoading, error } = useAuth();
 
   useEffect(() => {
-    if (AuthService.getInstance().isAuthenticated()) {
-      navigate("/fiba/profile");
+    if (isAuthenticated) {
+      navigate("/profile");
     }
-  }, [navigate]);
+  }, [isAuthenticated, navigate]);
+
+  useEffect(() => {
+    if (error) {
+      setLocalError(error.message);
+    }
+  }, [error]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -29,7 +31,7 @@ const Login: React.FC<LoginProps> = ({ setIsAuthenticated }) => {
       setPassword(value);
     }
     // Сбрасываем ошибку при изменении полей
-    if (error) setError("");
+    if (localError) setLocalError("");
   };
 
   const toggleShowPassword = () => {
@@ -38,23 +40,18 @@ const Login: React.FC<LoginProps> = ({ setIsAuthenticated }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     
     try {
-      await AuthService.getInstance().login(email, password);
-      setIsAuthenticated(true);
-      navigate("/fiba/profile");
+      await login(email, password);
     } catch (err: any) {
       console.error("Login error:", err);
       if (err.response?.status === 401) {
-        setError("Неверный email или пароль");
+        setLocalError("Неверный email или пароль");
       } else if (err.response?.data?.message) {
-        setError(err.response.data.message);
+        setLocalError(err.response.data.message);
       } else {
-        setError("Ошибка при входе. Попробуйте снова позже.");
+        setLocalError("Ошибка при входе. Попробуйте снова позже.");
       }
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -82,7 +79,7 @@ const Login: React.FC<LoginProps> = ({ setIsAuthenticated }) => {
                   onChange={handleChange}
                   placeholder="Введите ваш email"
                   required
-                  className={error ? "error" : ""}
+                  className={localError ? "error" : ""}
                   disabled={isLoading}
                   data-cy="email-input"
                 />
@@ -103,7 +100,7 @@ const Login: React.FC<LoginProps> = ({ setIsAuthenticated }) => {
                   onChange={handleChange}
                   placeholder="Введите ваш пароль"
                   required
-                  className={error ? "error" : ""}
+                  className={localError ? "error" : ""}
                   disabled={isLoading}
                   data-cy="password-input"
                 />
@@ -126,14 +123,14 @@ const Login: React.FC<LoginProps> = ({ setIsAuthenticated }) => {
               </div>
             </div>
             
-            {error && <div className="error-message" data-cy="error-message">{error}</div>}
+            {localError && <div className="error-message" data-cy="error-message">{localError}</div>}
             
             <div className="form-options">
               <div className="remember-me">
                 <input type="checkbox" id="remember" />
                 <label htmlFor="remember">Запомнить меня</label>
               </div>
-              <Link to="/fiba/forgot-password" className="forgot-password">Забыли пароль?</Link>
+              <Link to="/forgot-password" className="forgot-password">Забыли пароль?</Link>
             </div>
             
             <button 
@@ -153,7 +150,7 @@ const Login: React.FC<LoginProps> = ({ setIsAuthenticated }) => {
           </form>
           
           <div className="auth-footer">
-            <p>Еще нет аккаунта? <Link to="/fiba/register-user">Зарегистрироваться</Link></p>
+            <p>Еще нет аккаунта? <Link to="/register-user">Зарегистрироваться</Link></p>
           </div>
           
           <div className="auth-background">

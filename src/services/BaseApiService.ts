@@ -62,7 +62,7 @@ export abstract class BaseApiService {
         const path = urlObj.pathname;
         
         // Используем полный URL с нашим доменом API для прокси
-        const baseProxyUrl = 'https://timurbatrshin-fiba-backend-feef.twc1.net/api/proxy/static-bro-js';
+        const baseProxyUrl = 'https://timurbatrshin-fiba-backend-e32e.twc1.net/api/proxy/static-bro-js';
         
         // Если это JS файл, добавляем метку времени для предотвращения кэширования
         if (path.endsWith('.js')) {

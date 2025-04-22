@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import "./tournament.css"; // Исправленный импорт стилей
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faUser, faTrophy, faChartLine } from '@fortawesome/free-solid-svg-icons';
+import { faUser, faTrophy, faChartLine, faCheck, faTimes } from '@fortawesome/free-solid-svg-icons';
 import { PlayerSearch } from '../../components/PlayerSearch/PlayerSearch';
 import { 
   getTournamentById, 
@@ -12,6 +12,7 @@ import {
   Player 
 } from '../../services/api/tournaments';
 import defaultAvatar from '../../assets/images/default-avatar.png';
+import { useAuth } from "../../contexts/AuthContext";
 
 // Добавляем типы для моковых данных
 interface MockTeam {
@@ -30,6 +31,8 @@ interface MockPlayer {
 const Tournament = () => {
   const { id } = useParams(); 
   const navigate = useNavigate();
+  const { currentRole } = useAuth();
+  const isAdmin = currentRole === 'admin';
   const [tournament, setTournament] = useState<TournamentData | null>(null);
   const [advertisement, setAdvertisement] = useState<any>(null);
   const [teamName, setTeamName] = useState("");
@@ -265,6 +268,78 @@ const Tournament = () => {
     e.currentTarget.style.display = 'none'; // Hide broken image
   };
 
+  // Функция для подтверждения команды (только для админа)
+  const handleConfirmTeam = async (teamId: string) => {
+    try {
+      // В реальном приложении здесь должен быть API запрос
+      console.log(`Подтверждение команды с ID: ${teamId}`);
+      // Примерная реализация запроса:
+      // await ApiService.post(`/tournaments/${id}/teams/${teamId}/confirm`);
+      
+      // Обновляем UI
+      if (tournament && tournament.Registrations) {
+        const updatedRegistrations = tournament.Registrations.map(reg => {
+          if (reg.id === teamId) {
+            return { ...reg, status: 'confirmed' };
+          }
+          return reg;
+        });
+        
+        setTournament({
+          ...tournament,
+          Registrations: updatedRegistrations
+        });
+      }
+      
+      // Показываем сообщение об успехе
+      setRegistrationStatus("Команда успешно подтверждена");
+      
+      // Сбрасываем статус через 3 секунды
+      setTimeout(() => {
+        setRegistrationStatus("");
+      }, 3000);
+    } catch (error) {
+      console.error("Ошибка при подтверждении команды:", error);
+      setRegistrationStatus("Ошибка при подтверждении команды");
+    }
+  };
+  
+  // Функция для отклонения команды (только для админа)
+  const handleRejectTeam = async (teamId: string) => {
+    try {
+      // В реальном приложении здесь должен быть API запрос
+      console.log(`Отклонение команды с ID: ${teamId}`);
+      // Примерная реализация запроса:
+      // await ApiService.post(`/tournaments/${id}/teams/${teamId}/reject`);
+      
+      // Обновляем UI
+      if (tournament && tournament.Registrations) {
+        const updatedRegistrations = tournament.Registrations.map(reg => {
+          if (reg.id === teamId) {
+            return { ...reg, status: 'rejected' };
+          }
+          return reg;
+        });
+        
+        setTournament({
+          ...tournament,
+          Registrations: updatedRegistrations
+        });
+      }
+      
+      // Показываем сообщение об успехе
+      setRegistrationStatus("Команда отклонена");
+      
+      // Сбрасываем статус через 3 секунды
+      setTimeout(() => {
+        setRegistrationStatus("");
+      }, 3000);
+    } catch (error) {
+      console.error("Ошибка при отклонении команды:", error);
+      setRegistrationStatus("Ошибка при отклонении команды");
+    }
+  };
+
   if (isLoading) {
     return <div className="loading">Загрузка информации о турнире...</div>;
   }
@@ -276,6 +351,57 @@ const Tournament = () => {
   if (!tournament) {
     return <div className="error-message">Турнир не найден</div>;
   }
+
+  // Изменим рендеринг команд для администратора
+  const renderTeamCard = (registration: any) => (
+    <div key={registration.id || Math.random()} className={`team-card ${registration.status.toLowerCase()}`}>
+      <div className="team-card-header">
+        <h3 className="team-name">
+          <FontAwesomeIcon icon={faUser} className="team-icon" />
+          {registration.team_name || 'Команда без названия'}
+        </h3>
+        <div className={`team-status status-${registration.status.toLowerCase()}`}>
+          {registration.status === 'confirmed' || registration.status === 'approved' ? 'Подтверждена' : 
+           registration.status === 'pending' ? 'На рассмотрении' : 'Отклонена'}
+        </div>
+      </div>
+      
+      {/* Список игроков команды */}
+      <div className="team-players">
+        <h4>Игроки:</h4>
+        {registration.players && registration.players.length > 0 ? (
+          <ul className="players-list">
+            {registration.players.map((player: any, index: number) => (
+              <li key={player.id || index}>
+                {player.name || `Игрок ${index + 1}`}
+                {player.is_captain && <span className="captain-badge">Капитан</span>}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="no-players">Игроки не указаны</p>
+        )}
+      </div>
+      
+      {/* Кнопки для администратора */}
+      {isAdmin && registration.status === 'pending' && (
+        <div className="admin-actions">
+          <button 
+            className="admin-confirm-btn" 
+            onClick={() => handleConfirmTeam(registration.id)}
+          >
+            <FontAwesomeIcon icon={faCheck} /> Подтвердить
+          </button>
+          <button 
+            className="admin-reject-btn" 
+            onClick={() => handleRejectTeam(registration.id)}
+          >
+            <FontAwesomeIcon icon={faTimes} /> Отклонить
+          </button>
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <div className="tournament-page">
@@ -355,97 +481,18 @@ const Tournament = () => {
         
         <section className="registered-teams">
           <h2>Зарегистрированные команды</h2>
-          {(tournament.Registrations && tournament.Registrations.length > 0) ? (
+          {registrationStatus && (
+            <div className={`registration-status ${registrationStatus.includes('успешно') ? 'success' : 'error'}`}>
+              {registrationStatus}
+            </div>
+          )}
+          {(tournament?.Registrations && tournament.Registrations.length > 0) ? (
             <div className="teams-container">
-              {tournament.Registrations.map((reg, index) => (
-                <div key={reg.id || index} className={`team-card ${reg.status.toLowerCase()}`}>
-                  <div className="team-card-header">
-                    <h3 className="team-name">
-                      <FontAwesomeIcon icon={faUser} className="team-icon" />
-                      {reg.team_name || `Команда ${index + 1}`}
-                    </h3>
-                    <div className={`team-status status-${reg.status.toLowerCase()}`}>
-                      {reg.status === 'confirmed' || reg.status === 'approved' ? 'Подтверждена' : 
-                       reg.status === 'pending' ? 'На рассмотрении' : 'Отклонена'}
-                    </div>
-                  </div>
-                  
-                  {reg.players && reg.players.length > 0 ? (
-                    <div className="team-players">
-                      <h4>Состав команды:</h4>
-                      <ul className="players-list">
-                        {reg.players.map((player, playerIndex) => (
-                          <li key={player.id || playerIndex} className="player-item">
-                            <div className="player-avatar-container">
-                              <img 
-                                src={player.photoUrl || player.avatar || defaultAvatar} 
-                                alt={player.name} 
-                                className="player-avatar-small"
-                                onError={handlePlayerImageError}
-                              />
-                            </div>
-                            <span className="player-name">
-                              {player.name || `Игрок ${playerIndex + 1}`}
-                              {player.is_captain && <span className="captain-badge">Капитан</span>}
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ) : (
-                    <div className="team-players">
-                      <p className="no-players">Информация об игроках недоступна</p>
-                    </div>
-                  )}
-                </div>
-              ))}
+              {tournament.Registrations.map((registration) => renderTeamCard(registration))}
             </div>
           ) : (
-            <div className="mock-teams-container">
-              <div className="mock-teams-header">
-                <FontAwesomeIcon icon={faChartLine} className="mock-icon" />
-                <h3>Пример зарегистрированных команд</h3>
-                <p>Так будет выглядеть список команд после регистрации</p>
-              </div>
-              <div className="teams-container">
-                {mockTeams.map((team, index) => (
-                  <div key={team.id} className={`team-card ${team.status}`}>
-                    <div className="team-card-header">
-                      <h3 className="team-name">
-                        <FontAwesomeIcon icon={faUser} className="team-icon" />
-                        {team.name}
-                      </h3>
-                      <div className={`team-status status-${team.status}`}>
-                        {team.status === 'confirmed' ? 'Подтверждена' : 
-                         team.status === 'pending' ? 'На рассмотрении' : 'Отклонена'}
-                      </div>
-                    </div>
-                    <div className="team-players">
-                      <h4>Состав команды:</h4>
-                      <ul className="players-list">
-                        {team.players.map((player, playerIndex) => (
-                          <li key={player.id} className="player-item">
-                            <div className="player-avatar-container">
-                              <img 
-                                src={defaultAvatar} 
-                                alt={player.name} 
-                                className="player-avatar-small"
-                              />
-                            </div>
-                            <span className="player-name">
-                              {player.name}
-                              {player.is_captain && <span className="captain-badge">Капитан</span>}
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="mock-teams-note">
-                Это пример команд. Зарегистрируйте свою команду первыми!
-              </div>
+            <div className="no-teams">
+              <p>Пока нет зарегистрированных команд</p>
             </div>
           )}
         </section>

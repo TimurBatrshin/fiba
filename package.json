@@ -4,6 +4,8 @@
     "main": "./index.js",
     "scripts": {
         "test": "jest",
+        "test:watch": "jest --watch",
+        "test:coverage": "jest --coverage",
         "start": "brojs server --port=8099 --with-open-browser",
         "build": "npm run clean && brojs build --dev",
         "build:prod": "npm run clean && brojs build",

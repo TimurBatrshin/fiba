@@ -12,7 +12,7 @@ import { store } from './store';
 const APP_CONFIG = {
   version: APP_SETTINGS.buildVersion,
   devURL: 'https://dev.bro-js.ru/fiba/',
-  staticURL: 'https://timurbatrshin-fiba-backend-feef.twc1.net/api/proxy/static-bro-js/fiba/',
+  staticURL: 'https://timurbatrshin-fiba-backend-e32e.twc1.net/api/proxy/static-bro-js/fiba/',
   scripts: [],
   styles: []
 };

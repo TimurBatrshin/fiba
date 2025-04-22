@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import Navbar from "./widgets/navbar/navbar";
 import Home from "./pages/home/home";
@@ -9,11 +9,10 @@ import RegisterUser from "./pages/registerUser/registerUser";
 import Login from "./pages/login/login";
 import { Admin } from "./pages/admin";
 import TopPlayers from "./pages/TopPlayers/TopPlayers";
-import { AuthService } from "./services/AuthService";
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import ErrorToast from './components/ErrorToast';
-import { APP_SETTINGS } from './config/envConfig';
+import CreateTournament from './pages/CreateTournament/CreateTournament';
 
 // Импорт глобальных стилей
 import "./styles/global.css";
@@ -28,7 +27,7 @@ const PrivateRoute = ({ children }: { children: React.ReactNode }): React.ReactE
 
 const AdminRoute = ({ children }: { children: React.ReactNode }): React.ReactElement => {
   const { isAuthenticated, currentRole } = useAuth();
-  return isAuthenticated && currentRole === 'ADMIN' ? <>{children}</> : <Navigate to="/" />;
+  return isAuthenticated && currentRole === 'admin' ? <>{children}</> : <Navigate to="/" />;
 };
 
 // Новый компонент для перенаправления авторизованных пользователей
@@ -38,27 +37,12 @@ const AuthRedirectRoute = ({ children }: { children: React.ReactNode }): React.R
 };
 
 const App = (): React.ReactElement => {
-  const [isAuthenticated, setIsAuthenticated] = useState(AuthService.getInstance().isAuthenticated());
-
-  useEffect(() => {
-    const handleStorageChange = () => {
-      setIsAuthenticated(AuthService.getInstance().isAuthenticated());
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
-
-  const updateAuthStatus = (status: boolean) => {
-    setIsAuthenticated(status);
-  };
-
   return (
     <ErrorBoundary>
       <AuthProvider>
         <Router basename={basePath}>
           <div className="app">
-            <Navbar isAuthenticated={isAuthenticated} />
+            <Navbar />
             <ErrorToast />
             <Routes>
               <Route path="/" element={
@@ -74,7 +58,7 @@ const App = (): React.ReactElement => {
               <Route path="/login" element={
                 <ErrorBoundary>
                   <AuthRedirectRoute>
-                    <Login setIsAuthenticated={updateAuthStatus} />
+                    <Login />
                   </AuthRedirectRoute>
                 </ErrorBoundary>
               } />
@@ -88,7 +72,7 @@ const App = (): React.ReactElement => {
               <Route path="/profile" element={
                 <ErrorBoundary>
                   <PrivateRoute>
-                    <Profile isAuthenticated={isAuthenticated} />
+                    <Profile />
                   </PrivateRoute>
                 </ErrorBoundary>
               } />
@@ -109,6 +93,7 @@ const App = (): React.ReactElement => {
                   <TopPlayers />
                 </ErrorBoundary>
               } />
+              <Route path="/create-tournament" element={<CreateTournament />} />
             </Routes>
           </div>
         </Router>
