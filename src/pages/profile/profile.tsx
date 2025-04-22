@@ -4,7 +4,7 @@ import "./profile.css";
 import defaultAvatar from '../../assets/images/default-avatar.png';
 import { useAuth } from '../../contexts/AuthContext';
 import { API_CONFIG } from "../../config/api";
-import userService from "../../services/UserService";
+import { userService } from "../../services/UserService";
 
 interface ProfileFormData {
   photo: File | null;
