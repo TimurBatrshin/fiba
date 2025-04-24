@@ -1,9 +1,20 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Welcome to Firebase Hosting</title>
+    <meta name="theme-color" content="#000000" />
+    <meta name="description" content="FIBA3x3 Basketball Tournament Management System" />
+    
+    <!-- Настройка CSP для разрешения загрузки ресурсов -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://timurbatrshin-fiba-backend-fc1f.twc1.net; img-src 'self' data: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://timurbatrshin-fiba-backend-fc1f.twc1.net; style-src 'self' 'unsafe-inline' https:; font-src 'self' data: https:; connect-src 'self' https://timurbatrshin-fiba-backend-fc1f.twc1.net https: http: ws: wss:;">
+    
+    <!-- Используем относительные пути для ресурсов -->
+    <link rel="icon" href="./favicon.ico" />
+    <link rel="apple-touch-icon" href="./images/apple-touch-icon.png" />
+    <link rel="manifest" href="./site.webmanifest" />
+    
+    <title>FIBA3x3 Tournament App</title>
 
     <!-- update the version number as needed -->
     <script defer src="/__/firebase/11.5.0/firebase-app-compat.js"></script>
@@ -39,6 +50,8 @@
     </style>
   </head>
   <body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="app"></div>
     <div id="message">
       <h2>Welcome</h2>
       <h1>Firebase Hosting Setup Complete</h1>
@@ -84,6 +97,24 @@
           loadEl.textContent = 'Error loading the Firebase SDK, check the console.';
         }
       });
+    </script>
+
+    <!-- Скрипт для перенаправления всех запросов на index.html -->
+    <script>
+      // Перенаправление всех прямых запросов на хэш-маршруты
+      (function() {
+        // Исключаем основные статические ресурсы
+        const isDirectNavigation = !window.location.hash && 
+          !window.location.pathname.match(/\.(js|css|jpg|png|ico|json)$/);
+          
+        if (isDirectNavigation && 
+            window.location.pathname !== '/' && 
+            window.location.pathname !== '/index.html') {
+          // Преобразуем путь в формат для HashRouter
+          const path = window.location.pathname.replace(/^\//, '');
+          window.location.replace(`/#/${path}`);
+        }
+      })();
     </script>
   </body>
 </html>

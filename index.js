@@ -5,6 +5,16 @@ import { Provider } from 'react-redux';
 import { store } from './src/store';
 import App from './src/app';
 
+// Очищаем localStorage при каждом запуске приложения для гарантированного сброса авторизации
+console.log('Clearing localStorage for fresh authentication...');
+
+// Очищаем только токены авторизации
+const keysToRemove = [
+  'auth_token', 'refresh_token'
+];
+
+keysToRemove.forEach(key => localStorage.removeItem(key));
+
 // Рендерим приложение напрямую
 ReactDOM.render(
   <Provider store={store}>

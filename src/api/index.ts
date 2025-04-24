@@ -1,20 +1,18 @@
-import api, { apiClient } from './client';
-import tournamentsApi from './tournaments';
-import usersApi from './users';
+import AuthService from './auth';
+import TournamentService from './tournaments';
+import api from './client';
+import statisticsApi from './statistics';
 
-// Экспортируем все API через единую точку входа
 export {
-  api, // Базовый API-клиент
-  apiClient, // Экземпляр axios для расширенных случаев
-  tournamentsApi, // API для работы с турнирами
-  usersApi, // API для работы с пользователями
+  api,
+  AuthService,
+  TournamentService,
+  statisticsApi
 };
 
-// Единый объект для всех API
-const apiService = {
-  tournaments: tournamentsApi,
-  users: usersApi,
-  // Добавляйте новые API-модули здесь
-};
-
-export default apiService; 
+export default {
+  api,
+  auth: AuthService,
+  tournaments: TournamentService,
+  statistics: statisticsApi
+}; 

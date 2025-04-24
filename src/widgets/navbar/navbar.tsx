@@ -5,6 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faChartBar, faUser, faHome, faTrophy, faPlus } from "@fortawesome/free-solid-svg-icons";
 import fibaLogo from '../../assets/images/fiba-logo.png';
 import { useAuth } from "../../contexts/AuthContext";
+import { BASE_PATH } from '../../config/envConfig';
 
 const Navbar: React.FC = () => {
   const navigate = useNavigate();
@@ -127,9 +128,12 @@ const Navbar: React.FC = () => {
                 </button>
               ) : (
                 <div className="auth-buttons">
-                  <Link to="/login" className="btn-login">
+                  <button 
+                    onClick={() => window.location.href = `${BASE_PATH}#/login`} 
+                    className="btn-login"
+                  >
                     <span>Войти</span>
-                  </Link>
+                  </button>
                   <Link to="/register-user" className="btn-signup">
                     <span>Регистрация</span>
                   </Link>

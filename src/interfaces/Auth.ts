@@ -1,16 +1,16 @@
 export interface LoginResponse {
   token: string;
-  userId: string;
+  userId: number;
   email: string;
   name: string;
-  role: 'ADMIN' | 'USER' | 'COACH' | 'ORGANIZER';
+  role: 'user' | 'admin' | 'business';
 }
 
 export interface User {
-  id: string;
+  id: number;
   name: string;
   email: string;
-  role: 'ADMIN' | 'USER' | 'COACH' | 'ORGANIZER';
+  role: 'user' | 'admin' | 'business';
 }
 
 export interface LoginCredentials {
@@ -22,35 +22,33 @@ export interface RegisterData {
   name: string;
   email: string;
   password: string;
+  role?: 'user' | 'admin' | 'business';
 }
 
 export interface AuthResponse {
   token: string;
-  userId: string;
+  userId: number;
   email: string;
   name: string;
-  role: 'ADMIN' | 'USER' | 'COACH' | 'ORGANIZER';
+  role: 'user' | 'admin' | 'business';
 }
 
 export interface DecodedToken {
-  sub: string;
-  role: 'ADMIN' | 'USER' | 'COACH' | 'ORGANIZER';
-  exp: number;
-  iat: number;
+  sub: string; // user ID
+  role: 'user' | 'admin' | 'business';
+  exp: number; // expiration timestamp
+  iat: number; // issued at timestamp
+  name?: string; // имя пользователя (необязательное)
+  email?: string; // email пользователя (необязательное)
 }
 
 export interface UserProfile {
-  id: string;
-  userId: string;
-  photoUrl?: string;
-  avatarUrl?: string;
-  bio?: string;
-  phoneNumber?: string;
-  city?: string;
-  age?: number;
-  tournamentsPlayed?: number;
-  totalPoints?: number;
-  rating?: number;
-  createdAt: string;
-  updatedAt: string;
+  id: number;
+  user_id: number;
+  name: string;
+  email: string;
+  photo_url: string;
+  tournaments_played: number;
+  total_points: number;
+  rating: number;
 } 

@@ -1,5 +1,5 @@
-import React from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import React, { useEffect } from "react";
+import { HashRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import Navbar from "./widgets/navbar/navbar";
 import Home from "./pages/home/home";
 import Tournaments from "./pages/tournaments/tournaments";
@@ -9,39 +9,64 @@ import RegisterUser from "./pages/registerUser/registerUser";
 import Login from "./pages/login/login";
 import { Admin } from "./pages/admin";
 import TopPlayers from "./pages/TopPlayers/TopPlayers";
+import PlayerDetails from "./pages/Player/PlayerDetails";
+import PlayerStatistics from "./pages/Player/PlayerStatistics";
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import ErrorToast from './components/ErrorToast';
 import CreateTournament from './pages/CreateTournament/CreateTournament';
+import ApiTest from './pages/ApiTest';
+import { BASE_PATH } from './config/envConfig'; // Import BASE_PATH from envConfig
 
 // Импорт глобальных стилей
 import "./styles/global.css";
 
-// Обновляем базовый путь для GitHub Pages
-const basePath = process.env.NODE_ENV === 'production' ? '/fiba3x3' : '';
+// Используем BASE_PATH из envConfig для согласованности
+const basePath = BASE_PATH;
 
 const PrivateRoute = ({ children }: { children: React.ReactNode }): React.ReactElement => {
   const { isAuthenticated } = useAuth();
-  return isAuthenticated ? <>{children}</> : <Navigate to={`${basePath}`} />;
+  
+  useEffect(() => {
+    if (!isAuthenticated) {
+      window.location.href = `${basePath}#/login`;
+    }
+  }, [isAuthenticated]);
+  
+  return isAuthenticated ? <>{children}</> : <div className="redirecting"></div>;
 };
 
 // Новый компонент для перенаправления авторизованных пользователей
 const AuthRedirectRoute = ({ children }: { children: React.ReactNode }): React.ReactElement => {
   const { isAuthenticated } = useAuth();
-  return isAuthenticated ? <Navigate to={`${basePath}/profile`} /> : <>{children}</>;
+  return isAuthenticated ? <Navigate to="/profile" /> : <>{children}</>;
 };
 
 // Компонент для защиты маршрутов администратора
 const AdminRoute = ({ children }: { children: React.ReactNode }): React.ReactElement => {
   const { isAuthenticated, currentRole } = useAuth();
-  return isAuthenticated && currentRole === 'admin' ? <>{children}</> : <Navigate to={`${basePath}`} />;
+  
+  useEffect(() => {
+    if (!isAuthenticated || (currentRole?.toUpperCase() !== 'ADMIN')) {
+      window.location.href = `${basePath}#/login`;
+    }
+  }, [isAuthenticated, currentRole]);
+  
+  return (isAuthenticated && (currentRole?.toUpperCase() === 'ADMIN')) ? <>{children}</> : <div className="redirecting"></div>;
 };
 
 const App = (): React.ReactElement => {
+  useEffect(() => {
+    // Вызываем миграцию для обработки legacy токенов
+    import('./utils/tokenStorage').then(tokenStorage => {
+      tokenStorage.migrateTokens();
+    });
+  }, []);
+
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <Router basename={basePath}>
+        <Router>
           <div className="app">
             <Navbar />
             <ErrorToast />
@@ -94,7 +119,24 @@ const App = (): React.ReactElement => {
                   <TopPlayers />
                 </ErrorBoundary>
               } />
+              <Route path="/players/:id" element={
+                <ErrorBoundary>
+                  <PlayerDetails />
+                </ErrorBoundary>
+              } />
+              <Route path="/players/:id/statistics" element={
+                <ErrorBoundary>
+                  <PlayerStatistics />
+                </ErrorBoundary>
+              } />
               <Route path="/create-tournament" element={<CreateTournament />} />
+              <Route path="/api-test" element={
+                <ErrorBoundary>
+                  <ApiTest />
+                </ErrorBoundary>
+              } />
+              {/* Добавляем дополнительный маршрут для перехвата редиректов с сервера */}
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </div>
         </Router>

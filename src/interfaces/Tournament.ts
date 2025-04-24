@@ -1,29 +1,30 @@
-export type TournamentStatus = 'UPCOMING' | 'ONGOING' | 'COMPLETED' | 'CANCELLED';
+export type TournamentStatus = 'UPCOMING' | 'ONGOING' | 'COMPLETED' | 'CANCELLED' | 'REGISTRATION';
 export type TournamentLevel = 'PRO' | 'AMATEUR' | 'BUSINESS' | 'YOUTH';
 export type BusinessType = 'OFFICIAL' | 'COMMUNITY' | 'CORPORATE' | 'EDUCATION';
-export type RegistrationStatus = 'PENDING' | 'CONFIRMED' | 'REJECTED' | 'COMPLETED';
+export type RegistrationStatus = 'pending' | 'approved' | 'rejected';
 
 export interface Tournament {
-  id: string;
+  id: string | number;
   name: string;
+  title?: string;
   date: string;
-  startTime: string;
+  startTime?: string;
   location: string;
-  description: string;
+  description?: string;
   status: TournamentStatus;
-  level: TournamentLevel;
+  level: string;
   imageUrl?: string;
-  businessType: BusinessType;
-  maxTeams: number;
-  entryFee: number;
-  prizePool: string;
-  isBusinessTournament: boolean;
+  businessType?: string;
+  maxTeams?: number;
+  entryFee?: number;
+  prizePool: string | number;
+  isBusinessTournament?: boolean;
   sponsorName?: string;
   sponsorLogo?: string;
-  rules?: string;
-  registrationOpen: boolean;
-  createdAt: string;
-  updatedAt: string;
+  registrationOpen?: boolean;
+  teams?: any[];
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface TournamentTeam {
@@ -35,17 +36,32 @@ export interface TournamentTeam {
 }
 
 export interface Registration {
-  id: string;
+  id: number;
   teamName: string;
-  tournamentId: string;
-  userId: string;
+  tournament: Tournament;
+  captain: { id: number; name: string; email: string };
+  players: Array<{ id: number; name: string; email: string }>;
   status: RegistrationStatus;
-  createdAt: string;
-  updatedAt: string;
-  players?: Array<{userId: string}>;
 }
 
 export interface PlayerTeam {
   registrationId: string;
   userId: string;
+}
+
+export interface Team {
+  id: number;
+  teamName: string;
+  players: Array<{
+    id: number;
+    name: string;
+    email: string;
+    points: number;
+    rating: number;
+    tournaments_played: number;
+    photo_url: string;
+  }>;
+  captain: { id: number; name: string; email: string };
+  tournament: number;
+  status: RegistrationStatus;
 } 

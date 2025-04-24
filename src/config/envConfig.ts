@@ -1,61 +1,45 @@
 /**
- * Central configuration for environment variables
- * Supports multiple environments and fallbacks
+ * Централизованная конфигурация для переменных окружения
  */
 
-// Environment detection
-export const isProduction = window.location.hostname !== 'localhost';
-export const isDevelopment = !isProduction;
-
-// Environment-specific configurations
-const ENV_CONFIG = {
-  development: {
-    apiUrl: 'http://localhost:8080', // Backend server URL - default Spring Boot port
-    enableLogging: true,
-    staticUrl: 'http://localhost:8080/uploads/', // For uploaded files
-    appBaseUrl: '/',
-    msPath: '/ms'
-  },
-  production: {
-    apiUrl: 'https://dev.bro-js.ru/api', // Production API endpoint
-    enableLogging: false,
-    staticUrl: 'https://dev.bro-js.ru/uploads/', // For uploaded files
-    appBaseUrl: '/',
-    msPath: '/ms'
-  }
+// Базовая конфигурация
+const CONFIG = {
+  apiUrl: 'https://timurbatrshin-fiba-backend-5ef6.twc1.net/api',
+  enableLogging: true,
+  staticUrl: 'https://timurbatrshin-fiba-backend-5ef6.twc1.net/uploads/',
+  appBaseUrl: '/',
+  msPath: '/ms',
+  basePath: '/fiba3x3'
 };
 
-// Current environment configuration
-const currentEnv = isProduction ? 'production' : 'development';
-const config = ENV_CONFIG[currentEnv];
+// Экспорт API URLs
+export const API_BASE_URL = CONFIG.apiUrl;
+export const STATIC_URL = CONFIG.staticUrl;
+export const APP_BASE_URL = CONFIG.appBaseUrl;
+export const MS_PATH = CONFIG.msPath;
+export const BASE_PATH = CONFIG.basePath;
 
-// Export API URLs
-export const API_BASE_URL = config.apiUrl;
-export const STATIC_URL = config.staticUrl;
-export const APP_BASE_URL = config.appBaseUrl;
-export const MS_PATH = config.msPath;
-
-// App Settings
+// Настройки приложения
 export const APP_SETTINGS = {
-  enableLogging: config.enableLogging,
-  buildVersion: '1.6.9', // Точная версия согласно конфигурации стенда
+  enableLogging: CONFIG.enableLogging,
+  buildVersion: '1.7.2',
   appName: 'fiba',
   tokenStorageKey: 'fiba_auth_token',
   refreshTokenStorageKey: 'fiba_refresh_token',
   userStorageKey: 'fiba_user_data',
-  requestTimeout: 15000, // 15 seconds
-  notificationDuration: 5000, // 5 seconds
-  maxUploadSize: 10 * 1024 * 1024, // 10MB as specified in backend docs
-  apiBaseUrl: config.apiUrl,
-  staticUrl: config.staticUrl, 
-  appBaseUrl: config.appBaseUrl,
-  msPath: config.msPath,
-  basePath: '/fiba3x3', // Base path for the application
-  tokenExpiration: 86400000, // 24 hours in milliseconds
-  refreshTokenExpiration: 604800000 // 7 days in milliseconds
+  requestTimeout: 15000, // 15 секунд
+  notificationDuration: 5000, // 5 секунд
+  maxUploadSize: 10 * 1024 * 1024, // 10MB согласно документации бэкенда
+  apiBaseUrl: CONFIG.apiUrl,
+  staticUrl: CONFIG.staticUrl, 
+  appBaseUrl: CONFIG.appBaseUrl,
+  msPath: CONFIG.msPath,
+  basePath: CONFIG.basePath,
+  tokenExpiration: 86400000, // 24 часа в миллисекундах
+  refreshTokenExpiration: 604800000 // 7 дней в миллисекундах
 };
 
-// Service worker settings
+// Настройки Service Worker
 export const SERVICE_WORKER_SETTINGS = {
   scope: '/'
 }; 

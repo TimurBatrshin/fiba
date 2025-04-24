@@ -43,6 +43,7 @@ const Login: React.FC = () => {
     
     try {
       await login(email, password);
+      // После успешного входа перенаправление на profile произойдет через useEffect
     } catch (err: any) {
       console.error("Login error:", err);
       if (err.response?.status === 401) {
@@ -125,13 +126,6 @@ const Login: React.FC = () => {
             
             {localError && <div className="error-message" data-cy="error-message">{localError}</div>}
             
-            <div className="form-options">
-              <div className="remember-me">
-                <input type="checkbox" id="remember" />
-                <label htmlFor="remember">Запомнить меня</label>
-              </div>
-              <Link to="/forgot-password" className="forgot-password">Забыли пароль?</Link>
-            </div>
             
             <button 
               type="submit" 

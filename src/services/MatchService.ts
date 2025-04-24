@@ -4,7 +4,7 @@ import { Match, MatchFilter, MatchScore } from '../interfaces/Match';
 
 export class MatchService extends BaseApiService {
   constructor() {
-    super(API_CONFIG.baseUrl, API_CONFIG.mockUrl, API_CONFIG.useMockByDefault);
+    super(API_CONFIG.baseUrl);
   }
 
   /**

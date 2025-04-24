@@ -16,13 +16,13 @@ import {
 import defaultTournamentImg from '../../assets/images/default-tournament.jpg';
 import defaultAvatar from '../../assets/images/default-avatar.png';
 import heroBanner from '../../assets/images/hero-basketball.jpg';
-import { AuthService } from '../../services/AuthService';
-import { tournamentService } from '../../services/TournamentService';
+import { ServiceFactory } from '../../services/serviceFactory';
 import { Tournament as TournamentType } from '../../interfaces/Tournament';
+import { PlayerStatistics, PlayerWithStats } from '../../services/PlayerService';
 
-// Интерфейс для игрока
+// Интерфейс для игрока в компоненте
 interface Player {
-  id: number;
+  id: number | string;
   name: string;
   points: number;
   team: string;
@@ -35,68 +35,81 @@ const Home: React.FC = () => {
   const [topPlayers, setTopPlayers] = useState<Player[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isError, setIsError] = useState(false);
+  const [playersError, setPlayersError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
     // Проверяем авторизацию
-    setIsAuthenticated(AuthService.getInstance().isAuthenticated());
+    const authService = ServiceFactory.getAuthService();
+    setIsAuthenticated(authService.isAuthenticated());
 
     // Загружаем данные о предстоящих турнирах
     const fetchTournaments = async () => {
       try {
         setIsLoading(true);
         setIsError(false);
-        const tournaments = await tournamentService.getUpcomingTournaments();
-        setUpcomingTournaments(tournaments.slice(0, 3)); // Берем только 3 ближайших турнира
         
-        // Временно используем моковые данные для игроков
-        const players: Player[] = [
-          {
-            id: 1,
-            name: "Александр Иванов",
-            points: 456,
-            team: "Moscow Stars",
-            position: "Guard",
-            avatar: defaultAvatar
-          },
-          {
-            id: 2,
-            name: "Михаил Петров",
-            points: 445,
-            team: "Kazan Tigers",
-            position: "Forward",
-            avatar: defaultAvatar
-          },
-          {
-            id: 3,
-            name: "Дмитрий Сидоров",
-            points: 432,
-            team: "St. Petersburg Knights",
-            position: "Center",
-            avatar: defaultAvatar
-          },
-          {
-            id: 4,
-            name: "Игорь Смирнов",
-            points: 428,
-            team: "Novosibirsk Wolves",
-            position: "Forward",
-            avatar: defaultAvatar
-          },
-          {
-            id: 5,
-            name: "Сергей Волков",
-            points: 415,
-            team: "Ekaterinburg Eagles",
-            position: "Guard",
-            avatar: defaultAvatar
+        // Дополнительный лог для отладки
+        console.log("Начало загрузки предстоящих турниров");
+        
+        // Получаем предстоящие турниры
+        const tournamentService = ServiceFactory.getTournamentService();
+        let tournaments = await tournamentService.getUpcomingTournaments();
+        console.log("Loaded tournaments data:", tournaments);
+        
+        // Проверка, что получили массив и защита от ошибки
+        if (!tournaments) {
+          console.error("Received null or undefined tournaments data");
+          tournaments = [];
+        }
+        
+        // Дополнительно убеждаемся, что мы работаем с массивом
+        const tournamentsArray = Array.isArray(tournaments) ? tournaments : [];
+        if (!Array.isArray(tournaments)) {
+          console.error("Expected tournaments array, got:", typeof tournaments, tournaments);
+        }
+        
+        // Берем только 3 ближайших турнира из массива
+        const upcomingThree = tournamentsArray.slice(0, 3);
+        console.log("Setting upcoming tournaments:", upcomingThree);
+        setUpcomingTournaments(upcomingThree);
+        
+        // Получаем данные о лучших игроках из API
+        try {
+          const playerService = ServiceFactory.getPlayerService();
+          const topPlayersData = await playerService.getTopPlayers(5);
+          console.log("Loaded players data:", topPlayersData);
+          
+          if (topPlayersData && Array.isArray(topPlayersData) && topPlayersData.length > 0) {
+            // Преобразуем данные в формат, необходимый для отображения
+            const formattedPlayers = topPlayersData.map(player => ({
+              id: player.id || 0,
+              name: player.name || '',
+              points: player.rating || 0,
+              team: '—', // Заполняем статичными данными
+              position: '—', // Заполняем статичными данными
+              avatar: player.photoUrl || player.avatar || defaultAvatar
+            }));
+            setTopPlayers(formattedPlayers);
+            setPlayersError(null);
+          } else {
+            // Если данных нет, устанавливаем ошибку
+            setTopPlayers([]);
+            setPlayersError('Нет данных о рейтинге игроков');
           }
-        ];
-        
-        setTopPlayers(players);
-      } catch (error) {
+        } catch (playerError: any) {
+          console.error("Ошибка при загрузке данных игроков:", playerError);
+          // Устанавливаем сообщение об ошибке
+          setTopPlayers([]);
+          setPlayersError(playerError?.message || 'Ошибка при загрузке данных игроков');
+        }
+      } catch (error: any) {
         console.error("Ошибка при загрузке турниров:", error);
         setIsError(true);
+        // Устанавливаем пустые массивы в случае ошибки
+        setUpcomingTournaments([]);
+        setTopPlayers([]);
+        setPlayersError(error?.message || 'Ошибка при загрузке данных');
       } finally {
         setIsLoading(false);
       }
@@ -118,17 +131,24 @@ const Home: React.FC = () => {
   // Функция для форматирования даты
   const formatDate = (dateString: string) => {
     try {
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) {
+      if (!dateString) {
+        console.warn("Пустая строка даты");
         return "Дата не указана";
       }
+
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        console.warn("Некорректная дата:", dateString);
+        return "Дата не указана";
+      }
+      
       return date.toLocaleDateString('ru-RU', { 
         day: 'numeric', 
         month: 'long', 
         year: 'numeric' 
       });
     } catch (e) {
-      console.error("Ошибка форматирования даты:", e);
+      console.error("Ошибка форматирования даты:", e, "для значения:", dateString);
       return "Дата не указана";
     }
   };
@@ -171,18 +191,8 @@ const Home: React.FC = () => {
       <section className="gh-hero">
         <div className="gh-container">
           <div className="gh-hero-content">
-            <h1>Баскетбол 3x3 начинается здесь</h1>
-            <p>FIBA 3x3 — это платформа для создания турниров, управления командами и отслеживания статистики в формате 3x3.</p>
-            
-            <div className="gh-search-box">
-              <FontAwesomeIcon icon={faSearch} className="search-icon" />
-              <input 
-                type="text" 
-                placeholder="Найти турнир, команду или игрока..." 
-                className="gh-search-input" 
-              />
-              <button className="gh-search-button">Поиск</button>
-            </div>
+            <h1>Стань частью баскетбола 3x3</h1>
+            <p>Игры, турниры, команды и рейтинги - всё на одной платформе. Найди свой путь в мире уличного баскетбола.</p>
             
             <div className="gh-hero-cta">
               <Link to="/tournaments" className="gh-button gh-button-primary">
@@ -216,7 +226,7 @@ const Home: React.FC = () => {
       <section className="gh-tournaments">
         <div className="gh-container">
           <div className="gh-section-header">
-            <h2 className="gh-section-title">Ближайшие турниры</h2>
+            <h2 className="gh-section-title">Предстоящие турниры</h2>
             <Link to="/tournaments" className="gh-view-all">
               Все турниры <FontAwesomeIcon icon={faChevronRight} />
             </Link>
@@ -289,9 +299,9 @@ const Home: React.FC = () => {
       <section className="gh-top-players">
         <div className="gh-container">
           <div className="gh-section-header">
-            <h2 className="gh-section-title">Лучшие игроки</h2>
+            <h2 className="gh-section-title">Топ игроков</h2>
             <Link to="/top-players" className="gh-view-all">
-              Все игроки <FontAwesomeIcon icon={faChevronRight} />
+              Рейтинг игроков <FontAwesomeIcon icon={faChevronRight} />
             </Link>
           </div>
           
@@ -305,6 +315,15 @@ const Home: React.FC = () => {
                 </div>
               ))}
             </div>
+          ) : playersError ? (
+            <div className="gh-error-message">
+              <p>{playersError}</p>
+              <p>Пожалуйста, попробуйте позже или обратитесь к администратору.</p>
+            </div>
+          ) : topPlayers.length === 0 ? (
+            <div className="gh-empty-state">
+              <p>Нет данных о рейтинге игроков</p>
+            </div>
           ) : (
             <div className="gh-top-players-table">
               <div className="gh-table-header">
@@ -316,7 +335,11 @@ const Home: React.FC = () => {
               </div>
               
               {topPlayers.map((player, index) => (
-                <div key={player.id} className="gh-table-row">
+                <Link 
+                  to={`/players/${player.id}`}
+                  key={player.id} 
+                  className="gh-table-row"
+                >
                   <div className="gh-player-rank">{index + 1}</div>
                   <div className="gh-player-info">
                     <img 
@@ -333,7 +356,7 @@ const Home: React.FC = () => {
                     <span className="gh-points-value">{player.points}</span>
                     <FontAwesomeIcon icon={faStar} className="gh-points-icon" />
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           )}
@@ -344,23 +367,23 @@ const Home: React.FC = () => {
       <section className="gh-cta-section">
         <div className="gh-container">
           <div className="gh-cta-content">
-            <h2 className="gh-cta-title">Присоединяйтесь к сообществу FIBA 3x3</h2>
+            <h2 className="gh-cta-title">Твоя история в баскетболе 3x3 начинается сейчас</h2>
             <p className="gh-cta-text">
-              Создайте профиль, чтобы участвовать в турнирах, отслеживать статистику и быть в курсе всех событий баскетбола 3x3.
+              Регистрируйся, чтобы участвовать в турнирах, следить за своей статистикой и быть в центре баскетбольного сообщества.
             </p>
             
             {!isAuthenticated ? (
               <div className="gh-cta-buttons">
-                <Link to="/fiba/register-user" className="gh-button gh-button-primary">
-                  <FontAwesomeIcon icon={faUserPlus} /> Регистрация
+                <Link to="/register-user" className="gh-button gh-button-primary">
+                  <FontAwesomeIcon icon={faUserPlus} /> Создать аккаунт
                 </Link>
-                <Link to="/fiba/login" className="gh-button gh-button-outline">
-                  Вход в аккаунт
+                <Link to="/login" className="gh-button gh-button-outline">
+                  Войти
                 </Link>
               </div>
             ) : (
               <div className="gh-cta-buttons">
-                <Link to="/fiba/profile" className="gh-button gh-button-primary">
+                <Link to="/profile" className="gh-button gh-button-primary">
                   <FontAwesomeIcon icon={faBasketballBall} /> Мой профиль
                 </Link>
               </div>

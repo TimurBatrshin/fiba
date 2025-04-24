@@ -1,6 +1,7 @@
 // Мок модуля ApiService
 import { AxiosRequestConfig } from 'axios';
 import { ApiError, ValidationError, AuthError } from '../../utils/errorHandler';
+import { BASE_PATH } from '../../config/envConfig';
 
 // Расширенный тип для request interceptor
 interface RequestInterceptor {
@@ -49,7 +50,7 @@ const responseErrorInterceptor = (error: any) => {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('auth_token');
       localStorage.removeItem('token');
-      window.location.href = '/login';
+      window.location.href = `${BASE_PATH}#/login`;
     }
   }
   

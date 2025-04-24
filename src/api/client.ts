@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
-import { APP_SETTINGS } from '../config/envConfig';
+import { APP_SETTINGS, BASE_PATH } from '../config/envConfig';
 
 // Типы для API-запросов
 export interface ApiResponse<T = any> {
@@ -23,6 +23,18 @@ const createApiClient = (baseURL: string): AxiosInstance => {
     headers: {
       'Content-Type': 'application/json',
       'Accept': 'application/json'
+    },
+    // Добавляем правильную обработку параметров запроса
+    paramsSerializer: {
+      encode: (param: string) => encodeURIComponent(param),
+      serialize: (params) => {
+        // Преобразуем объект параметров в строку запроса
+        return Object.entries(params)
+          .map(([key, value]) => {
+            return `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`;
+          })
+          .join('&');
+      }
     }
   });
 
@@ -43,18 +55,34 @@ const createApiClient = (baseURL: string): AxiosInstance => {
 
   // Перехватчик ответов для обработки ошибок
   client.interceptors.response.use(
-    (response) => response,
-    (error: AxiosError) => {
+    (response) => response.data, // Возвращаем только данные ответа
+    (error: any) => {
+      // Отдельная обработка ошибок CORS
+      if (typeof error.message === 'string' && error.message.includes('Network Error') || !error.response) {
+        console.error('Возможная ошибка CORS или сетевая ошибка:', error.message);
+        return Promise.reject({
+          message: 'Проблема с сетевым соединением. Пожалуйста, проверьте ваше подключение или обратитесь к администратору.',
+          status: 0,
+          data: { originalError: error.message }
+        });
+      }
+
       // Проверка на ошибку авторизации
       if (error.response?.status === 401) {
-        // Очистка токена и перенаправление на страницу входа
+        // Очищаем токены
         localStorage.removeItem(APP_SETTINGS.tokenStorageKey);
-        window.location.href = '/login';
+        localStorage.removeItem('token');
+
+        // Редирект на логин, если пользователь не на странице логина
+        const currentPath = window.location.pathname;
+        if (!currentPath.includes('/login') && !currentPath.includes('/register')) {
+          window.location.href = `${BASE_PATH}#/login`;
+        }
       }
 
       // Преобразование ошибки в удобный формат
       const apiError: ApiError = {
-        message: error.message || 'Неизвестная ошибка',
+        message: error.response?.data?.message || (typeof error.message === 'string' ? error.message : 'Неизвестная ошибка'),
         status: error.response?.status,
         data: error.response?.data
       };
@@ -74,9 +102,16 @@ export const api = {
   // GET запрос
   get: async <T = any>(url: string, config?: AxiosRequestConfig): Promise<T> => {
     try {
-      const response: AxiosResponse<T> = await apiClient.get(url, config);
-      return response.data;
-    } catch (error) {
+      console.log(`API GET: ${url}`, config);
+      return await apiClient.get(url, config) as T;
+    } catch (error: any) {
+      console.error(`API GET error for ${url}:`, error);
+      
+      // Для методов, которые должны возвращать массивы, возвращаем пустой массив при ошибке
+      if (url.includes('/tournaments') && !url.includes('/tournaments/')) {
+        return ([] as unknown) as T;
+      }
+      
       throw error;
     }
   },
@@ -84,9 +119,10 @@ export const api = {
   // POST запрос
   post: async <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> => {
     try {
-      const response: AxiosResponse<T> = await apiClient.post(url, data, config);
-      return response.data;
-    } catch (error) {
+      console.log(`API POST: ${url}`, { data });
+      return await apiClient.post(url, data, config) as T;
+    } catch (error: any) {
+      console.error(`API POST error for ${url}:`, error);
       throw error;
     }
   },
@@ -94,9 +130,10 @@ export const api = {
   // PUT запрос
   put: async <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> => {
     try {
-      const response: AxiosResponse<T> = await apiClient.put(url, data, config);
-      return response.data;
-    } catch (error) {
+      console.log(`API PUT: ${url}`, { data });
+      return await apiClient.put(url, data, config) as T;
+    } catch (error: any) {
+      console.error(`API PUT error for ${url}:`, error);
       throw error;
     }
   },
@@ -104,9 +141,10 @@ export const api = {
   // DELETE запрос
   delete: async <T = any>(url: string, config?: AxiosRequestConfig): Promise<T> => {
     try {
-      const response: AxiosResponse<T> = await apiClient.delete(url, config);
-      return response.data;
-    } catch (error) {
+      console.log(`API DELETE: ${url}`, config);
+      return await apiClient.delete(url, config) as T;
+    } catch (error: any) {
+      console.error(`API DELETE error for ${url}:`, error);
       throw error;
     }
   },
@@ -114,9 +152,10 @@ export const api = {
   // PATCH запрос
   patch: async <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> => {
     try {
-      const response: AxiosResponse<T> = await apiClient.patch(url, data, config);
-      return response.data;
-    } catch (error) {
+      console.log(`API PATCH: ${url}`, { data });
+      return await apiClient.patch(url, data, config) as T;
+    } catch (error: any) {
+      console.error(`API PATCH error for ${url}:`, error);
       throw error;
     }
   }

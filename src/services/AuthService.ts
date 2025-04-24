@@ -1,6 +1,6 @@
 import { jwtDecode } from 'jwt-decode';
 import { BaseApiService } from './BaseApiService';
-import { APP_SETTINGS } from '../config/envConfig';
+import { APP_SETTINGS, BASE_PATH } from '../config/envConfig';
 import { API_CONFIG } from '../config/api';
 import { 
   LoginResponse, 
@@ -22,15 +22,29 @@ export class AuthService extends BaseApiService {
     this.TOKEN_KEY = APP_SETTINGS.tokenStorageKey;
     this.REFRESH_TOKEN_KEY = APP_SETTINGS.refreshTokenStorageKey;
     
-    // Инициализировать токен из хранилища
-    const token = this.getToken();
-    if (token) {
-      this.setAuthToken(token);
-      this.startTokenRefreshTimer();
-    }
+    // Мигрируем токены из разных форматов хранения
+    import('../utils/tokenStorage').then(tokenStorage => {
+      tokenStorage.migrateTokens();
+      
+      // Инициализируем токен из хранилища после миграции
+      const token = this.getToken();
+      if (token) {
+        this.setAuthToken(token);
+        this.startTokenRefreshTimer();
+      }
+    }).catch(error => {
+      console.error('[AuthService] Error importing tokenStorage module:', error);
+      
+      // Fallback инициализация
+      const token = this.getToken();
+      if (token) {
+        this.setAuthToken(token);
+        this.startTokenRefreshTimer();
+      }
+    });
     
-    // Миграция старого токена
-    this.migrateTokenIfNeeded();
+    // Логируем конфигурацию для отладки
+    console.log('[AuthService] Initialized with baseUrl:', API_CONFIG.baseUrl);
   }
 
   public static getInstance(): AuthService {
@@ -41,36 +55,28 @@ export class AuthService extends BaseApiService {
   }
 
   /**
-   * Миграция токена из старого хранилища
-   */
-  private migrateTokenIfNeeded(): void {
-    const legacyToken = localStorage.getItem('token');
-    const newToken = localStorage.getItem(this.TOKEN_KEY);
-    
-    if (legacyToken && !newToken) {
-      this.setToken(legacyToken);
-      localStorage.removeItem('token');
-    }
-  }
-
-  /**
    * Authenticates a user and stores their token
    */
   async login(email: string, password: string): Promise<LoginResponse> {
     try {
-      const response = await this.post<LoginResponse>('/api/auth/login', { email, password });
+      console.log('[AuthService] Attempting login for:', email);
+      // Используем путь для endpoint auth/login согласно API бэкенда
+      const response = await this.post<LoginResponse>('/auth/login', { email, password });
       
       if (response && response.data.token) {
+        console.log('[AuthService] Login successful, setting tokens');
         this.setToken(response.data.token);
         this.setAuthToken(response.data.token);
         
         // Start the token refresh timer
         this.startTokenRefreshTimer();
+      } else {
+        console.error('[AuthService] Login response missing token');
       }
       
       return response.data;
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('[AuthService] Login error:', error);
       throw error;
     }
   }
@@ -80,7 +86,7 @@ export class AuthService extends BaseApiService {
    */
   async register(data: RegisterData): Promise<LoginResponse> {
     try {
-      const response = await this.post<LoginResponse>('/api/auth/register', data);
+      const response = await this.post<LoginResponse>('/auth/register', data);
       
       if (response && response.data.token) {
         this.setToken(response.data.token);
@@ -106,23 +112,15 @@ export class AuthService extends BaseApiService {
     this.clearAuthToken();
     this.stopTokenRefreshTimer();
     
-    // Redirect to login page с учетом базового пути для GitHub Pages
-    const basePath = process.env.NODE_ENV === 'production' ? '/fiba3x3' : '';
-    
-    // Формируем корректный URL для редиректа с учетом базового пути
-    if (basePath && !window.location.pathname.startsWith(basePath)) {
-      // Если мы не в baseUrl, то используем абсолютный путь
-      window.location.href = `${window.location.origin}${basePath}/login`;
-    } else {
-      // Используем относительный путь
-      window.location.href = `${basePath}/login`;
-    }
+    // Перенаправляем на страницу входа через HashRouter с относительным URL
+    window.location.href = `${BASE_PATH}#/login`;
   }
 
   /**
    * Sets the authentication token
    */
   private setToken(token: string): void {
+    console.log('[AuthService] Setting token in localStorage');
     localStorage.setItem(this.TOKEN_KEY, token);
   }
 
@@ -137,6 +135,7 @@ export class AuthService extends BaseApiService {
    * Removes the authentication token
    */
   private removeToken(): void {
+    console.log('[AuthService] Removing tokens from localStorage');
     localStorage.removeItem(this.TOKEN_KEY);
     localStorage.removeItem('token'); // Legacy storage
   }
@@ -154,21 +153,35 @@ export class AuthService extends BaseApiService {
   isAuthenticated(): boolean {
     const token = this.getToken();
     
-    if (!token) return false;
+    if (!token) {
+      console.log('[AuthService] No token found, user not authenticated');
+      return false;
+    }
 
     try {
       const decoded = jwtDecode<DecodedToken>(token);
+      if (!decoded || typeof decoded !== 'object' || !decoded.exp) {
+        console.warn('[AuthService] Token validation failed: Invalid token structure');
+        this.logout();
+        return false;
+      }
+      
       const isValid = decoded.exp > Date.now() / 1000;
       
       // If token is expired, try to refresh
       if (!isValid) {
-        this.refreshToken().catch(() => this.logout());
+        console.log('[AuthService] Token expired, attempting refresh');
+        this.refreshToken().catch(() => {
+          console.warn("[AuthService] Token refresh failed");
+          this.logout();
+        });
         return false;
       }
       
+      console.log('[AuthService] Token valid, user authenticated');
       return isValid;
     } catch (error) {
-      console.error('Token validation error:', error);
+      console.error('[AuthService] Token validation error:', error);
       // Clean up invalid token
       this.logout();
       return false;
@@ -178,57 +191,85 @@ export class AuthService extends BaseApiService {
   /**
    * Refreshes the authentication token
    */
-  async refreshToken(): Promise<void> {
+  async refreshToken(): Promise<boolean> {
     try {
       const currentToken = this.getToken();
       if (!currentToken) {
+        console.warn('Refresh token failed: No token found');
         this.logout();
-        return;
+        return false;
       }
 
-      const response = await this.post<{ token: string }>(
-        '/api/auth/refresh-token',
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${currentToken}`
-          }
-        }
-      );
+      // Используем endpoint для обновления токена
+      const headers = {
+        Authorization: `Bearer ${currentToken}`
+      };
       
-      if (response && response.data.token) {
+      // Используем custom headers через Axios request конфигурацию
+      const response = await this.request<LoginResponse>({
+        method: 'post',
+        url: '/auth/refresh-token',
+        data: {},
+        headers
+      });
+
+      if (response && response.data && response.data.token) {
         this.setToken(response.data.token);
         this.setAuthToken(response.data.token);
+        
+        // Reset refresh timer
         this.startTokenRefreshTimer();
+        
+        console.log('Token refreshed successfully');
+        return true;
+      } else {
+        console.error('Refresh token response is invalid', response);
+        this.logout();
+        return false;
       }
     } catch (error) {
-      console.error('Error refreshing token:', error);
+      console.error('Refresh token error:', error);
       this.logout();
+      return false;
     }
   }
 
   /**
-   * Starts a timer to refresh the token before it expires
+   * Starts the token refresh timer
    */
   private startTokenRefreshTimer(): void {
-    // Clear any existing timer
+    // Clear any existing timers
     this.stopTokenRefreshTimer();
-
+    
     const token = this.getToken();
     if (!token) return;
-
+    
     try {
+      // Decode the token to get expiration time
       const decoded = jwtDecode<DecodedToken>(token);
-      const expiresIn = decoded.exp - Math.floor(Date.now() / 1000);
+      if (!decoded.exp) return;
       
-      // Refresh 5 minutes before expiration or halfway through the lifetime if less than 10 minutes
-      const refreshTime = Math.max(0, expiresIn < 600 ? expiresIn / 2 : (expiresIn - 300)) * 1000;
+      // Get current time and expiration time in seconds
+      const now = Math.floor(Date.now() / 1000);
+      const exp = decoded.exp;
       
+      // Calculate when to refresh (5 minutes before expiration)
+      const refreshAt = exp - now - 300;
+      
+      if (refreshAt <= 0) {
+        // Token is about to expire or already expired, refresh immediately
+        this.refreshToken();
+        return;
+      }
+      
+      // Set timer to refresh token
+      console.log(`[AuthService] Setting token refresh timer for ${refreshAt} seconds from now`);
       this.refreshTimer = setTimeout(() => {
         this.refreshToken();
-      }, refreshTime);
+      }, refreshAt * 1000);
+      
     } catch (error) {
-      console.error('Error starting token refresh timer:', error);
+      console.error('[AuthService] Error starting refresh timer:', error);
     }
   }
 
@@ -243,74 +284,111 @@ export class AuthService extends BaseApiService {
   }
 
   /**
-   * Checks if the user has a specific role
+   * Checks if the current user has a specific role
    */
-  hasRole(role: 'ADMIN' | 'USER' | 'COACH' | 'ORGANIZER'): boolean {
-    if (!this.isAuthenticated()) return false;
-    
+  hasRole(role: string): boolean {
     try {
       const token = this.getToken();
       if (!token) return false;
-
+      
       const decoded = jwtDecode<DecodedToken>(token);
-      return decoded.role === role;
+      if (!decoded || !decoded.role) return false;
+      
+      // Check if the user's role matches the required role
+      return decoded.role.toLowerCase() === role.toLowerCase();
     } catch (error) {
+      console.error('[AuthService] Error checking role:', error);
       return false;
     }
   }
 
   /**
-   * Gets the current user's role
+   * Returns the current user's role
    */
-  getCurrentUserRole(): 'ADMIN' | 'USER' | 'COACH' | 'ORGANIZER' | null {
+  getCurrentUserRole(): string | null {
     try {
       const token = this.getToken();
       if (!token) return null;
-
+      
       const decoded = jwtDecode<DecodedToken>(token);
+      if (!decoded || !decoded.role) return null;
+      
       return decoded.role;
     } catch (error) {
+      console.error('[AuthService] Error getting user role:', error);
       return null;
     }
   }
 
   /**
-   * Get the authentication token from storage
+   * Returns the JWT token
    */
   getToken(): string | null {
-    // First try the primary location, then fall back to legacy location
-    return localStorage.getItem(this.TOKEN_KEY) || localStorage.getItem('token');
+    const token = localStorage.getItem(this.TOKEN_KEY);
+    
+    // If token not found in primary storage, check legacy storage
+    if (!token) {
+      const legacyToken = localStorage.getItem('token');
+      if (legacyToken) {
+        // Migrate from legacy storage to current storage
+        localStorage.setItem(this.TOKEN_KEY, legacyToken);
+        localStorage.removeItem('token');
+        return legacyToken;
+      }
+    }
+    
+    return token;
   }
 
   /**
-   * Get the refresh token from storage
+   * Returns the refresh token
    */
   getRefreshToken(): string | null {
     return localStorage.getItem(this.REFRESH_TOKEN_KEY);
   }
-
+  
   /**
-   * Gets the current authenticated user
+   * Gets the current user information
    */
   async getCurrentUser(): Promise<User> {
     try {
-      const response = await this.get<User>('/api/users/me');
-      return response.data;
+      const token = this.getToken();
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+      
+      // Декодируем токен для получения информации о пользователе
+      const decoded = jwtDecode<DecodedToken>(token);
+      
+      // Используем информацию из токена для создания объекта пользователя
+      // Для более полной информации можно добавить запрос к API /user/profile
+      const user: User = {
+        id: parseInt(decoded.sub, 10),
+        name: '',  // Имя может отсутствовать в токене
+        email: '',  // Email может отсутствовать в токене
+        role: decoded.role
+      };
+      
+      // Можно дополнительно запросить полную информацию о пользователе с сервера
+      // const response = await this.get<User>('/user/profile');
+      // return response.data;
+      
+      return user;
     } catch (error) {
-      console.error('Error getting current user:', error);
+      console.error('[AuthService] Error getting current user:', error);
       throw error;
     }
   }
 
   /**
-   * Gets the profile for the current user
+   * Gets the user profile
    */
   async getUserProfile(userId: string): Promise<UserProfile> {
     try {
-      const response = await this.get<UserProfile>(`/api/profiles/${userId}`);
+      const response = await this.get<UserProfile>(`/profile/${userId}`);
       return response.data;
     } catch (error) {
-      console.error('Error getting user profile:', error);
+      console.error('[AuthService] Error getting user profile:', error);
       throw error;
     }
   }
@@ -320,32 +398,25 @@ export class AuthService extends BaseApiService {
    */
   async updateUserProfile(userId: string, profileData: Partial<UserProfile>): Promise<UserProfile> {
     try {
-      const response = await this.put<UserProfile>(`/api/profiles/${userId}`, profileData);
+      const response = await this.put<UserProfile>(`/profile/${userId}`, profileData);
       return response.data;
     } catch (error) {
-      console.error('Error updating user profile:', error);
+      console.error('[AuthService] Error updating user profile:', error);
       throw error;
     }
   }
 
   /**
-   * Checks if the user is an admin
+   * Checks if the current user is an admin
    */
   isAdmin(): boolean {
     return this.hasRole('ADMIN');
   }
 
   /**
-   * Checks if the user is a coach
+   * Checks if the current user is a business account
    */
-  isCoach(): boolean {
-    return this.hasRole('COACH');
-  }
-
-  /**
-   * Checks if the user is an organizer
-   */
-  isOrganizer(): boolean {
-    return this.hasRole('ORGANIZER');
+  isBusiness(): boolean {
+    return this.hasRole('business');
   }
 } 

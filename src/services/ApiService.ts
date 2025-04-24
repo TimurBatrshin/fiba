@@ -12,11 +12,6 @@ import {
 } from '../interfaces/Tournament';
 import { Team, Player } from '../interfaces/Team';
 
-// Adding fallbackUrl to the API_CONFIG if it doesn't exist
-if (!('fallbackUrl' in API_CONFIG)) {
-  (API_CONFIG as any).fallbackUrl = API_CONFIG.mockUrl; // Use mockUrl as fallback
-}
-
 /**
  * Сервис для работы с API
  */
@@ -131,35 +126,6 @@ class ApiService {
       });
       return response.data;
     } catch (error: any) {
-      // Проверяем, связана ли ошибка с таймаутом
-      if (error.code === 'ECONNABORTED' || (error.message && error.message.includes('timeout'))) {
-        console.warn(`Таймаут запроса к ${url}. Пробуем использовать резервный URL...`);
-        try {
-          // Создаем новый экземпляр axios с резервным URL
-          const fallbackApi = axios.create({
-            baseURL: API_CONFIG.fallbackUrl,
-            timeout: API_CONFIG.timeout,
-            withCredentials: API_CONFIG.withCredentials,
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json'
-            }
-          });
-          
-          // Пробуем выполнить запрос с резервным URL
-          const fallbackResponse: AxiosResponse<T> = await fallbackApi.get(url, {
-            ...config,
-            withCredentials: true
-          });
-          
-          return fallbackResponse.data;
-        } catch (fallbackError) {
-          console.error('Ошибка при использовании резервного URL:', fallbackError);
-          this.handleError(fallbackError);
-          throw fallbackError;
-        }
-      }
-      
       this.handleError(error);
       throw error;
     }
@@ -173,35 +139,6 @@ class ApiService {
       });
       return response.data;
     } catch (error: any) {
-      // Проверяем, связана ли ошибка с таймаутом
-      if (error.code === 'ECONNABORTED' || (error.message && error.message.includes('timeout'))) {
-        console.warn(`Таймаут запроса к ${url}. Пробуем использовать резервный URL...`);
-        try {
-          // Создаем новый экземпляр axios с резервным URL
-          const fallbackApi = axios.create({
-            baseURL: API_CONFIG.fallbackUrl,
-            timeout: API_CONFIG.timeout,
-            withCredentials: API_CONFIG.withCredentials,
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json'
-            }
-          });
-          
-          // Пробуем выполнить запрос с резервным URL
-          const fallbackResponse: AxiosResponse<T> = await fallbackApi.post(url, data, {
-            ...config,
-            withCredentials: true
-          });
-          
-          return fallbackResponse.data;
-        } catch (fallbackError) {
-          console.error('Ошибка при использовании резервного URL:', fallbackError);
-          this.handleError(fallbackError);
-          throw fallbackError;
-        }
-      }
-      
       this.handleError(error);
       throw error;
     }
@@ -215,35 +152,6 @@ class ApiService {
       });
       return response.data;
     } catch (error: any) {
-      // Проверяем, связана ли ошибка с таймаутом
-      if (error.code === 'ECONNABORTED' || (error.message && error.message.includes('timeout'))) {
-        console.warn(`Таймаут запроса к ${url}. Пробуем использовать резервный URL...`);
-        try {
-          // Создаем новый экземпляр axios с резервным URL
-          const fallbackApi = axios.create({
-            baseURL: API_CONFIG.fallbackUrl,
-            timeout: API_CONFIG.timeout,
-            withCredentials: API_CONFIG.withCredentials,
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json'
-            }
-          });
-          
-          // Пробуем выполнить запрос с резервным URL
-          const fallbackResponse: AxiosResponse<T> = await fallbackApi.put(url, data, {
-            ...config,
-            withCredentials: true
-          });
-          
-          return fallbackResponse.data;
-        } catch (fallbackError) {
-          console.error('Ошибка при использовании резервного URL:', fallbackError);
-          this.handleError(fallbackError);
-          throw fallbackError;
-        }
-      }
-      
       this.handleError(error);
       throw error;
     }
@@ -257,35 +165,6 @@ class ApiService {
       });
       return response.data;
     } catch (error: any) {
-      // Проверяем, связана ли ошибка с таймаутом
-      if (error.code === 'ECONNABORTED' || (error.message && error.message.includes('timeout'))) {
-        console.warn(`Таймаут запроса к ${url}. Пробуем использовать резервный URL...`);
-        try {
-          // Создаем новый экземпляр axios с резервным URL
-          const fallbackApi = axios.create({
-            baseURL: API_CONFIG.fallbackUrl,
-            timeout: API_CONFIG.timeout,
-            withCredentials: API_CONFIG.withCredentials,
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json'
-            }
-          });
-          
-          // Пробуем выполнить запрос с резервным URL
-          const fallbackResponse: AxiosResponse<T> = await fallbackApi.delete(url, {
-            ...config,
-            withCredentials: true
-          });
-          
-          return fallbackResponse.data;
-        } catch (fallbackError) {
-          console.error('Ошибка при использовании резервного URL:', fallbackError);
-          this.handleError(fallbackError);
-          throw fallbackError;
-        }
-      }
-      
       this.handleError(error);
       throw error;
     }

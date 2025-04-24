@@ -4,6 +4,8 @@ import { useNavigate, Link } from "react-router-dom";
 import "./registerUser.css";  // Импортируем стили
 import { API_BASE_URL } from "../../config/envConfig";
 import { AuthService } from "../../services/AuthService";
+import { useAuth } from "../../contexts/AuthContext";
+import { BASE_PATH } from '../../config/envConfig';
 
 const RegisterUser: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -104,11 +106,13 @@ const RegisterUser: React.FC = () => {
         headers: { "Content-Type": "application/json" },
       });
 
-      if (response.status === 200) {
+      if (response && response.data && response.data.token) {
+        console.log('Registration successful, redirecting to login page');
+        // Show success before redirecting
         setSuccess(true);
         setTimeout(() => {
-          navigate("/fiba/login");
-        }, 3000);
+          window.location.href = `${BASE_PATH}#/`;
+        }, 1000);
       }
     } catch (err: any) {
       console.error("Ошибка регистрации:", err);
@@ -156,7 +160,7 @@ const RegisterUser: React.FC = () => {
                 </svg>
               </div>
               <h3>Регистрация успешна!</h3>
-              <p>На ваш email отправлено письмо с подтверждением. Вы будете перенаправлены на страницу входа через несколько секунд.</p>
+              <p>На ваш email отправлено письмо с подтверждением. Вы будете перенаправлены на главную страницу через несколько секунд.</p>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="auth-form">

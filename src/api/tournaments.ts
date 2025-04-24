@@ -1,66 +1,147 @@
 import api from './client';
+import { Tournament, Registration } from '../interfaces/Tournament';
 
-// Типы данных для турниров
-export interface Tournament {
-  id: string;
-  name: string;
-  startDate: string;
-  endDate: string;
+// Интерфейсы для запросов
+export interface CreateTournamentRequest {
+  title: string;
+  date: string;
   location: string;
-  status: 'upcoming' | 'ongoing' | 'completed';
-  participants: number;
-  description?: string;
-  imageUrl?: string;
+  level: string;
+  prize_pool: number;
+  tournament_image?: File;
 }
 
-export interface TournamentFilters {
-  status?: 'upcoming' | 'ongoing' | 'completed';
-  search?: string;
-  startDate?: string;
-  endDate?: string;
+export interface CreateBusinessTournamentRequest extends CreateTournamentRequest {
+  sponsor_name?: string;
+  business_type?: string;
+  sponsor_logo?: File;
 }
 
-// API-функции для работы с турнирами
-export const tournamentsApi = {
-  // Получение списка всех турниров с возможностью фильтрации
-  getAll: async (filters?: TournamentFilters): Promise<Tournament[]> => {
-    return api.get('/tournaments', { params: filters });
-  },
+export interface TournamentRegistrationRequest {
+  team_name: string;
+  player_ids?: string[];
+}
 
-  // Получение турнира по ID
-  getById: async (id: string): Promise<Tournament> => {
-    return api.get(`/tournaments/${id}`);
-  },
+// Реэкспортируем интерфейсы из централизованного места
+export type { Tournament, Registration };
 
-  // Создание нового турнира
-  create: async (tournamentData: Omit<Tournament, 'id'>): Promise<Tournament> => {
-    return api.post('/tournaments', tournamentData);
+// Сервис турниров
+const TournamentService = {
+  // Получить список всех турниров
+  getAllTournaments: async (params?: { limit?: number; sort?: string; direction?: string; upcoming?: boolean }): Promise<Tournament[]> => {
+    return api.get<Tournament[]>('/tournaments', { params });
   },
-
-  // Обновление существующего турнира
-  update: async (id: string, tournamentData: Partial<Tournament>): Promise<Tournament> => {
-    return api.put(`/tournaments/${id}`, tournamentData);
+  
+  // Получить турнир по ID
+  getTournamentById: async (id: number): Promise<Tournament> => {
+    return api.get<Tournament>(`/tournaments/${id}`);
   },
-
-  // Удаление турнира
-  delete: async (id: string): Promise<void> => {
+  
+  // Получить турниры по статусу
+  getTournamentsByStatus: async (status: string): Promise<Tournament[]> => {
+    return api.get<Tournament[]>(`/tournaments/status/${status}`);
+  },
+  
+  // Получить предстоящие турниры
+  getUpcomingTournaments: async (): Promise<Tournament[]> => {
+    return api.get<Tournament[]>(`/tournaments/upcoming`);
+  },
+  
+  // Получить прошедшие турниры
+  getPastTournaments: async (): Promise<Tournament[]> => {
+    return api.get<Tournament[]>(`/tournaments/past`);
+  },
+  
+  // Поиск турниров
+  searchTournaments: async (query: string): Promise<Tournament[]> => {
+    return api.get<Tournament[]>(`/tournaments/search`, { params: { query } });
+  },
+  
+  // Создать турнир (только для администраторов)
+  createTournament: async (data: CreateTournamentRequest): Promise<Tournament> => {
+    // Создаем FormData для отправки файлов
+    const formData = new FormData();
+    formData.append('title', data.title);
+    formData.append('date', data.date);
+    formData.append('location', data.location);
+    formData.append('level', data.level);
+    formData.append('prize_pool', String(data.prize_pool));
+    
+    if (data.tournament_image) {
+      formData.append('tournament_image', data.tournament_image);
+    }
+    
+    return api.post<Tournament>('/tournaments', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+  },
+  
+  // Создать бизнес-турнир (для администраторов или бизнес-аккаунтов)
+  createBusinessTournament: async (data: CreateBusinessTournamentRequest): Promise<Tournament> => {
+    // Создаем FormData для отправки файлов
+    const formData = new FormData();
+    formData.append('title', data.title);
+    formData.append('date', data.date);
+    formData.append('location', data.location);
+    formData.append('level', data.level);
+    formData.append('prize_pool', String(data.prize_pool));
+    
+    if (data.sponsor_name) {
+      formData.append('sponsor_name', data.sponsor_name);
+    }
+    
+    if (data.business_type) {
+      formData.append('business_type', data.business_type);
+    }
+    
+    if (data.tournament_image) {
+      formData.append('tournament_image', data.tournament_image);
+    }
+    
+    if (data.sponsor_logo) {
+      formData.append('sponsor_logo', data.sponsor_logo);
+    }
+    
+    return api.post<Tournament>('/tournaments/business', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+  },
+  
+  // Регистрация команды на турнир
+  registerForTournament: async (tournamentId: number, teamName: string, playerIds?: string[]): Promise<Registration> => {
+    // Создаем объект с необходимыми данными
+    const requestData = {
+      team_name: teamName,
+      player_ids: playerIds
+    };
+    
+    return api.post<Registration>(`/tournaments/${tournamentId}/register`, requestData);
+  },
+  
+  // Обновить турнир (только для администраторов)
+  updateTournament: async (id: number, data: Partial<Tournament>): Promise<Tournament> => {
+    return api.put<Tournament>(`/tournaments/${id}`, data);
+  },
+  
+  // Удалить турнир (только для администраторов)
+  deleteTournament: async (id: number): Promise<void> => {
     return api.delete(`/tournaments/${id}`);
   },
-
-  // Получение участников турнира
-  getParticipants: async (tournamentId: string): Promise<any[]> => {
-    return api.get(`/tournaments/${tournamentId}/participants`);
-  },
-
-  // Добавление участника в турнир
-  addParticipant: async (tournamentId: string, participantData: any): Promise<any> => {
-    return api.post(`/tournaments/${tournamentId}/participants`, participantData);
-  },
-
-  // Удаление участника из турнира
-  removeParticipant: async (tournamentId: string, participantId: string): Promise<void> => {
-    return api.delete(`/tournaments/${tournamentId}/participants/${participantId}`);
+  
+  // Получение команд турнира по ID
+  getTeamsForTournament: async (tournamentId: number): Promise<any[]> => {
+    try {
+      const response = await api.get<any[]>(`/tournaments/${tournamentId}/teams`);
+      return response || [];
+    } catch (error) {
+      console.error(`Error fetching teams for tournament ${tournamentId}:`, error);
+      return [];
+    }
   }
 };
 
-export default tournamentsApi; 
+export default TournamentService; 

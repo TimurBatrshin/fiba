@@ -1,4 +1,7 @@
-import { APP_SETTINGS, isProduction } from '../config/envConfig';
+import { APP_SETTINGS } from '../config/envConfig';
+
+// Определяем isProduction на основе хоста
+const isProduction = window.location.hostname !== 'localhost';
 
 /**
  * Logger levels for different types of logging

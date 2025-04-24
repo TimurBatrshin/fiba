@@ -1,0 +1,196 @@
+.top-players-container {
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.05);
+  padding: 24px;
+  margin-bottom: 30px;
+}
+
+.top-players-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.top-players-header h2 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1a202c;
+  margin: 0;
+}
+
+.see-all-link {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  color: #3182ce;
+  font-weight: 600;
+  font-size: 15px;
+  transition: color 0.2s ease;
+}
+
+.see-all-link:hover {
+  color: #2c5282;
+  text-decoration: underline;
+}
+
+.see-all-link svg {
+  margin-left: 4px;
+  font-size: 12px;
+}
+
+.top-players-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.top-players-table-header {
+  display: grid;
+  grid-template-columns: 50px 3fr 2fr 1fr 1fr;
+  padding: 16px 10px;
+  background-color: #f7fafc;
+  border-radius: 8px;
+  font-weight: 600;
+  color: #4a5568;
+  font-size: 14px;
+}
+
+.top-players-table-body {
+  margin-top: 4px;
+}
+
+.top-player-row {
+  display: grid;
+  grid-template-columns: 50px 3fr 2fr 1fr 1fr;
+  padding: 14px 10px;
+  align-items: center;
+  border-bottom: 1px solid #edf2f7;
+  text-decoration: none;
+  color: #1a202c;
+  transition: background-color 0.2s ease;
+}
+
+.top-player-row:hover {
+  background-color: #f7fafc;
+  border-radius: 8px;
+}
+
+.top-player-row:last-child {
+  border-bottom: none;
+}
+
+.player-rank {
+  font-weight: 700;
+  font-size: 18px;
+  color: #4a5568;
+}
+
+.player-info {
+  display: flex;
+  align-items: center;
+}
+
+.player-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-right: 12px;
+  border: 2px solid #e2e8f0;
+}
+
+.player-name {
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.player-team, .player-position {
+  color: #718096;
+  font-size: 14px;
+}
+
+.player-points {
+  font-weight: 700;
+  font-size: 16px;
+  color: #3182ce;
+  display: flex;
+  align-items: center;
+}
+
+.star-icon {
+  margin-left: 6px;
+  color: #ecc94b;
+}
+
+/* Топ 3 игрока выделяем особым образом */
+.top-player-row:nth-child(1) .player-rank {
+  color: #d69e2e;
+}
+
+.top-player-row:nth-child(2) .player-rank {
+  color: #718096;
+}
+
+.top-player-row:nth-child(3) .player-rank {
+  color: #dd6b20;
+}
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 768px) {
+  .top-players-table-header,
+  .top-player-row {
+    grid-template-columns: 40px 5fr 2fr;
+  }
+  
+  .player-position,
+  .player-team {
+    display: none;
+  }
+  
+  .top-players-container {
+    padding: 16px;
+  }
+  
+  .top-players-header h2 {
+    font-size: 20px;
+  }
+}
+
+/* Стили для кнопок */
+.action-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border: none;
+  outline: none;
+  text-decoration: none;
+}
+
+.primary-button {
+  background-color: #3182ce;
+  color: white;
+}
+
+.primary-button:hover {
+  background-color: #2c5282;
+}
+
+.secondary-button {
+  background-color: #e2e8f0;
+  color: #4a5568;
+}
+
+.secondary-button:hover {
+  background-color: #cbd5e0;
+}
+
+.action-button svg {
+  margin-right: 8px;
+} 

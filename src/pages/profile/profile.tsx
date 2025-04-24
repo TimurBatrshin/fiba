@@ -1,10 +1,13 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import "./profile.css";
 import defaultAvatar from '../../assets/images/default-avatar.png';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 import { API_CONFIG } from "../../config/api";
 import { userService } from "../../services/UserService";
+import { BASE_PATH } from '../../config/envConfig';
+import { AuthService } from '../../services/AuthService';
+import api from '../../api/client';
 
 interface ProfileFormData {
   photo: File | null;
@@ -13,48 +16,123 @@ interface ProfileFormData {
   rating: number;
 }
 
+// Расширенный интерфейс пользователя с дополнительными полями
+interface ExtendedUser {
+  id: number;
+  name?: string;
+  username?: string;
+  email: string;
+  role?: string;
+  avatar?: string;
+  tournaments_played?: number;
+  total_points?: number;
+  rating?: number;
+}
+
+// Функция для загрузки фото
+const uploadProfilePhoto = async (userId: string | number, photo: File): Promise<void> => {
+  try {
+    // Используем метод из userService вместо прямого вызова API
+    await userService.uploadProfilePhoto(userId, photo);
+    console.log('Фото профиля успешно загружено');
+  } catch (error) {
+    console.error('Ошибка при загрузке фото профиля:', error);
+    throw error;
+  }
+};
+
 const Profile: React.FC = () => {
-  const { currentUser, updateUser } = useAuth();
-  const [profile, setProfile] = useState<any>(null);
-  const [editMode, setEditMode] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [profile, setProfile] = useState<ExtendedUser | null>(null);
+  const [editMode, setEditMode] = useState<boolean>(false);
   const [error, setError] = useState(false);
-  const [uploadError, setUploadError] = useState("");
+  const [uploadError, setUploadError] = useState<string>("");
   const [formData, setFormData] = useState<ProfileFormData>({
     photo: null,
     tournaments_played: 0,
     total_points: 0,
-    rating: 0,
+    rating: 0
   });
+  
+  const { user, updateUser } = useAuth();
+  const redirectAttempted = useRef<boolean>(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchProfile = async () => {
-      if (!currentUser) {
-        navigate("/login");
+      if (!user) {
+        if (!redirectAttempted.current) {
+          redirectAttempted.current = true;
+          
+          // Проверяем счетчик перенаправлений в localStorage
+          const redirectAttemptsKey = 'profile_redirect_attempts';
+          const redirectAttempts = parseInt(localStorage.getItem(redirectAttemptsKey) || '0');
+          
+          if (redirectAttempts < 3) {
+            localStorage.setItem(redirectAttemptsKey, (redirectAttempts + 1).toString());
+            window.location.href = `${BASE_PATH}#/login`;
+          } else {
+            console.warn('Превышено максимальное количество попыток перенаправления из профиля');
+            // Сбрасываем счетчик через 10 секунд
+            setTimeout(() => {
+              localStorage.setItem(redirectAttemptsKey, '0');
+            }, 10000);
+          }
+        }
         return;
       }
 
       try {
         setIsLoading(true);
         const userData = await userService.getCurrentUser();
-        setProfile(userData);
+        // Явно преобразуем User в ExtendedUser через unknown
+        const extendedUser = {
+          ...userData, 
+          username: userData?.name || '',
+          tournaments_played: 0,
+          total_points: 0,
+          rating: 0
+        } as ExtendedUser;
+        
+        setProfile(extendedUser);
         setFormData({
           photo: null, // Обнуляем фото в форме, чтобы не отправлять старое
-          tournaments_played: userData.tournaments_played || 0,
-          total_points: userData.total_points || 0,
-          rating: userData.rating || 0,
+          tournaments_played: extendedUser.tournaments_played || 0,
+          total_points: extendedUser.total_points || 0,
+          rating: extendedUser.rating || 0,
         });
       } catch (err: any) {
         console.error("Ошибка при получении профиля", err);
         setError(true);
+        
+        // Если получили ошибку авторизации, предотвращаем зацикливание
+        if (err.message === 'Unauthorized access' && !redirectAttempted.current) {
+          redirectAttempted.current = true;
+          
+          // Проверяем счетчик перенаправлений в localStorage
+          const redirectAttemptsKey = 'profile_redirect_attempts';
+          const redirectAttempts = parseInt(localStorage.getItem(redirectAttemptsKey) || '0');
+          
+          if (redirectAttempts < 3) {
+            localStorage.setItem(redirectAttemptsKey, (redirectAttempts + 1).toString());
+            window.location.href = `${BASE_PATH}#/login`;
+          } else {
+            console.warn('Превышено максимальное количество попыток перенаправления из профиля (ошибка)');
+            // Сбрасываем счетчик через 10 секунд
+            setTimeout(() => {
+              localStorage.setItem(redirectAttemptsKey, '0');
+            }, 10000);
+          }
+        }
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchProfile();
-  }, [currentUser, navigate]);
+    if (!redirectAttempted.current) {
+      fetchProfile();
+    }
+  }, [user?.id]);
 
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
     e.currentTarget.src = defaultAvatar;
@@ -79,13 +157,31 @@ const Profile: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!currentUser) {
-      navigate("/login");
+    if (!user) {
+      if (!redirectAttempted.current) {
+        redirectAttempted.current = true;
+        
+        // Проверяем счетчик перенаправлений в localStorage
+        const redirectAttemptsKey = 'profile_redirect_attempts';
+        const redirectAttempts = parseInt(localStorage.getItem(redirectAttemptsKey) || '0');
+        
+        if (redirectAttempts < 3) {
+          localStorage.setItem(redirectAttemptsKey, (redirectAttempts + 1).toString());
+          window.location.href = `${BASE_PATH}#/login`;
+        } else {
+          console.warn('Превышено максимальное количество попыток перенаправления из handleSubmit');
+          // Сбрасываем счетчик через 10 секунд
+          setTimeout(() => {
+            localStorage.setItem(redirectAttemptsKey, '0');
+          }, 10000);
+        }
+      }
       return;
     }
 
     try {
       setIsLoading(true);
+      setUploadError("");
       
       // Create data to update user
       const updateData = {
@@ -94,25 +190,31 @@ const Profile: React.FC = () => {
         rating: formData.rating
       };
       
-      // If there's a photo, handle it separately
+      // If there's a photo, handle it separately with the new function
       if (formData.photo) {
-        const formDataToSend = new FormData();
-        formDataToSend.append("photo", formData.photo);
-        
-        // Upload photo
-        // You'll need to implement this route in your API service
-        // or use a direct fetch here if your API service doesn't support file uploads
-        await fetch(`${API_CONFIG.baseUrl}/users/${currentUser.id}/photo`, {
-          method: 'POST',
-          body: formDataToSend,
-          credentials: 'include'
-        });
-      }
+    try {
+      await uploadProfilePhoto(user.id, formData.photo); // Вызываем без profileData
+    } catch (photoError: any) {
+      console.error("Ошибка при загрузке фото:", photoError);
+      setUploadError("Не удалось загрузить фото, но данные профиля будут обновлены");
+    }
+  }
       
-      // Update user data
-      const updatedUser = await updateUser(currentUser.id, updateData);
-      setProfile(updatedUser);
-      setEditMode(false);
+      try {
+        // Используем updateUser из хука useAuth
+        const updatedUser = await updateUser(String(user.id), updateData);
+        setProfile(updatedUser as ExtendedUser);
+        setEditMode(false);
+      } catch (profileError: any) {
+        console.error("Ошибка при обновлении профиля", profileError);
+        setUploadError(profileError.message || "Ошибка при сохранении данных профиля");
+        
+        // Обработка ошибки авторизации
+        if (profileError.status === 401 && !redirectAttempted.current) {
+          redirectAttempted.current = true;
+          window.location.href = `${BASE_PATH}#/login`;
+        }
+      }
     } catch (err: any) {
       console.error("Ошибка при обновлении профиля", err);
       setUploadError("Ошибка при сохранении профиля");

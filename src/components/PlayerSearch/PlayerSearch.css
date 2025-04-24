@@ -1,18 +1,20 @@
 .player-search-container {
-  max-width: 1000px;
+  max-width: 100%;
   margin: 0 auto;
-  padding: 16px;
+  padding: 20px;
   background-color: #fff;
   border-radius: 8px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  width: 100%;
 }
 
 .player-search-container h3 {
   margin-top: 0;
   color: #333;
-  border-bottom: 2px solid #3498db;
+  border-bottom: 2px solid var(--primary);
   padding-bottom: 10px;
   margin-bottom: 20px;
+  font-size: 1.1rem;
 }
 
 .player-search-container h4 {
@@ -24,27 +26,30 @@
 .search-box {
   display: flex;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
   gap: 12px;
+  width: 100%;
 }
 
 .search-input {
   flex: 1;
-  padding: 10px 16px;
+  padding: 12px 16px;
   border: 1px solid #e0e0e0;
   border-radius: 4px;
   font-size: 16px;
   transition: border-color 0.2s;
+  width: 100%;
+  min-width: 300px;
 }
 
 .search-input:focus {
   outline: none;
-  border-color: #ff8800;
-  box-shadow: 0 0 0 2px rgba(255, 136, 0, 0.2);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
 }
 
 .search-button {
-  background-color: #F06D3C;
+  background-color: var(--primary);
   color: white;
   border: none;
   border-radius: 4px;
@@ -58,11 +63,12 @@
 }
 
 .search-button:hover {
-  background-color: #e85a26;
+  background-color: var(--primary-dark);
 }
 
-.search-button:active {
-  background-color: #d64e1e;
+.search-button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
 }
 
 .players-count {
@@ -130,12 +136,11 @@
 }
 
 .player-avatar {
-  width: 50px;
-  height: 50px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid #ff8800;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border: 2px solid var(--primary);
 }
 
 .player-avatar-small {
@@ -167,7 +172,7 @@
 }
 
 .captain-badge {
-  background-color: #ff8800;
+  background-color: var(--primary);
   color: white;
   font-size: 12px;
   padding: 3px 8px;
@@ -176,7 +181,7 @@
 }
 
 .remove-player-button {
-  background-color: #f44336;
+  background-color: #e74c3c;
   color: white;
   border: none;
   width: 30px;
@@ -191,12 +196,34 @@
 }
 
 .remove-player-button:hover {
-  background-color: #d32f2f;
+  background-color: #c0392b;
   transform: scale(1.1);
+}
+
+.search-loading {
+  text-align: center;
+  padding: 20px;
+  color: #666;
+  font-style: italic;
+  background-color: #f9f9f9;
+  border-radius: 4px;
+  margin-top: 15px;
+}
+
+.no-results {
+  text-align: center;
+  padding: 20px;
+  color: #e74c3c;
+  background-color: #fde7e7;
+  border-radius: 4px;
+  margin-top: 15px;
+  font-weight: 500;
 }
 
 .search-results {
   margin-top: 20px;
+  border-top: 1px solid #eee;
+  padding-top: 15px;
 }
 
 .search-results h3 {
@@ -210,8 +237,11 @@
   list-style: none;
   padding: 0;
   margin: 0;
-  max-height: 400px;
+  max-height: 350px;
   overflow-y: auto;
+  border: 1px solid #eee;
+  border-radius: 4px;
+  width: 100%;
 }
 
 .result-item {
@@ -246,8 +276,8 @@
 }
 
 .result-player-avatar {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   object-fit: cover;
 }
@@ -271,7 +301,8 @@
   color: #666;
 }
 
-.add-result-button, .remove-result-button {
+.add-result-button, 
+.remove-result-button {
   border: none;
   padding: 6px 12px;
   border-radius: 4px;
@@ -281,27 +312,54 @@
 }
 
 .add-result-button {
-  background-color: #ff8800;
+  background-color: var(--primary);
   color: white;
 }
 
 .add-result-button:hover {
-  background-color: #e67700;
+  background-color: var(--primary-dark);
 }
 
 .remove-result-button {
-  background-color: #f44336;
+  background-color: #e74c3c;
   color: white;
 }
 
 .remove-result-button:hover {
-  background-color: #d32f2f;
+  background-color: #c0392b;
 }
 
 /* Responsive adjustments */
-@media (max-width: 600px) {
+@media (max-width: 768px) {
   .players-list {
     grid-template-columns: 1fr;
+  }
+  
+  .search-box {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .search-input {
+    min-width: 100%;
+    order: 1;
+  }
+  
+  .search-button {
+    order: 2;
+  }
+  
+  .players-count {
+    order: 3;
+    width: 100%;
+    text-align: center;
+    margin-top: 8px;
+  }
+}
+
+@media (max-width: 576px) {
+  .player-search-container {
+    padding: 12px;
   }
   
   .search-box {
@@ -310,7 +368,26 @@
   }
   
   .player-avatar {
-    width: 40px;
-    height: 40px;
+    width: 32px;
+    height: 32px;
   }
+  
+  .result-player-avatar {
+    width: 28px;
+    height: 28px;
+  }
+}
+
+.search-error {
+  background-color: #ffebee;
+  border: 1px solid #ffcdd2;
+  border-radius: 4px;
+  margin: 10px 0;
+  padding: 12px;
+  color: #c62828;
+  font-size: 14px;
+}
+
+.search-error p {
+  margin: 0;
 } 

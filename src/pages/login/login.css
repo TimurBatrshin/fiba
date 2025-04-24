@@ -143,6 +143,7 @@
   color: var(--gray-500);
   transition: var(--transition);
   z-index: 5;
+  pointer-events: none;
 }
 
 input[type="email"],
@@ -157,6 +158,11 @@ input[type="text"] {
   background-color: var(--light);
   position: relative;
   z-index: 1;
+  text-indent: 0.5rem;
+}
+
+input[type="password"] {
+  padding-right: 40px;
 }
 
 input[type="email"]:focus,
@@ -191,6 +197,8 @@ input[type="text"]:focus + .input-icon {
   border: none;
   position: relative;
   overflow: hidden;
+  background-color: #0056b3;
+  color: white;
 }
 
 .auth-button::before {
@@ -214,14 +222,14 @@ input[type="text"]:focus + .input-icon {
 }
 
 .auth-button-primary {
-  background: linear-gradient(90deg, var(--primary), var(--primary-light));
+  background-color: #0056b3;
   color: var(--light);
 }
 
 .auth-button-primary:hover {
-  background: linear-gradient(90deg, var(--primary-dark), var(--primary));
+  background-color: #003d7f;
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(52, 98, 216, 0.25);
+  box-shadow: 0 5px 15px rgba(0, 86, 179, 0.3);
 }
 
 .auth-button-secondary {
@@ -378,4 +386,79 @@ input[type="text"]:focus + .input-icon {
     gap: var(--spacing-md);
     align-items: center;
   }
+}
+
+/* Стили для кнопки входа */
+.btn-primary {
+  background-color: #0056b3;
+  color: white;
+  padding: 12px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  border: none;
+  width: 100%;
+  text-align: center;
+}
+
+.btn-primary:hover {
+  background-color: #003d7f;
+}
+
+/* Стили для турнирных карточек */
+.prize_pool, .prize-pool {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Исправление наложения текста в статусе турнира */
+.tournament-status {
+  display: flex;
+  flex-direction: column;
+  margin-top: 10px;
+}
+
+.tournament-status .value {
+  margin-top: 5px;
+}
+
+/* Улучшение отображения информации о турнире */
+.tournament-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin-top: 20px;
+}
+
+/* Стили для полей паролей */
+.password-toggle {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gray-500);
+}
+
+.password-toggle:hover {
+  color: var(--primary);
+}
+
+.toggle-icon {
+  width: 22px;
+  height: 22px;
+  color: var(--gray-500);
+}
+
+.password-toggle:hover .toggle-icon {
+  color: var(--primary);
 }
