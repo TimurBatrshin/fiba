@@ -13,8 +13,7 @@ const Navbar: React.FC = () => {
   const { isAuthenticated, logout: contextLogout, currentRole } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const [showStatsDropdown, setShowStatsDropdown] = useState(false);
-  const isAdmin = currentRole === 'admin';
+  const isAdmin = currentRole?.toUpperCase() === 'ADMIN';
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.pageYOffset > 10);
@@ -31,14 +30,14 @@ const Navbar: React.FC = () => {
     contextLogout();
   };
 
-  const toggleStatsDropdown = () => {
-    setShowStatsDropdown(!showStatsDropdown);
-  };
-
   const isStatsPage = () => {
     return ['/rankings/players', '/rankings/teams', '/top-players', '/players'].some(path => 
       location.pathname.startsWith(path)
     );
+  };
+
+  const isTopPlayersPage = () => {
+    return location.pathname === '/top-players';
   };
 
   return (
@@ -87,20 +86,20 @@ const Navbar: React.FC = () => {
             <li className="nav-item stats-dropdown">
               <div className="nav-dropdown">
                 <button 
-                  className={`nav-dropdown-btn ${isStatsPage() ? 'active' : ''}`} 
-                  onClick={toggleStatsDropdown}
+                  className={`nav-dropdown-btn ${isStatsPage() ? 'active' : ''}`}
                 >
                   <FontAwesomeIcon icon={faChartBar} />
                   <span>Статистика</span>
                 </button>
-                {showStatsDropdown && (
-                  <div className="nav-dropdown-content">
-                    <Link to="/top-players">
-                      <FontAwesomeIcon icon={faUser} />
-                      <span>Топ игроки</span>
-                    </Link>
-                  </div>
-                )}
+                <div className="nav-dropdown-content">
+                  <Link 
+                    to="/top-players"
+                    className={isTopPlayersPage() ? 'active' : ''}
+                  >
+                    <FontAwesomeIcon icon={faUser} />
+                    <span>Топ игроки</span>
+                  </Link>
+                </div>
               </div>
             </li>
             {isAuthenticated && (

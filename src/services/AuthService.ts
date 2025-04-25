@@ -122,6 +122,7 @@ export class AuthService extends BaseApiService {
   private setToken(token: string): void {
     console.log('[AuthService] Setting token in localStorage');
     localStorage.setItem(this.TOKEN_KEY, token);
+    localStorage.setItem('token', token); // Also save in legacy storage
   }
 
   /**

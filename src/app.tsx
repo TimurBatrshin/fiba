@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { HashRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { HashRouter as Router, Routes, Route, Navigate, createRoutesFromElements } from "react-router-dom";
 import Navbar from "./widgets/navbar/navbar";
 import Home from "./pages/home/home";
 import Tournaments from "./pages/tournaments/tournaments";
@@ -14,7 +14,7 @@ import PlayerStatistics from "./pages/Player/PlayerStatistics";
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import ErrorToast from './components/ErrorToast';
-import CreateTournament from './pages/CreateTournament/CreateTournament';
+import CreateTournament from './pages/create-tournament/create-tournament';
 import ApiTest from './pages/ApiTest';
 import { BASE_PATH } from './config/envConfig'; // Import BASE_PATH from envConfig
 
@@ -66,7 +66,7 @@ const App = (): React.ReactElement => {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <Router>
+        <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <div className="app">
             <Navbar />
             <ErrorToast />
@@ -129,7 +129,13 @@ const App = (): React.ReactElement => {
                   <PlayerStatistics />
                 </ErrorBoundary>
               } />
-              <Route path="/create-tournament" element={<CreateTournament />} />
+              <Route path="/create-tournament" element={
+                <ErrorBoundary>
+                  <AdminRoute>
+                    <CreateTournament />
+                  </AdminRoute>
+                </ErrorBoundary>
+              } />
               <Route path="/api-test" element={
                 <ErrorBoundary>
                   <ApiTest />

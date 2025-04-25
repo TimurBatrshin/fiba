@@ -163,11 +163,26 @@ export class TournamentService extends BaseApiService {
   }
 
   /**
+   * Convert camelCase to snake_case
+   */
+  private camelToSnakeCase(str: string): string {
+    return str.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+  }
+
+  /**
    * Create new tournament
    */
   public async createTournament(tournament: Omit<Tournament, 'id'>): Promise<Tournament> {
     try {
-      const response = await this.post<Tournament>('/tournaments', tournament);
+      // Convert tournament data to URLSearchParams with snake_case keys
+      const params = new URLSearchParams();
+      Object.entries(tournament).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          params.append(this.camelToSnakeCase(key), value.toString());
+        }
+      });
+
+      const response = await this.post<Tournament>('/tournaments', params);
       return response.data;
     } catch (error) {
       console.error("Error creating tournament:", error);

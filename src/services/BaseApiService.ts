@@ -13,7 +13,7 @@ export interface ApiResponse<T> {
  */
 export class BaseApiService {
   private baseUrl: string;
-  private axiosInstance: AxiosInstance;
+  protected axiosInstance: AxiosInstance;
   
   // Перечень публичных эндпоинтов, для которых не требуется авторизация
   private publicEndpoints = [
@@ -24,9 +24,7 @@ export class BaseApiService {
     '/tournaments/upcoming',
     '/tournaments/recent',
     '/tournaments/search',
-    '/tournaments',
     '/tournaments/locations',
-    '/tournaments/',
     '/tournaments/status/UPCOMING',
     '/tournaments/status/ONGOING',
     '/tournaments/status/COMPLETED',
@@ -43,6 +41,17 @@ export class BaseApiService {
       headers: {
         'Content-Type': 'application/json',
       },
+      // Отключаем автоматическое кодирование URL
+      paramsSerializer: {
+        encode: (param: string) => param,
+        serialize: (params: Record<string, any>) => {
+          const searchParams = new URLSearchParams();
+          Object.entries(params).forEach(([key, value]) => {
+            searchParams.append(key, value);
+          });
+          return searchParams.toString();
+        }
+      }
     });
     
     // Setup request interceptor
@@ -52,9 +61,19 @@ export class BaseApiService {
         console.log(`BaseApiService: Making request to ${config.url}`);
         
         // Добавляем токен авторизации, если он есть
-        const token = localStorage.getItem(APP_SETTINGS.tokenStorageKey) || localStorage.getItem('token');
+        const tokenFromMain = localStorage.getItem(APP_SETTINGS.tokenStorageKey);
+        const tokenFromLegacy = localStorage.getItem('token');
+        console.log('BaseApiService: Tokens in storage:', {
+          mainToken: tokenFromMain ? 'present' : 'missing',
+          legacyToken: tokenFromLegacy ? 'present' : 'missing'
+        });
+        
+        const token = tokenFromMain || tokenFromLegacy;
         if (token && config.headers) {
           config.headers.Authorization = `Bearer ${token}`;
+          console.log('BaseApiService: Added Authorization header:', config.headers.Authorization);
+        } else {
+          console.log('BaseApiService: No token available for request');
         }
         return config;
       },
@@ -105,6 +124,88 @@ export class BaseApiService {
       }
     );
   }
+
+  /**
+   * HTTP GET request
+   */
+  protected async get<T>(url: string, params?: any): Promise<ApiResponse<T>> {
+    const response = await this.axiosInstance.get<T>(url, { params });
+    return {
+      data: response.data,
+      status: response.status,
+      headers: response.headers as Record<string, string>
+    };
+  }
+
+  /**
+   * HTTP POST request
+   */
+  protected async post<T>(url: string, data?: any): Promise<ApiResponse<T>> {
+    const config: AxiosRequestConfig = {};
+    
+    // If data is URLSearchParams, set the correct Content-Type
+    if (data instanceof URLSearchParams) {
+      config.headers = {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      };
+    }
+    
+    const response = await this.axiosInstance.post<T>(url, data, config);
+    return {
+      data: response.data,
+      status: response.status,
+      headers: response.headers as Record<string, string>
+    };
+  }
+
+  /**
+   * HTTP PUT request
+   */
+  protected async put<T>(url: string, data?: any): Promise<ApiResponse<T>> {
+    const response = await this.axiosInstance.put<T>(url, data);
+    return {
+      data: response.data,
+      status: response.status,
+      headers: response.headers as Record<string, string>
+    };
+  }
+
+  /**
+   * HTTP DELETE request
+   */
+  protected async delete<T>(url: string): Promise<ApiResponse<T>> {
+    const response = await this.axiosInstance.delete<T>(url);
+    return {
+      data: response.data,
+      status: response.status,
+      headers: response.headers as Record<string, string>
+    };
+  }
+
+  /**
+   * Sets the authentication token in the axios instance
+   */
+  protected setAuthToken(token: string): void {
+    if (this.axiosInstance.defaults.headers.common) {
+      this.axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    } else {
+      this.axiosInstance.defaults.headers.common = {
+        'Authorization': `Bearer ${token}`
+      };
+    }
+  }
+
+  /**
+   * Clears the authentication token from both axios instance and storage
+   */
+  protected clearAuthToken(): void {
+    // Clear from axios instance
+    if (this.axiosInstance.defaults.headers.common) {
+      delete this.axiosInstance.defaults.headers.common['Authorization'];
+    }
+    // Clear from storage
+    removeToken();
+  }
   
   /**
    * Проверяет, является ли URL публичным эндпоинтом
@@ -124,162 +225,9 @@ export class BaseApiService {
     
     // Логируем для отладки
     if (isInPublicList || isTournamentDetails) {
-      console.log(`BaseApiService: URL ${url} определен как публичный эндпоинт`);
+      console.log(`BaseApiService: ${url} is a public endpoint`);
     }
     
     return isInPublicList || isTournamentDetails;
   }
-
-  /**
-   * Установить токен авторизации
-   */
-  public setAuthToken(token: string): void {
-    localStorage.setItem(APP_SETTINGS.tokenStorageKey, token);
-  }
-
-  /**
-   * Очистить токен авторизации
-   */
-  public clearAuthToken(): void {
-    clearTokens();
-  }
-
-  /**
-   * Создать заголовки для запросов
-   */
-  protected createHeaders(): Headers {
-    const headers = new Headers({
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-    });
-
-    const token = getToken();
-    if (token) {
-      console.log('[BaseApiService] Adding Authorization header with token');
-      headers.append('Authorization', `Bearer ${token}`);
-    } else {
-      console.warn('[BaseApiService] No token available for Authorization header');
-    }
-
-    return headers;
-  }
-
-  /**
-   * Проверяет, требуется ли использовать прокси для запроса
-   */
-  protected shouldUseProxy(url: string): boolean {
-    // Не используем прокси
-    return false;
-  }
-
-  /**
-   * Преобразует URL для проксирования
-   */
-  protected transformUrlForProxy(url: string): string {
-    // Если включен режим прокси, возвращаем только путь без домена
-    if (this.shouldUseProxy(url)) {
-      // Извлекаем часть URL после /api/
-      const apiIndex = url.indexOf('/api/');
-      if (apiIndex !== -1) {
-        const transformedUrl = url.substring(apiIndex + 4); // +4 чтобы пропустить /api/
-        return transformedUrl;
-      }
-    }
-    return url;
-  }
-
-  /**
-   * Generic request method
-   */
-  protected async request<T>(config: AxiosRequestConfig): Promise<AxiosResponse<T>> {
-    try {
-      return await this.axiosInstance(config);
-    } catch (error) {
-      console.error('BaseApiService: Request error:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * GET method
-   */
-  protected async get<T>(url: string, options: any = {}): Promise<AxiosResponse<T>> {
-    // Check if options contains a params property
-    if (options && options.params) {
-      // Request config is properly structured with top-level params
-      return this.request<T>({
-        method: 'get',
-        url,
-        params: options.params,
-      });
-    } else {
-      // Treat the entire options as params (for backward compatibility)
-      return this.request<T>({
-        method: 'get',
-        url,
-        params: options,
-      });
-    }
-  }
-
-  /**
-   * POST method
-   */
-  protected async post<T>(url: string, data = {}): Promise<AxiosResponse<T>> {
-    return this.request<T>({
-      method: 'post',
-      url,
-      data,
-    });
-  }
-
-  /**
-   * PUT method
-   */
-  protected async put<T>(url: string, data = {}): Promise<AxiosResponse<T>> {
-    return this.request<T>({
-      method: 'put',
-      url,
-      data,
-    });
-  }
-
-  /**
-   * DELETE method
-   */
-  protected async delete<T>(url: string): Promise<AxiosResponse<T>> {
-    return this.request<T>({
-      method: 'delete',
-      url,
-    });
-  }
-
-  /**
-   * Загрузка файла на сервер
-   */
-  public async uploadFile<T = any>(endpoint: string, file: File): Promise<T> {
-    try {
-      const formData = new FormData();
-      formData.append('photo', file, file.name); // Явно указываем имя файла
-  
-      const response = await fetch(API_CONFIG.baseUrl + endpoint, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.getToken()}` // Если требуется авторизация
-        },
-        body: formData,
-      });
-  
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`[BaseApiService] Error uploading file to ${endpoint}:`, errorText);
-        throw new Error(`Request failed with status code ${response.status}: ${errorText}`);
-      }
-  
-      return await response.json();
-    } catch (error) {
-      console.error(`[BaseApiService] Error uploading file to ${endpoint}:`, error);
-      throw error;
-    }
-  }
-} 
+}

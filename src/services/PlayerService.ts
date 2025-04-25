@@ -183,10 +183,8 @@ export class PlayerService extends BaseApiService {
   async searchPlayers(query: string): Promise<SearchPlayer[]> {
     try {
       console.log('Поиск игроков с запросом:', query);
-      // Исправляем формат параметров запроса - убираем вложенный params объект
-      const response = await this.get<SearchPlayer[]>(API_ENDPOINTS.players.search, { 
-        params: { query } 
-      });
+      // Используем прямой запрос с русскими буквами
+      const response = await this.get<SearchPlayer[]>(`${API_ENDPOINTS.players.search}?query=${query}`);
       return response.data;
     } catch (error) {
       console.error('Ошибка при поиске игроков:', error);
@@ -201,8 +199,8 @@ export const playerService = PlayerService.getInstance();
 // Функция поиска игроков для поддержки обратной совместимости
 export const searchPlayers = async (query: string): Promise<SearchPlayer[]> => {
   try {
-    // Исправляем формат параметров запроса - убираем encodeURIComponent и используем правильный формат
-    const response = await api.get(API_ENDPOINTS.players.search, { params: { query } });
+    // Используем прямой запрос с русскими буквами
+    const response = await api.get(`${API_ENDPOINTS.players.search}?query=${query}`);
     return response.data;
   } catch (error) {
     console.error('Ошибка при поиске игроков:', error);

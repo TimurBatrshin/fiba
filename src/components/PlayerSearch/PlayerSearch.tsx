@@ -65,10 +65,7 @@ export const PlayerSearch: React.FC<PlayerSearchProps> = (props) => {
       setIsSearching(true);
       setSearchError(null);
       try {
-        // Use direct API client instead of the service
-        const response = await api.get<SearchPlayer[]>('/players/search', { 
-          params: { query } 
-        });
+        const response = await playerService.searchPlayers(query.trim());
         setSearchResults(response || []);
       } catch (error: any) {
         console.error("Ошибка при поиске игроков:", error);
@@ -97,10 +94,7 @@ export const PlayerSearch: React.FC<PlayerSearchProps> = (props) => {
     setIsSearching(true);
     setSearchError(null);
     try {
-      // Use direct API client instead of the service
-      const response = await api.get<SearchPlayer[]>('/players/search', { 
-        params: { query: searchQuery } 
-      });
+      const response = await playerService.searchPlayers(searchQuery.trim());
       setSearchResults(response || []);
     } catch (error: any) {
       console.error("Ошибка при поиске игроков:", error);
