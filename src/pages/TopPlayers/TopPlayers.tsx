@@ -8,7 +8,7 @@ import {
 import { StatisticsService } from '../../services/StatisticsService';
 import { PhotoService } from '../../services/PhotoService';
 import { PlayerBasicStats } from '../../interfaces/PlayerStatistics';
-import { UserPhoto } from '../../components/UserPhoto/UserPhoto';
+import ProfileAvatar from '../../components/Profile/ProfileAvatar';
 import './TopPlayers.css';
 
 // Типы статистических категорий
@@ -167,9 +167,8 @@ const TopPlayers: React.FC = () => {
                 <span>{index + 1}</span>
               </div>
               <div className="player-avatar">
-                <UserPhoto 
-                  photoUrl={player.photoUrl}
-                  alt={player.name}
+                <ProfileAvatar 
+                  userId={player.id}
                   className="player-photo"
                 />
               </div>

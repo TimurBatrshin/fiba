@@ -92,7 +92,7 @@ export class UserService extends BaseApiService {
    */
   public getProfilePhotoUrl(photoUrl: string | null | undefined): string {
     if (!photoUrl) return '';
-    return `${API_BASE_URL}${photoUrl}`;
+    return photoUrl.replace('/api', 'https://timurbatrshin-fiba-backend-5ef6.twc1.net/api');
   }
 
   /**

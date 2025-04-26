@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getStoredToken } from '../../utils/tokenStorage';
+import { API_BASE_URL } from '../../config/apiConfig';
 import './UserPhoto.css';
-
-const API_BASE_URL = 'https://timurbatrshin-fiba-backend-5ef6.twc1.net';
 
 interface UserPhotoProps {
   photoUrl?: string;
@@ -38,10 +37,10 @@ export const UserPhoto: React.FC<UserPhotoProps> = ({
           return;
         }
 
-        // Remove leading slash if present
-        const cleanUrl = photoUrl.startsWith('/') ? photoUrl.slice(1) : photoUrl;
+        // Формируем корректный URL для бэкенда
+        const fullUrl = `https://timurbatrshin-fiba-backend-5ef6.twc1.net${photoUrl.startsWith('/') ? photoUrl : '/' + photoUrl}`;
         
-        const response = await fetch(`${API_BASE_URL}/${cleanUrl}`, {
+        const response = await fetch(fullUrl, {
           headers: {
             'Authorization': `Bearer ${token}`
           }

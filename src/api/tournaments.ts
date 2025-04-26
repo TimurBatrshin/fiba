@@ -78,11 +78,28 @@ const TournamentService = {
   // Создать новый турнир
   createTournament: async (data: CreateTournamentRequest): Promise<Tournament> => {
     const formData = new FormData();
-    Object.entries(data).forEach(([key, value]) => {
-      if (value !== undefined) {
-        formData.append(key, value);
-      }
+    
+    // Добавляем обязательные поля
+    formData.append('title', data.title);
+    formData.append('date', data.date);
+    formData.append('location', data.location);
+    formData.append('level', data.level);
+    formData.append('prize_pool', String(data.prize_pool));
+    
+    // Добавляем опциональное изображение
+    if (data.tournament_image) {
+      formData.append('tournament_image', data.tournament_image);
+    }
+    
+    console.log('Отправка данных турнира:', {
+      title: data.title,
+      date: data.date,
+      location: data.location,
+      level: data.level,
+      prize_pool: data.prize_pool,
+      hasImage: !!data.tournament_image
     });
+
     const response = await api.post('/tournaments', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
@@ -93,14 +110,16 @@ const TournamentService = {
   
   // Создать бизнес-турнир (для администраторов или бизнес-аккаунтов)
   createBusinessTournament: async (data: CreateBusinessTournamentRequest): Promise<Tournament> => {
-    // Создаем FormData для отправки файлов
     const formData = new FormData();
+    
+    // Добавляем обязательные поля
     formData.append('title', data.title);
     formData.append('date', data.date);
     formData.append('location', data.location);
     formData.append('level', data.level);
     formData.append('prize_pool', String(data.prize_pool));
     
+    // Добавляем опциональные поля бизнес-турнира
     if (data.sponsor_name) {
       formData.append('sponsor_name', data.sponsor_name);
     }
@@ -117,7 +136,19 @@ const TournamentService = {
       formData.append('sponsor_logo', data.sponsor_logo);
     }
     
-    const response = await api.post<Tournament>('/tournaments/business', formData, {
+    console.log('Отправка данных бизнес-турнира:', {
+      title: data.title,
+      date: data.date,
+      location: data.location,
+      level: data.level,
+      prize_pool: data.prize_pool,
+      sponsor_name: data.sponsor_name,
+      business_type: data.business_type,
+      hasTournamentImage: !!data.tournament_image,
+      hasSponsorLogo: !!data.sponsor_logo
+    });
+
+    const response = await api.post('/tournaments/business', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }
@@ -229,4 +260,4 @@ const TournamentService = {
   }
 };
 
-export default TournamentService; 
+export default TournamentService;

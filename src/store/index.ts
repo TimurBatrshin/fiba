@@ -2,6 +2,7 @@ import { configureStore } from '@reduxjs/toolkit';
 import authReducer from './slices/authSlice';
 import tournamentReducer from './slices/tournamentSlice';
 import errorReducer from './slices/errorSlice';
+import fixtureReducer from './slices/fixtureSlice';
 import authMiddleware from '../utils/authMiddleware';
 
 export const store = configureStore({
@@ -9,6 +10,7 @@ export const store = configureStore({
     auth: authReducer,
     tournaments: tournamentReducer,
     error: errorReducer,
+    fixtures: fixtureReducer,
   },
   middleware: (getDefaultMiddleware) => 
     getDefaultMiddleware().concat(authMiddleware),

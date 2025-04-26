@@ -1,46 +1,41 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { playerService, PlayerStatistics } from '../../services/PlayerService';
+import { Link, useParams } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowLeft, faTrophy, faStar } from '@fortawesome/free-solid-svg-icons';
-import { UserPhoto } from '../../components/UserPhoto/UserPhoto';
+import { faArrowLeft, faStar } from '@fortawesome/free-solid-svg-icons';
+import { PlayerService } from '../../services/PlayerService';
+import ProfileAvatar from '../../components/Profile/ProfileAvatar';
 import './PlayerDetails.css';
 
 const PlayerDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const [player, setPlayer] = useState<PlayerStatistics | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [player, setPlayer] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchPlayerData = async () => {
+    const fetchPlayerDetails = async () => {
+      if (!id) return;
+
       try {
         setLoading(true);
-        const data = await playerService.getPlayerStatistics(id!);
-        setPlayer(data);
+        const playerData = await PlayerService.getInstance().getPlayerStatistics(parseInt(id));
+        setPlayer(playerData);
         setError(null);
       } catch (err: any) {
-        console.error('Ошибка при загрузке данных игрока:', err);
-        setError(err.message || 'Произошла ошибка при загрузке данных игрока');
+        console.error('Error fetching player details:', err);
+        setError(err.message || 'Не удалось загрузить информацию об игроке');
       } finally {
         setLoading(false);
       }
     };
 
-    if (id) {
-      fetchPlayerData();
-    }
+    fetchPlayerDetails();
   }, [id]);
-
-  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    e.currentTarget.src = defaultAvatar;
-    e.currentTarget.onerror = null; // Prevent infinite loop
-  };
 
   if (loading) {
     return (
       <div className="player-details-container loading">
-        <div className="loading-spinner"></div>
+        <div className="spinner"></div>
         <p>Загрузка информации об игроке...</p>
       </div>
     );
@@ -80,9 +75,8 @@ const PlayerDetails: React.FC = () => {
 
       <div className="player-profile">
         <div className="player-avatar-container">
-          <UserPhoto 
-            photoUrl={player.photoUrl}
-            alt={player.name}
+          <ProfileAvatar 
+            userId={player.id}
             className="player-avatar"
           />
           {player.rating !== undefined && (

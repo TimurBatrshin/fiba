@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { tournamentService } from '../../services/TournamentService';
+import TournamentService from '../../api/tournaments';
 import { Tournament, TournamentStatus } from '../../interfaces/Tournament';
 import './create-tournament.css';
 
@@ -20,7 +20,7 @@ const CreateTournament: React.FC = () => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (currentRole?.toUpperCase() !== 'ADMIN') {
+    if (currentRole !== undefined && currentRole?.toUpperCase() !== 'ADMIN') {
       navigate('/');
     }
   }, [currentRole, navigate]);
@@ -48,22 +48,17 @@ const CreateTournament: React.FC = () => {
     setLoading(true);
 
     try {
-      // Создаем объект турнира
-      const tournamentData: Omit<Tournament, 'id'> = {
+      const createData: any = {
         title: formData.title,
-        name: formData.title,
         date: formData.date,
         location: formData.location,
-        level: formData.level.toUpperCase(),
-        prizePool: formData.prize_pool,
-        status: 'UPCOMING' as TournamentStatus,
-        registrationOpen: true
+        level: formData.level,
+        prize_pool: Number(formData.prize_pool),
       };
-
-      // Создаем турнир через сервис
-      await tournamentService.createTournament(tournamentData);
-
-      // После успешного создания турнира
+      if (formData.tournament_image) {
+        createData.tournament_image = formData.tournament_image;
+      }
+      await TournamentService.createTournament(createData);
       navigate('/tournaments', { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Произошла ошибка при создании турнира');

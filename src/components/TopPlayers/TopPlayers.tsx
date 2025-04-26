@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faStar, faChevronRight } from '@fortawesome/free-solid-svg-icons';
 import defaultAvatar from '../../assets/images/default-avatar.png';
+import ProfileAvatar from '../Profile/ProfileAvatar';
 import './TopPlayers.css';
 
 export interface TopPlayer {
@@ -61,11 +62,9 @@ export const TopPlayers: React.FC<TopPlayersProps> = ({
             >
               <div className="player-rank">{index + 1}</div>
               <div className="player-info">
-                <img 
-                  src={player.photoUrl || defaultAvatar} 
-                  alt={player.name} 
-                  className="player-avatar" 
-                  onError={handleImageError}
+                <ProfileAvatar 
+                  userId={parseInt(player.id)} 
+                  className="player-avatar"
                 />
                 <div className="player-name">{player.name}</div>
               </div>

@@ -3,10 +3,10 @@ import { Navigate } from "react-router-dom";
 import "./profile.css";
 import { useAuth } from '../../hooks/useAuth';
 import { userService } from "../../services/UserService";
-import { UserPhoto } from '../../components/UserPhoto/UserPhoto';
+import ProfileAvatar from '../../components/Profile/ProfileAvatar';
+import AvatarUploader from '../../components/Profile/AvatarUploader';
 
 interface ProfileFormData {
-  photo: File | null;
   name: string;
   email: string;
 }
@@ -27,14 +27,12 @@ const Profile: React.FC = () => {
   const [error, setError] = useState<string>("");
   const [shouldRedirect, setShouldRedirect] = useState(false);
   const [formData, setFormData] = useState<ProfileFormData>({
-    photo: null,
     name: '',
     email: ''
   });
   
   const { user } = useAuth();
   const redirectAttempted = useRef<boolean>(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -51,7 +49,6 @@ const Profile: React.FC = () => {
         const userData = await userService.getCurrentUser();
         setProfile(userData);
         setFormData({
-          photo: null,
           name: userData.name || '',
           email: userData.email || ''
         });
@@ -75,47 +72,12 @@ const Profile: React.FC = () => {
     return <Navigate to="/login" replace />;
   }
 
-  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const file = e.target.files[0];
-      
-      // Проверка размера файла (не более 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        setError("Размер файла не должен превышать 5MB");
-        return;
-      }
+  const handleUploadSuccess = (avatarUrl: string) => {
+    window.location.reload();
+  };
 
-      // Проверка типа файла
-      if (!file.type.startsWith('image/')) {
-        setError("Пожалуйста, загрузите изображение");
-        return;
-      }
-
-      try {
-        setIsLoading(true);
-        setError("");
-        
-        // Загружаем фото сразу при выборе
-        const updatedProfile = await userService.uploadProfilePhoto(file);
-        setProfile(updatedProfile);
-        
-        // Обновляем форму
-        setFormData(prev => ({
-          ...prev,
-          photo: null // Сбрасываем файл, так как он уже загружен
-        }));
-
-        // Сбрасываем input file
-        if (fileInputRef.current) {
-          fileInputRef.current.value = '';
-        }
-      } catch (err: any) {
-        console.error("Ошибка при загрузке фото", err);
-        setError(err.message || "Ошибка при загрузке фото");
-      } finally {
-        setIsLoading(false);
-      }
-    }
+  const handleUploadError = (error: string) => {
+    setError(error);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -186,28 +148,12 @@ const Profile: React.FC = () => {
       ) : profile ? (
         <div className="profile-info">
           <div className="profile-avatar">
-            <UserPhoto 
-              photoUrl={profile?.profile?.photo_url}
-              className="profile-photo"
+            <ProfileAvatar userId={profile.id} className="profile-photo" />
+            <AvatarUploader
+              userId={profile.id}
+              onUploadSuccess={handleUploadSuccess}
+              onUploadError={handleUploadError}
             />
-            <div className="photo-upload">
-              <input
-                ref={fileInputRef}
-                type="file"
-                id="photo"
-                name="photo"
-                accept="image/*"
-                onChange={handlePhotoChange}
-                style={{ display: 'none' }}
-              />
-              <button 
-                onClick={() => fileInputRef.current?.click()}
-                className="change-photo-btn"
-                disabled={isLoading}
-              >
-                {profile?.profile?.photo_url ? 'Изменить фото' : 'Загрузить фото'}
-              </button>
-            </div>
           </div>
           <div className="profile-details">
             {!editMode ? (
@@ -249,18 +195,21 @@ const Profile: React.FC = () => {
                 </div>
               </form>
             )}
+            {!editMode && (
+              <button 
+                onClick={() => setEditMode(true)} 
+                className="edit-profile-btn"
+                disabled={isLoading}
+              >
+                Редактировать профиль
+              </button>
+            )}
           </div>
         </div>
       ) : (
-        <p>Профиль не найден</p>
-      )}
-
-      {error && <p className="error-message">{error}</p>}
-
-      {!isLoading && profile && !editMode && (
-        <button onClick={() => setEditMode(true)} className="edit-profile-btn">
-          Редактировать профиль
-        </button>
+        <div className="error-message">
+          {error || "Не удалось загрузить профиль"}
+        </div>
       )}
     </div>
   );

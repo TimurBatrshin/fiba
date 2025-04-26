@@ -14,6 +14,7 @@ import { toast } from 'react-hot-toast';
 import { getStoredToken } from '../../utils/tokenStorage';
 import defaultTeamLogo from '../../assets/images/default-tournament.jpg';
 import { UserPhoto } from '../../components/UserPhoto/UserPhoto';
+import type { UserRole } from '../../interfaces/Auth';
 
 // Компонент Badge для отображения статуса
 interface BadgeProps {
@@ -127,6 +128,8 @@ interface TournamentPlayer {
   id: number;
   name: string;
   photo: string | null;
+  photo_url?: string | null;
+  email?: string;
 }
 
 interface TournamentTeam {
@@ -260,15 +263,53 @@ const Tournament = () => {
           console.log('Fetching teams for tournament:', id);
           const teams = await TournamentService.getTournamentTeams(Number(id));
           console.log('Teams received:', teams);
-          
+
+          // Собираем все уникальные id игроков
+          const allPlayerIds = Array.from(new Set(
+            teams.flatMap(team => team.players.map((p: any) => p.id))
+          ));
+
+          // Получаем профили всех игроков параллельно
+          const playerProfiles = await Promise.all(
+            allPlayerIds.map(async (playerId) => {
+              try {
+                return await playerService.getPlayerById(playerId.toString());
+              } catch (e) {
+                return null;
+              }
+            })
+          );
+
+          // Мапа id -> профиль
+          const playerMap = new Map();
+          playerProfiles.forEach(profile => {
+            if (profile && profile.id) {
+              playerMap.set(profile.id, profile);
+            }
+          });
+
+          // Обогащаем игроков в каждой команде
+          const enrichedTeams = teams.map(team => ({
+            ...team,
+            players: team.players.map((p: any) => {
+              const profile = playerMap.get(p.id);
+              return {
+                ...p,
+                photo_url: profile?.profile?.photo_url || null,
+                email: profile?.email || '',
+                email_verified: !!profile?.email_verified,
+                // можно добавить другие поля из профиля
+              };
+            })
+          }));
+
           setTeamsLoaded(true);
-          if (teams && Array.isArray(teams) && teams.length > 0) {
+          if (enrichedTeams && Array.isArray(enrichedTeams) && enrichedTeams.length > 0) {
             setTournament(prev => ({
               ...prev!,
-              teams: teams
+              teams: enrichedTeams
             }));
           } else {
-            console.log('No teams found or empty teams array');
             setTournament(prev => ({
               ...prev!,
               teams: []
@@ -277,19 +318,17 @@ const Tournament = () => {
         } catch (error: any) {
           console.error('Ошибка при получении команд турнира:', error);
           const errorMessage = error.response?.data?.error || error.message;
-          console.error('Teams fetch error details:', errorMessage);
           setTournament(prev => ({
             ...prev!,
             teams: []
           }));
         }
       };
-      
       fetchTeams();
     }
   }, [id, tournament, teamsLoaded]);
 
-  // Добавляем эффект для автоматического добавления капитана
+  // useEffect для автоматического добавления капитана
   useEffect(() => {
     const initializeCaptain = async () => {
       if (currentUser && currentUser.id) {
@@ -310,15 +349,13 @@ const Tournament = () => {
             }
           };
           setCaptain(captainPlayer);
-          // Автоматически добавляем капитана в список выбранных игроков
-          setSelectedPlayers([captainPlayer]);
+          setSelectedPlayers([{ ...captainPlayer, email_verified: !!captainPlayer.email_verified }]);
           setPlayerIds([captainPlayer.id.toString()]);
         } catch (error) {
           console.error("Ошибка при получении данных капитана:", error);
         }
       }
     };
-
     initializeCaptain();
   }, [currentUser]);
 
@@ -403,7 +440,7 @@ const Tournament = () => {
       return;
     }
     
-    setSelectedPlayers([...selectedPlayers, player]);
+    setSelectedPlayers([...selectedPlayers, { ...player, email_verified: !!player.email_verified }]);
     setPlayerIds([...playerIds, player.id.toString()]);
     setRegistrationStatus("");
     setPlayersError(null);
@@ -412,20 +449,16 @@ const Tournament = () => {
 
   // Обработчик удаления игрока из выбранных
   const handleRemovePlayer = (playerId: string) => {
-    // Проверяем, не пытается ли пользователь удалить капитана
     if (captain && playerId === captain.id.toString()) {
       setPlayersError("Нельзя удалить капитана команды");
       return;
     }
-
     setSelectedPlayers(selectedPlayers.filter(player => player.id.toString() !== playerId));
     setPlayerIds(playerIds.filter(id => id !== playerId));
     setRegistrationStatus("");
-    
     if (selectedPlayers.length <= 4) {
       setPlayersError(null);
     }
-    
     if (selectedPlayers.length <= 3) {
       setPlayersError("Выберите минимум 3 игрока");
     }
@@ -464,18 +497,17 @@ const Tournament = () => {
     });
 
     try {
-      // Создаем FormData для отправки данных
-      const formData = new FormData();
-      formData.append('teamName', teamName);
-      formData.append('playerIds', JSON.stringify(playerIds));
-
       // Отправляем запрос на регистрацию команды
       const response = await api.post(
-        `/tournaments/${id}/teams/register`,
-        formData,
+        `/tournaments/${id}/register`,
+        {
+          tournamentId: id,
+          teamName,
+          playerIds
+        },
         {
           headers: {
-            'Content-Type': 'multipart/form-data',
+            'Content-Type': 'application/json',
           },
         }
       );
@@ -651,9 +683,8 @@ const Tournament = () => {
               <li key={player.id} className="player-item">
                 <div className="player-avatar-container">
                   <UserPhoto 
-                    photoUrl={player.photo}
+                    photoUrl={player.photo_url || undefined}
                     className="player-avatar"
-                    alt={player.name}
                   />
                 </div>
                 <div className="player-info">
@@ -767,14 +798,17 @@ const Tournament = () => {
                 <ul className="players-list">
                   {selectedPlayers.map((player) => (
                     <li key={player.id} className="selected-player">
-                      <div className="player-info">
+                      <div className="player-info-full">
                         <UserPhoto 
-                          photoUrl={player.profile?.photo_url}
+                          photoUrl={player.profile?.photo_url || undefined}
                           className="player-avatar"
-                          alt={player.name}
                         />
                         <div className="player-details">
                           <span className="player-name">{player.name}</span>
+                          {player.email && (
+                            <span className="player-email">{player.email}</span>
+                          )}
+                          <span className="player-id">ID: {player.id}</span>
                           {captain && player.id === captain.id && (
                             <span className="captain-badge">Капитан</span>
                           )}
@@ -803,7 +837,19 @@ const Tournament = () => {
                 <PlayerSearch 
                   onSelectPlayer={handleSelectPlayer} 
                   onRemovePlayer={handleRemovePlayer}
-                  selectedPlayers={selectedPlayers}
+                  selectedPlayers={selectedPlayers.map(p => ({
+                    ...p,
+                    email_verified: !!p.email_verified,
+                    role: (p.role || 'user') as UserRole,
+                    profile: p.profile
+                      ? {
+                          tournaments_played: p.profile.tournaments_played ?? 0,
+                          total_points: p.profile.total_points ?? 0,
+                          rating: p.profile.rating ?? 0,
+                          photo_url: p.profile.photo_url
+                        }
+                      : { tournaments_played: 0, total_points: 0, rating: 0 }
+                  }))}
                   disabled={isTeamRegistering || selectedPlayers.length >= 4}
                   hideSelectedPlayersList={true}
                 />
@@ -860,7 +906,9 @@ const Tournament = () => {
           <div className="prize-info">
             <span className="label">ПРИЗОВОЙ ФОНД:</span>
             <span className="value">
-              {tournament?.prizePool ? `${tournament.prizePool} руб.` : 'Не указан'}
+              {(tournament && ((tournament as any).prize_pool || (tournament as any).prizePool))
+                ? `${(tournament as any).prize_pool || (tournament as any).prizePool} руб.`
+                : 'Не указан'}
             </span>
           </div>
         </section>

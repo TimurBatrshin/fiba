@@ -78,7 +78,7 @@ const Navbar: React.FC = () => {
               </li>
               {isAdmin && isAuthenticated && (
                 <li className="nav-item">
-                  <Link to="/create-tournament" className="nav-link admin-link">
+                  <Link to="/create-tournament" className={`nav-link admin-link ${location.pathname === '/create-tournament' ? 'active' : ''}`}>
                     <FontAwesomeIcon icon={faPlus} className="nav-icon" />
                     <span>Создать турнир</span>
                   </Link>
