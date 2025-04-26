@@ -18,7 +18,7 @@ const PlayerDetails: React.FC = () => {
 
       try {
         setLoading(true);
-        const playerData = await PlayerService.getInstance().getPlayerStatistics(parseInt(id));
+        const playerData = await PlayerService.getInstance().getPlayerStatistics(id);
         setPlayer(playerData);
         setError(null);
       } catch (err: any) {
