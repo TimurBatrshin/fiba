@@ -282,34 +282,6 @@ const Home: React.FC = () => {
         </div>
       </section>
       
-      {/* Секция рейтинга игроков */}
-      <section className="gh-top-players">
-        <div className="gh-container">
-          <div className="gh-section-header">
-            <h2 className="gh-section-title">Топ игроков</h2>
-            <Link to="/top-players" className="gh-view-all">
-              Рейтинг игроков <FontAwesomeIcon icon={faChevronRight} />
-            </Link>
-          </div>
-          
-          {isLoadingTopPlayers ? (
-            <Loader />
-          ) : playersError ? (
-            <div className="gh-error-message">
-              <p>{playersError}</p>
-              <p>Пожалуйста, попробуйте позже или обратитесь к администратору.</p>
-            </div>
-          ) : topPlayers.length === 0 ? (
-            <div className="gh-empty-state">No top players found</div>
-          ) : (
-            <TopPlayers 
-              players={topPlayers} 
-              isLoading={isLoadingTopPlayers} 
-            />
-          )}
-        </div>
-      </section>
-      
       {/* Секция призыва к действию */}
       <section className="gh-cta-section">
         <div className="gh-container">
