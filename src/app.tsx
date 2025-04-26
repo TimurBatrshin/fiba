@@ -17,6 +17,7 @@ import ErrorToast from './components/ErrorToast';
 import CreateTournament from './pages/create-tournament/create-tournament';
 import ApiTest from './pages/ApiTest';
 import { BASE_PATH } from './config/envConfig'; // Import BASE_PATH from envConfig
+import { features } from './config/features';
 
 // Импорт глобальных стилей
 import "./styles/global.css";
@@ -103,6 +104,13 @@ const App = (): React.ReactElement => {
                   <Tournament />
                 </ErrorBoundary>
               } />
+              {features.enableAdminPage && (
+                <Route path="/admin" element={
+                  <ErrorBoundary>
+                    <AdminRoute>
+                      <Admin />
+                    </AdminRoute>
+                  </ErrorBoundary>
               <Route path="/admin" element={
                 <ErrorBoundary>
                   <AdminRoute>

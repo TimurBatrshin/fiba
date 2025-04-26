@@ -10,6 +10,8 @@ import { PhotoService } from '../../services/PhotoService';
 import { PlayerBasicStats } from '../../interfaces/PlayerStatistics';
 import ProfileAvatar from '../../components/Profile/ProfileAvatar';
 import './TopPlayers.css';
+import { features } from '../../config/features';
+import { PlayerSearch } from '../../components/PlayerSearch/PlayerSearch';
 
 // Типы статистических категорий
 type StatCategory = 'points' | 'rating';
@@ -201,6 +203,7 @@ const TopPlayers: React.FC = () => {
     <div className="top-players-page">
       {renderHeader()}
       {renderCategories()}
+      {features.enablePlayerSearch && <PlayerSearch />}
       {renderPlayersList()}
     </div>
   );

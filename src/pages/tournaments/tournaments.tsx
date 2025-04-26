@@ -5,6 +5,7 @@ import TournamentFilter from '../TournamentFilter/TournamentFilter';
 import defaultTournament from '../../assets/images/default-tournament.jpg';
 import { tournamentService } from '../../services/TournamentService';
 import { Tournament, TournamentStatus } from '../../interfaces/Tournament';
+import { features } from '../../config/features';
 
 interface FilterValues {
   date?: string;
@@ -180,7 +181,7 @@ const Tournaments: React.FC = () => {
       
       <div className="container">
         <div className="tournaments-content">
-          <TournamentFilter onFilter={fetchTournaments} />
+          {features.enableTournamentFilter && <TournamentFilter onFilter={fetchTournaments} />}
           
           {isLoading ? (
             <div className="tournaments-loading">

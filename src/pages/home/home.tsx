@@ -21,6 +21,7 @@ import { Player } from '../../services/PlayerService';
 import { Loader } from '../../components/Loader';
 import { TopPlayers } from '../../components/TopPlayers';
 import { UserPhoto } from '../../components/UserPhoto/UserPhoto';
+import { features } from '../../config/features';
 
 const Home: React.FC = () => {
   const [upcomingTournaments, setUpcomingTournaments] = useState<TournamentType[]>([]);
@@ -310,6 +311,16 @@ const Home: React.FC = () => {
           </div>
         </div>
       </section>
+
+      {/* Секция лучших игроков */}
+      {features.showTopPlayers && (
+        <section className="gh-top-players">
+          <div className="gh-container">
+            <TopPlayers players={topPlayers} isLoading={isLoadingTopPlayers} />
+            {playersError && <div className="gh-error-message">{playersError}</div>}
+          </div>
+        </section>
+      )}
     </div>
   );
 };

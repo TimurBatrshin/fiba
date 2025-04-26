@@ -12,6 +12,7 @@ import {
   RegistrationStatus 
 } from '../interfaces/Tournament';
 import { Team, Player } from '../interfaces/Team';
+import { features } from '../config/features';
 
 /**
  * Сервис для работы с API
@@ -118,6 +119,9 @@ class ApiService {
 
   // Generic API methods
   async get<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
+    if (features.disableBackend) {
+      return Promise.reject(new Error('Сервер недоступен (feature flag)'));
+    }
     try {
       const response: AxiosResponse<T> = await this.api.get(url, {
         ...config,
@@ -131,6 +135,9 @@ class ApiService {
   }
   
   async post<T>(url: string, data: any, config?: AxiosRequestConfig): Promise<T> {
+    if (features.disableBackend) {
+      return Promise.reject(new Error('Сервер недоступен (feature flag)'));
+    }
     try {
       const response: AxiosResponse<T> = await this.api.post(url, data, {
         ...config,
@@ -144,6 +151,9 @@ class ApiService {
   }
   
   async put<T>(url: string, data: any, config?: AxiosRequestConfig): Promise<T> {
+    if (features.disableBackend) {
+      return Promise.reject(new Error('Сервер недоступен (feature flag)'));
+    }
     try {
       const response: AxiosResponse<T> = await this.api.put(url, data, {
         ...config,
@@ -157,6 +167,9 @@ class ApiService {
   }
   
   async delete<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
+    if (features.disableBackend) {
+      return Promise.reject(new Error('Сервер недоступен (feature flag)'));
+    }
     try {
       const response: AxiosResponse<T> = await this.api.delete(url, {
         ...config,
