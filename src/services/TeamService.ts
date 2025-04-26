@@ -13,7 +13,7 @@ export interface TeamPlayer {
 
 export class TeamService extends BaseApiService {
   constructor() {
-    super(API_CONFIG.baseUrl, API_CONFIG.mockUrl, API_CONFIG.useMockByDefault);
+    super(API_CONFIG.baseUrl);
   }
 
   /**

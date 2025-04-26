@@ -1,0 +1,246 @@
+.player-details-container {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px;
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+}
+
+.player-details-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.back-button {
+  display: inline-flex;
+  align-items: center;
+  color: #3182ce;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.back-button svg {
+  margin-right: 8px;
+}
+
+.back-button:hover {
+  color: #2c5282;
+  text-decoration: underline;
+}
+
+.player-profile {
+  display: flex;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.player-avatar-container {
+  position: relative;
+  margin-right: 24px;
+  width: 120px;
+  height: 120px;
+}
+
+.player-avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #edf2f7;
+}
+
+.player-rating {
+  position: absolute;
+  top: 0;
+  right: 0;
+  transform: translate(25%, -25%);
+  background-color: #f6e05e;
+  color: #744210;
+  border-radius: 20px;
+  padding: 4px 8px;
+  display: flex;
+  align-items: center;
+  font-weight: bold;
+  font-size: 14px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  z-index: 1;
+}
+
+.player-rating svg {
+  margin-right: 4px;
+  font-size: 12px;
+}
+
+.player-info h1 {
+  margin: 0 0 8px 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: #1a202c;
+}
+
+.player-team, .player-position, .player-points {
+  margin: 4px 0;
+  color: #4a5568;
+  font-size: 16px;
+}
+
+.player-statistics, .player-tournaments {
+  margin-top: 40px;
+}
+
+.player-statistics h2, .player-tournaments h2 {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: #2d3748;
+}
+
+.statistics-container {
+  display: flex;
+  gap: 20px;
+}
+
+.statistic-card {
+  background-color: #f7fafc;
+  border-radius: 8px;
+  padding: 16px;
+  flex: 1;
+  text-align: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.statistic-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #3182ce;
+  margin-bottom: 4px;
+}
+
+.statistic-label {
+  font-size: 14px;
+  color: #718096;
+}
+
+.tournaments-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 16px;
+}
+
+.tournament-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #f7fafc;
+  border-radius: 8px;
+  padding: 16px;
+  color: #2d3748;
+  text-decoration: none;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.tournament-card:hover {
+  background-color: #edf2f7;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.tournament-info h3 {
+  margin: 0 0 4px 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.tournament-date {
+  font-size: 14px;
+  color: #718096;
+  margin: 0;
+}
+
+.tournament-place {
+  background-color: #fed7d7;
+  color: #9b2c2c;
+  border-radius: 20px;
+  padding: 4px 10px;
+  display: flex;
+  align-items: center;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.tournament-place svg {
+  margin-right: 6px;
+  font-size: 12px;
+}
+
+/* Состояние загрузки */
+.player-details-container.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #e2e8f0;
+  border-top: 3px solid #3182ce;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Состояние ошибки */
+.player-details-container.error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  text-align: center;
+}
+
+.player-details-container.error h2 {
+  color: #e53e3e;
+  margin-bottom: 12px;
+}
+
+.player-details-container.error p {
+  color: #4a5568;
+  margin-bottom: 20px;
+}
+
+/* Адаптивная верстка */
+@media (max-width: 768px) {
+  .player-profile {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .player-avatar-container {
+    margin-right: 0;
+    margin-bottom: 20px;
+  }
+  
+  .statistics-container {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .tournaments-list {
+    grid-template-columns: 1fr;
+  }
+} 

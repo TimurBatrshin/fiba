@@ -6,9 +6,10 @@ import {
   faRankingStar 
 } from '@fortawesome/free-solid-svg-icons';
 import { StatisticsService } from '../../services/StatisticsService';
+import { PhotoService } from '../../services/PhotoService';
 import { PlayerBasicStats } from '../../interfaces/PlayerStatistics';
+import { UserPhoto } from '../../components/UserPhoto/UserPhoto';
 import './TopPlayers.css';
-import defaultAvatar from '../../assets/images/default-avatar.png';
 
 // Типы статистических категорий
 type StatCategory = 'points' | 'rating';
@@ -21,9 +22,13 @@ interface CategoryInfo {
   description: string;
 }
 
+interface PlayerWithPhoto extends PlayerBasicStats {
+  photoUrl?: string;
+}
+
 const TopPlayers: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState<StatCategory>('points');
-  const [topPlayers, setTopPlayers] = useState<PlayerBasicStats[]>([]);
+  const [topPlayers, setTopPlayers] = useState<PlayerWithPhoto[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -50,20 +55,31 @@ const TopPlayers: React.FC = () => {
     return categories.find(cat => cat.id === activeCategory) || categories[0];
   };
 
-  // Handle image error - improved implementation
-  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    if (e.currentTarget.src !== defaultAvatar) {
-      e.currentTarget.src = defaultAvatar;
-    }
-    e.currentTarget.onerror = null; // Prevent infinite loop
-  };
-
   useEffect(() => {
     const fetchTopPlayers = async () => {
       setLoading(true);
       try {
         const players = await StatisticsService.getInstance().getTopPlayers(activeCategory, 10);
-        setTopPlayers(players);
+        console.log('Received players:', players);
+        
+        // Получаем фотографии для каждого игрока
+        const photoService = PhotoService.getInstance();
+        const playersWithPhotos = await Promise.all(
+          players.map(async (player) => {
+            try {
+              const photoUrl = await photoService.getUserPhotoUrl(player.id);
+              console.log(`Got photo URL for player ${player.id}:`, photoUrl);
+              return { ...player, photoUrl };
+            } catch (err) {
+              console.error(`Error fetching photo for player ${player.id}:`, err);
+              return { ...player, photoUrl: undefined };
+            }
+          })
+        );
+
+        console.log('Players with photos:', playersWithPhotos);
+        setTopPlayers(playersWithPhotos);
+        setError(null);
       } catch (err) {
         console.error(`Ошибка при загрузке топ игроков по категории ${activeCategory}:`, err);
         setError('Не удалось загрузить данные о лучших игроках. Пожалуйста, попробуйте позже.');
@@ -151,10 +167,10 @@ const TopPlayers: React.FC = () => {
                 <span>{index + 1}</span>
               </div>
               <div className="player-avatar">
-                <img 
-                  src={player.photoUrl || defaultAvatar} 
+                <UserPhoto 
+                  photoUrl={player.photoUrl}
                   alt={player.name}
-                  onError={handleImageError}
+                  className="player-photo"
                 />
               </div>
               <div className="player-info">

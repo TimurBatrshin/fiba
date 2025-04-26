@@ -1,37 +1,48 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect, useRef } from "react";
+import { Navigate } from "react-router-dom";
 import "./profile.css";
-import defaultAvatar from '../../assets/images/default-avatar.png';
-import { useAuth } from '../../contexts/AuthContext';
-import { API_CONFIG } from "../../config/api";
+import { useAuth } from '../../hooks/useAuth';
 import { userService } from "../../services/UserService";
+import { UserPhoto } from '../../components/UserPhoto/UserPhoto';
 
 interface ProfileFormData {
   photo: File | null;
-  tournaments_played: number;
-  total_points: number;
-  rating: number;
+  name: string;
+  email: string;
+}
+
+interface ExtendedUser {
+  id: number;
+  name: string;
+  email: string;
+  profile?: {
+    photo_url?: string;
+  };
 }
 
 const Profile: React.FC = () => {
-  const { currentUser, updateUser } = useAuth();
-  const [profile, setProfile] = useState<any>(null);
-  const [editMode, setEditMode] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(false);
-  const [uploadError, setUploadError] = useState("");
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [profile, setProfile] = useState<ExtendedUser | null>(null);
+  const [editMode, setEditMode] = useState<boolean>(false);
+  const [error, setError] = useState<string>("");
+  const [shouldRedirect, setShouldRedirect] = useState(false);
   const [formData, setFormData] = useState<ProfileFormData>({
     photo: null,
-    tournaments_played: 0,
-    total_points: 0,
-    rating: 0,
+    name: '',
+    email: ''
   });
-  const navigate = useNavigate();
+  
+  const { user } = useAuth();
+  const redirectAttempted = useRef<boolean>(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const fetchProfile = async () => {
-      if (!currentUser) {
-        navigate("/login");
+      if (!user) {
+        if (!redirectAttempted.current) {
+          redirectAttempted.current = true;
+          setShouldRedirect(true);
+        }
         return;
       }
 
@@ -40,82 +51,125 @@ const Profile: React.FC = () => {
         const userData = await userService.getCurrentUser();
         setProfile(userData);
         setFormData({
-          photo: null, // Обнуляем фото в форме, чтобы не отправлять старое
-          tournaments_played: userData.tournaments_played || 0,
-          total_points: userData.total_points || 0,
-          rating: userData.rating || 0,
+          photo: null,
+          name: userData.name || '',
+          email: userData.email || ''
         });
       } catch (err: any) {
         console.error("Ошибка при получении профиля", err);
-        setError(true);
+        setError(err.message || "Ошибка при загрузке профиля");
+        
+        if (err.message === 'Unauthorized access' && !redirectAttempted.current) {
+          redirectAttempted.current = true;
+          setShouldRedirect(true);
+        }
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchProfile();
-  }, [currentUser, navigate]);
+  }, [user]);
 
-  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    e.currentTarget.src = defaultAvatar;
-    e.currentTarget.onerror = null; // Предотвращаем бесконечный цикл
+  if (shouldRedirect) {
+    return <Navigate to="/login" replace />;
+  }
+
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      
+      // Проверка размера файла (не более 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setError("Размер файла не должен превышать 5MB");
+        return;
+      }
+
+      // Проверка типа файла
+      if (!file.type.startsWith('image/')) {
+        setError("Пожалуйста, загрузите изображение");
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+        setError("");
+        
+        // Загружаем фото сразу при выборе
+        const updatedProfile = await userService.uploadProfilePhoto(file);
+        setProfile(updatedProfile);
+        
+        // Обновляем форму
+        setFormData(prev => ({
+          ...prev,
+          photo: null // Сбрасываем файл, так как он уже загружен
+        }));
+
+        // Сбрасываем input file
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+      } catch (err: any) {
+        console.error("Ошибка при загрузке фото", err);
+        setError(err.message || "Ошибка при загрузке фото");
+      } finally {
+        setIsLoading(false);
+      }
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.name === "photo" && e.target.files && e.target.files.length > 0) {
-      setFormData({
-        ...formData,
-        photo: e.target.files[0],
-      });
-      setUploadError("");
-    } else {
-      setFormData({
-        ...formData,
-        [e.target.name]: e.target.value,
-      });
-    }
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!currentUser) {
-      navigate("/login");
+    if (!user) {
+      if (!redirectAttempted.current) {
+        redirectAttempted.current = true;
+        setShouldRedirect(true);
+      }
       return;
     }
 
     try {
       setIsLoading(true);
+      setError("");
       
-      // Create data to update user
-      const updateData = {
-        tournaments_played: formData.tournaments_played,
-        total_points: formData.total_points,
-        rating: formData.rating
-      };
+      // Создаем объект только с измененными данными
+      const updateData: { name?: string; email?: string } = {};
       
-      // If there's a photo, handle it separately
-      if (formData.photo) {
-        const formDataToSend = new FormData();
-        formDataToSend.append("photo", formData.photo);
-        
-        // Upload photo
-        // You'll need to implement this route in your API service
-        // or use a direct fetch here if your API service doesn't support file uploads
-        await fetch(`${API_CONFIG.baseUrl}/users/${currentUser.id}/photo`, {
-          method: 'POST',
-          body: formDataToSend,
-          credentials: 'include'
-        });
+      if (formData.email !== profile?.email) {
+        updateData.email = formData.email;
       }
       
-      // Update user data
-      const updatedUser = await updateUser(currentUser.id, updateData);
+      if (formData.name !== profile?.name) {
+        updateData.name = formData.name;
+      }
+
+      // Проверяем, есть ли что обновлять
+      if (Object.keys(updateData).length === 0) {
+        setEditMode(false);
+        return;
+      }
+
+      // Обновляем профиль
+      const updatedUser = await userService.updateProfile(updateData);
       setProfile(updatedUser);
       setEditMode(false);
     } catch (err: any) {
       console.error("Ошибка при обновлении профиля", err);
-      setUploadError("Ошибка при сохранении профиля");
+      setError(err.message || "Ошибка при сохранении профиля");
+      
+      if (err.status === 401 && !redirectAttempted.current) {
+        redirectAttempted.current = true;
+        setShouldRedirect(true);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -132,86 +186,81 @@ const Profile: React.FC = () => {
       ) : profile ? (
         <div className="profile-info">
           <div className="profile-avatar">
-            <img 
-              src={profile.avatar || defaultAvatar} 
-              alt="Фото профиля" 
-              onError={handleImageError}
+            <UserPhoto 
+              photoUrl={profile?.profile?.photo_url}
+              className="profile-photo"
             />
+            <div className="photo-upload">
+              <input
+                ref={fileInputRef}
+                type="file"
+                id="photo"
+                name="photo"
+                accept="image/*"
+                onChange={handlePhotoChange}
+                style={{ display: 'none' }}
+              />
+              <button 
+                onClick={() => fileInputRef.current?.click()}
+                className="change-photo-btn"
+                disabled={isLoading}
+              >
+                {profile?.profile?.photo_url ? 'Изменить фото' : 'Загрузить фото'}
+              </button>
+            </div>
           </div>
           <div className="profile-details">
-            <p><strong>Имя:</strong> {profile.username || "Не указано"}</p>
-            <p><strong>Email:</strong> {profile.email || "Не указано"}</p>
-            <p><strong>Турниров сыграно:</strong> {profile.tournaments_played}</p>
-            <p><strong>Всего очков:</strong> {profile.total_points}</p>
-            <p><strong>Рейтинг:</strong> {profile.rating}</p>
+            {!editMode ? (
+              <>
+                <p><strong>Имя:</strong> {profile.name || "Не указано"}</p>
+                <p><strong>Email:</strong> {profile.email || "Не указано"}</p>
+              </>
+            ) : (
+              <form onSubmit={handleSubmit} className="profile-form">
+                <div className="form-group">
+                  <label htmlFor="name">Имя</label>
+                  <input
+                    id="name"
+                    type="text"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    disabled={isLoading}
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="email">Email</label>
+                  <input
+                    id="email"
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    disabled={isLoading}
+                  />
+                </div>
+                <div className="form-actions">
+                  <button type="submit" disabled={isLoading}>
+                    {isLoading ? 'Сохранение...' : 'Сохранить изменения'}
+                  </button>
+                  <button type="button" onClick={() => setEditMode(false)} disabled={isLoading}>
+                    Отмена
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       ) : (
         <p>Профиль не найден</p>
       )}
 
+      {error && <p className="error-message">{error}</p>}
+
       {!isLoading && profile && !editMode && (
         <button onClick={() => setEditMode(true)} className="edit-profile-btn">
           Редактировать профиль
         </button>
-      )}
-
-      {editMode && (
-        <form onSubmit={handleSubmit} className="profile-form">
-          <div className="form-group">
-            <label htmlFor="photo">Фото профиля</label>
-            <input
-              id="photo"
-              type="file"
-              name="photo"
-              accept="image/*"
-              onChange={handleChange}
-              disabled={isLoading}
-            />
-            {uploadError && <p className="error-message">{uploadError}</p>}
-          </div>
-          <div className="form-group">
-            <label htmlFor="tournaments_played">Турниров сыграно</label>
-            <input
-              id="tournaments_played"
-              type="number"
-              name="tournaments_played"
-              value={formData.tournaments_played}
-              onChange={handleChange}
-              disabled={isLoading}
-            />
-          </div>
-          <div className="form-group">
-            <label htmlFor="total_points">Всего очков</label>
-            <input
-              id="total_points"
-              type="number"
-              name="total_points"
-              value={formData.total_points}
-              onChange={handleChange}
-              disabled={isLoading}
-            />
-          </div>
-          <div className="form-group">
-            <label htmlFor="rating">Рейтинг</label>
-            <input
-              id="rating"
-              type="number"
-              name="rating"
-              value={formData.rating}
-              onChange={handleChange}
-              disabled={isLoading}
-            />
-          </div>
-          <div className="form-actions">
-            <button type="submit" className="save-btn" disabled={isLoading}>
-              {isLoading ? "Сохранение..." : "Сохранить изменения"}
-            </button>
-            <button type="button" onClick={() => setEditMode(false)} className="cancel-btn" disabled={isLoading}>
-              Отмена
-            </button>
-          </div>
-        </form>
       )}
     </div>
   );

@@ -1,29 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch, faPlus, faTimes, faCrown } from '@fortawesome/free-solid-svg-icons';
-import { searchPlayers } from '../../services/api/tournaments';
-import defaultAvatar from '../../assets/images/default-avatar.png';
+import { playerService, SearchPlayer } from '../../services/PlayerService';
+import { UserPhoto } from '../../components/UserPhoto/UserPhoto';
 import './PlayerSearch.css';
+import api from '../../api/client';
+import { UserProfile } from '../../interfaces/Auth';
 
-export interface Player {
-  id: string;
-  name: string;
-  email?: string;
-  photoUrl?: string;
-  fullName?: string;
-  avatar?: string;
-  rating?: number;
-}
-
-interface PlayerSearchProps {
-  // New props
-  onSelectedPlayersChange?: (players: Player[]) => void;
+export interface PlayerSearchProps {
+  onSelectPlayer?: (player: SearchPlayer) => void;
+  onRemovePlayer?: (playerId: string) => void;
+  selectedPlayers?: SearchPlayer[];
+  onSelectedPlayersChange?: (players: SearchPlayer[]) => void;
   maxPlayers?: number;
   showCaptain?: boolean;
-  // Legacy props
-  onSelectPlayer?: (player: Player) => void;
-  selectedPlayers?: Player[];
-  onRemovePlayer?: (playerId: string) => void;
+  disabled?: boolean;
+  hideSelectedPlayersList?: boolean;
 }
 
 export const PlayerSearch: React.FC<PlayerSearchProps> = (props) => {
@@ -31,6 +23,8 @@ export const PlayerSearch: React.FC<PlayerSearchProps> = (props) => {
     onSelectedPlayersChange,
     maxPlayers = 4,
     showCaptain = true,
+    disabled = false,
+    hideSelectedPlayersList = false,
     // Legacy props
     onSelectPlayer,
     selectedPlayers: externalSelectedPlayers,
@@ -39,8 +33,11 @@ export const PlayerSearch: React.FC<PlayerSearchProps> = (props) => {
 
   const isLegacyMode = !!onSelectPlayer && !!onRemovePlayer;
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<Player[]>([]);
-  const [internalSelectedPlayers, setInternalSelectedPlayers] = useState<Player[]>([]);
+  const [searchResults, setSearchResults] = useState<SearchPlayer[]>([]);
+  const [internalSelectedPlayers, setInternalSelectedPlayers] = useState<SearchPlayer[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const searchTimerRef = useRef<NodeJS.Timeout | null>(null);
   
   // Get the right selected players array based on mode
   const selectedPlayers = isLegacyMode ? externalSelectedPlayers || [] : internalSelectedPlayers;
@@ -52,21 +49,75 @@ export const PlayerSearch: React.FC<PlayerSearchProps> = (props) => {
     }
   }, [isLegacyMode, externalSelectedPlayers]);
 
+  // Дебаунсированный поиск игроков
+  const debouncedSearch = useCallback((query: string) => {
+    if (searchTimerRef.current) {
+      clearTimeout(searchTimerRef.current);
+    }
+
+    searchTimerRef.current = setTimeout(async () => {
+      if (!query.trim() || query.trim().length < 2) {
+        setSearchResults([]);
+        setIsSearching(false);
+        setSearchError(null);
+        return;
+      }
+      
+      setIsSearching(true);
+      setSearchError(null);
+      try {
+        const response = await playerService.searchPlayers(query.trim());
+        setSearchResults(response || []);
+      } catch (error: any) {
+        console.error("Ошибка при поиске игроков:", error);
+        setSearchResults([]);
+        
+        // Обработка различных типов ошибок
+        if (error instanceof Error) {
+          if (error.message.includes('Unauthorized')) {
+            setSearchError('Пожалуйста, войдите в систему для выполнения поиска');
+          } else {
+            setSearchError(`Ошибка при поиске игроков: ${error.message}`);
+          }
+        } else {
+          setSearchError('Произошла неизвестная ошибка при поиске');
+        }
+      } finally {
+        setIsSearching(false);
+      }
+    }, 300);
+  }, []);
+
   // Обработчик поиска игроков
   const handleSearchPlayers = async () => {
     if (!searchQuery.trim()) return;
     
+    setIsSearching(true);
+    setSearchError(null);
     try {
-      const players = await searchPlayers(searchQuery);
-      setSearchResults(players);
-    } catch (error) {
+      const response = await playerService.searchPlayers(searchQuery.trim());
+      setSearchResults(response || []);
+    } catch (error: any) {
       console.error("Ошибка при поиске игроков:", error);
       setSearchResults([]);
+      
+      // Обработка различных типов ошибок
+      if (error instanceof Error) {
+        if (error.message.includes('Unauthorized')) {
+          setSearchError('Пожалуйста, войдите в систему для выполнения поиска');
+        } else {
+          setSearchError(`Ошибка при поиске игроков: ${error.message}`);
+        }
+      } else {
+        setSearchError('Произошла неизвестная ошибка при поиске');
+      }
+    } finally {
+      setIsSearching(false);
     }
   };
 
   // Обработчик выбора игрока из результатов поиска
-  const handleSelectPlayer = (player: Player) => {
+  const handleSelectPlayer = (player: SearchPlayer) => {
     // Проверяем, не выбран ли уже этот игрок
     if (selectedPlayers.some(p => p.id === player.id)) {
       return;
@@ -90,10 +141,10 @@ export const PlayerSearch: React.FC<PlayerSearchProps> = (props) => {
     setSearchResults([]);
   };
 
-  const handleRemovePlayer = (playerId: string) => {
+  const handleRemovePlayer = (playerId: string | number) => {
     if (isLegacyMode && onRemovePlayer) {
       // Legacy mode - call the external handler
-      onRemovePlayer(playerId);
+      onRemovePlayer(String(playerId));
     } else if (onSelectedPlayersChange) {
       // New mode - update internal state and call the callback
       const newSelectedPlayers = internalSelectedPlayers.filter(p => p.id !== playerId);
@@ -106,125 +157,116 @@ export const PlayerSearch: React.FC<PlayerSearchProps> = (props) => {
   };
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value);
+    const value = e.target.value;
+    setSearchQuery(value);
+    
+    // Запускаем дебаунсированный поиск по мере ввода
+    debouncedSearch(value);
+  };
+
+  const handleClearSearch = () => {
+    setSearchQuery('');
+    setSearchResults([]);
   };
 
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    if (e.currentTarget.src !== defaultAvatar) {
-      e.currentTarget.src = defaultAvatar;
-    }
     e.currentTarget.onerror = null; // Prevent infinite loop
   };
 
   return (
-    <div className="player-search-container">
+    <div className={`player-search-container ${disabled ? 'disabled' : ''}`}>
       <div className="search-box">
-        <input
-          type="text"
-          placeholder="Search for a player..."
-          value={searchQuery}
-          onChange={handleSearchChange}
-          className="search-input"
-          onKeyPress={(e) => e.key === 'Enter' && handleSearchPlayers()}
-        />
-        <button 
-          className="search-button" 
-          onClick={handleSearchPlayers}
-          aria-label="Search"
-          type="button"
-        >
-          <FontAwesomeIcon icon={faSearch} />
-        </button>
-        <div className="players-count">
-          {selectedPlayers.length}/{maxPlayers} players
+        <div style={{ position: 'relative', flex: 1 }}>
+          <input
+            type="text"
+            placeholder="Введите имя или email игрока..."
+            value={searchQuery}
+            onChange={handleSearchChange}
+            className="search-input"
+            onKeyPress={(e) => e.key === 'Enter' && handleSearchPlayers()}
+            disabled={disabled}
+          />
+          {searchQuery && (
+            <button
+              className="clear-search-button"
+              onClick={handleClearSearch}
+              aria-label="Очистить поиск"
+              type="button"
+            >
+              <FontAwesomeIcon icon={faTimes} />
+            </button>
+          )}
         </div>
       </div>
 
-      <div className="selected-players">
-        <h3>Selected Players</h3>
-        {selectedPlayers.length === 0 ? (
-          <p className="no-players-message">No players selected yet</p>
-        ) : (
-          <ul className="players-list">
-            {selectedPlayers.map((player, index) => (
-              <li key={player.id} className="selected-player">
-                <div className="player-info">
-                  <img 
-                    src={player.avatar || player.photoUrl || defaultAvatar} 
-                    alt={player.name} 
-                    className="player-avatar" 
-                    onError={handleImageError}
+      {/* Результаты поиска */}
+      {searchResults.length > 0 && (
+        <div className="mt-4">
+          <h3 className="text-lg font-semibold mb-2">Результаты поиска</h3>
+          <div className="space-y-2">
+            {searchResults.map((player) => (
+              <div
+                key={player.id}
+                className="flex items-center justify-between p-2 border rounded hover:bg-gray-50"
+              >
+                <div className="flex items-center space-x-2">
+                  <UserPhoto
+                    photoUrl={player.profile?.photo_url}
+                    alt={player.name}
+                    className="w-10 h-10 rounded-full"
                   />
-                  <div className="player-details">
-                    <span className="player-name">
-                      {player.name}
-                      {showCaptain && index === 0 && (
-                        <span className="captain-badge">Captain</span>
-                      )}
-                    </span>
-                    {player.rating && <span className="player-rating">{player.rating}</span>}
-                  </div>
+                  <span>{player.name}</span>
                 </div>
                 <button
-                  className="remove-player-button"
-                  onClick={() => handleRemovePlayer(player.id)}
-                  aria-label="Remove player"
-                  type="button"
+                  onClick={() => handleSelectPlayer(player)}
+                  className="px-3 py-1 text-sm text-white bg-blue-500 rounded hover:bg-blue-600"
+                  disabled={selectedPlayers.some((p) => p.id === player.id)}
                 >
-                  ×
+                  {selectedPlayers.some((p) => p.id === player.id)
+                    ? 'Добавлен'
+                    : 'Добавить'}
                 </button>
-              </li>
+              </div>
             ))}
-          </ul>
-        )}
-      </div>
+          </div>
+        </div>
+      )}
 
-      {searchResults.length > 0 && (
-        <div className="search-results">
-          <h3>Search Results</h3>
-          <ul className="results-list">
-            {searchResults.map((player) => {
-              const isSelected = selectedPlayers.some((p) => p.id === player.id);
-              const isMaxReached = selectedPlayers.length >= maxPlayers;
-              return (
-                <li
-                  key={player.id}
-                  className={`result-item ${isSelected ? 'selected' : ''} ${
-                    isMaxReached && !isSelected ? 'disabled' : ''
-                  }`}
-                  onClick={() => {
-                    if (!isSelected && !isMaxReached) {
-                      handleSelectPlayer(player);
-                    } else if (isSelected) {
-                      handleRemovePlayer(player.id);
-                    }
-                  }}
+      {/* Список выбранных игроков */}
+      {!hideSelectedPlayersList && selectedPlayers.length > 0 && (
+        <div className="mt-6">
+          <h3 className="text-lg font-semibold mb-2">Список выбранных игроков</h3>
+          <div className="space-y-2">
+            {selectedPlayers.map((player) => (
+              <div
+                key={player.id}
+                className="flex items-center justify-between p-2 border rounded"
+              >
+                <div className="flex items-center space-x-2">
+                  <UserPhoto
+                    photoUrl={player.profile?.photo_url}
+                    alt={player.name}
+                    className="w-10 h-10 rounded-full"
+                  />
+                  <span>{player.name}</span>
+                </div>
+                <button
+                  onClick={() => handleRemovePlayer(player.id)}
+                  className="px-3 py-1 text-sm text-white bg-red-500 rounded hover:bg-red-600"
                 >
-                  <div className="result-player-info">
-                    <img 
-                      src={player.avatar || player.photoUrl || defaultAvatar} 
-                      alt={player.name} 
-                      className="result-player-avatar" 
-                      onError={handleImageError}
-                    />
-                    <div className="result-player-details">
-                      <span className="result-player-name">{player.name}</span>
-                      {player.rating && (
-                        <span className="result-player-rating">{player.rating}</span>
-                      )}
-                    </div>
-                  </div>
-                  {isSelected ? (
-                    <button className="remove-result-button" type="button">Remove</button>
-                  ) : (
-                    !isMaxReached && <button className="add-result-button" type="button">Add</button>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
+                  Удалить
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {searchError && (
+        <div className="search-error">
+          {searchError}
         </div>
       )}
     </div>
   );
-}; 
+};

@@ -1,8 +1,12 @@
+import { API_CONFIG as ApiConfigFromCentral } from './apiConfig';
+
 export const API_CONFIG = {
-  baseUrl: 'https://timurbatrshin-fiba-backend-1aa7.twc1.net/api',
-  localUrl: 'http://localhost:8080',
-  fallbackUrl: 'https://fiba-mock.vercel.app/api',
-  useMockByDefault: true,
-  timeout: 60000,
-  withCredentials: true
+  baseUrl: 'https://timurbatrshin-fiba-backend-5ef6.twc1.net/api',
+  TOURNAMENTS_PATH: '/tournaments',
+  timeout: 30000,
+  withCredentials: true,
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+  }
 }; 

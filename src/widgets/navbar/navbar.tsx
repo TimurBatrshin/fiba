@@ -5,6 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faChartBar, faUser, faHome, faTrophy, faPlus } from "@fortawesome/free-solid-svg-icons";
 import fibaLogo from '../../assets/images/fiba-logo.png';
 import { useAuth } from "../../contexts/AuthContext";
+import { BASE_PATH } from '../../config/envConfig';
 
 const Navbar: React.FC = () => {
   const navigate = useNavigate();
@@ -12,8 +13,7 @@ const Navbar: React.FC = () => {
   const { isAuthenticated, logout: contextLogout, currentRole } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const [showStatsDropdown, setShowStatsDropdown] = useState(false);
-  const isAdmin = currentRole === 'admin';
+  const isAdmin = currentRole?.toUpperCase() === 'ADMIN';
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.pageYOffset > 10);
@@ -30,14 +30,14 @@ const Navbar: React.FC = () => {
     contextLogout();
   };
 
-  const toggleStatsDropdown = () => {
-    setShowStatsDropdown(!showStatsDropdown);
-  };
-
   const isStatsPage = () => {
     return ['/rankings/players', '/rankings/teams', '/top-players', '/players'].some(path => 
       location.pathname.startsWith(path)
     );
+  };
+
+  const isTopPlayersPage = () => {
+    return location.pathname === '/top-players';
   };
 
   return (
@@ -61,59 +61,61 @@ const Navbar: React.FC = () => {
           <span className="hamburger-line"></span>
         </button>
 
-        <nav className={`navbar-menu ${isMobileMenuOpen ? 'open' : ''}`}>
-          <ul className="nav-list">
-            <li className="nav-item">
-              <Link to="/" className={`nav-link ${location.pathname === '/' || location.pathname === '' ? 'active' : ''}`}>
-                <FontAwesomeIcon icon={faHome} className="nav-icon" />
-                <span>Главная</span>
-              </Link>
-            </li>
-            <li className="nav-item">
-              <Link to="/tournaments" className={`nav-link ${location.pathname === '/tournaments' ? 'active' : ''}`}>
-                <FontAwesomeIcon icon={faTrophy} className="nav-icon" />
-                <span>Турниры</span>
-              </Link>
-            </li>
-            {isAdmin && isAuthenticated && (
+        <div className={`navbar-menu ${isMobileMenuOpen ? 'open' : ''}`}>
+          <nav className="nav-content">
+            <ul className="nav-list">
               <li className="nav-item">
-                <Link to="/create-tournament" className="nav-link admin-link">
-                  <FontAwesomeIcon icon={faPlus} className="nav-icon" />
-                  <span>Создать турнир</span>
+                <Link to="/" className={`nav-link ${location.pathname === '/' || location.pathname === '' ? 'active' : ''}`}>
+                  <FontAwesomeIcon icon={faHome} className="nav-icon" />
+                  <span>Главная</span>
                 </Link>
               </li>
-            )}
-            <li className="nav-item stats-dropdown">
-              <div className="nav-dropdown">
-                <button 
-                  className={`nav-dropdown-btn ${isStatsPage() ? 'active' : ''}`} 
-                  onClick={toggleStatsDropdown}
-                >
-                  <FontAwesomeIcon icon={faChartBar} />
-                  <span>Статистика</span>
-                </button>
-                {showStatsDropdown && (
+              <li className="nav-item">
+                <Link to="/tournaments" className={`nav-link ${location.pathname === '/tournaments' ? 'active' : ''}`}>
+                  <FontAwesomeIcon icon={faTrophy} className="nav-icon" />
+                  <span>Турниры</span>
+                </Link>
+              </li>
+              {isAdmin && isAuthenticated && (
+                <li className="nav-item">
+                  <Link to="/create-tournament" className="nav-link admin-link">
+                    <FontAwesomeIcon icon={faPlus} className="nav-icon" />
+                    <span>Создать турнир</span>
+                  </Link>
+                </li>
+              )}
+              <li className="nav-item stats-dropdown">
+                <div className="nav-dropdown">
+                  <button 
+                    className={`nav-dropdown-btn ${isStatsPage() ? 'active' : ''}`}
+                  >
+                    <FontAwesomeIcon icon={faChartBar} />
+                    <span>Статистика</span>
+                  </button>
                   <div className="nav-dropdown-content">
-                    <Link to="/top-players">
+                    <Link 
+                      to="/top-players"
+                      className={isTopPlayersPage() ? 'active' : ''}
+                    >
                       <FontAwesomeIcon icon={faUser} />
                       <span>Топ игроки</span>
                     </Link>
                   </div>
-                )}
-              </div>
-            </li>
-            {isAuthenticated && (
-              <li className="nav-item">
-                <Link 
-                  to="/profile" 
-                  className={`nav-link ${location.pathname === '/profile' ? 'active' : ''}`}
-                >
-                  <FontAwesomeIcon icon={faUser} className="nav-icon" />
-                  <span>Профиль</span>
-                </Link>
+                </div>
               </li>
-            )}
-          </ul>
+              {isAuthenticated && (
+                <li className="nav-item">
+                  <Link 
+                    to="/profile" 
+                    className={`nav-link ${location.pathname === '/profile' ? 'active' : ''}`}
+                  >
+                    <FontAwesomeIcon icon={faUser} className="nav-icon" />
+                    <span>Профиль</span>
+                  </Link>
+                </li>
+              )}
+            </ul>
+          </nav>
 
           <div className="nav-actions">
             <div className="nav-auth">
@@ -137,7 +139,7 @@ const Navbar: React.FC = () => {
               )}
             </div>
           </div>
-        </nav>
+        </div>
       </div>
     </header>
   );

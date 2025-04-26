@@ -1,0 +1,221 @@
+.top-players-container {
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  padding: 24px;
+  margin-bottom: 30px;
+}
+
+.top-players-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.top-players-header h2 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1a202c;
+  margin: 0;
+}
+
+.see-all-link {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  color: #3462d8;
+  font-weight: 600;
+  font-size: 15px;
+  transition: color 0.2s ease;
+}
+
+.see-all-link:hover {
+  color: #254db3;
+}
+
+.see-all-link svg {
+  margin-left: 6px;
+  font-size: 14px;
+}
+
+.top-players-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.top-players-table-header {
+  display: grid;
+  grid-template-columns: 50px 2fr 1fr 1fr 100px;
+  padding: 12px 16px;
+  background-color: #f7f9fc;
+  border-radius: 8px;
+  font-weight: 600;
+  color: #4d5b7c;
+  font-size: 14px;
+}
+
+.top-players-table-body {
+  margin-top: 8px;
+}
+
+.top-player-row {
+  display: grid;
+  grid-template-columns: 50px 2fr 1fr 1fr 100px;
+  padding: 12px 16px;
+  align-items: center;
+  border-radius: 8px;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.2s ease;
+}
+
+.top-player-row:hover {
+  background-color: #f7f9fc;
+  transform: translateX(4px);
+}
+
+.player-rank {
+  font-weight: 700;
+  font-size: 16px;
+  color: #4d5b7c;
+}
+
+.player-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.player-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #e9edf5;
+}
+
+.player-name {
+  font-weight: 600;
+  font-size: 15px;
+  color: #2d3748;
+}
+
+.player-team, 
+.player-position {
+  color: #707eae;
+  font-size: 14px;
+}
+
+.player-points {
+  font-weight: 700;
+  font-size: 15px;
+  color: #3462d8;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.star-icon {
+  color: #ffd60a;
+  font-size: 14px;
+}
+
+/* Топ 3 игрока */
+.top-player-row:nth-child(1) .player-rank {
+  color: #ffd60a;
+}
+
+.top-player-row:nth-child(2) .player-rank {
+  color: #a3aed0;
+}
+
+.top-player-row:nth-child(3) .player-rank {
+  color: #ff5e3a;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .top-players-container {
+    padding: 16px;
+  }
+
+  .top-players-table-header {
+    display: none;
+  }
+
+  .top-player-row {
+    grid-template-columns: 40px 1fr;
+    grid-template-areas:
+      "rank info"
+      "rank meta";
+    gap: 4px;
+    padding: 12px;
+    margin-bottom: 8px;
+    background-color: #f7f9fc;
+  }
+
+  .player-rank {
+    grid-area: rank;
+    font-size: 18px;
+  }
+
+  .player-info {
+    grid-area: info;
+  }
+
+  .player-team,
+  .player-position,
+  .player-points {
+    grid-area: meta;
+    padding-left: 48px;
+    font-size: 13px;
+  }
+
+  .player-name {
+    font-size: 14px;
+  }
+
+  .player-avatar {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+/* Стили для кнопок */
+.action-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border: none;
+  outline: none;
+  text-decoration: none;
+}
+
+.primary-button {
+  background-color: #3182ce;
+  color: white;
+}
+
+.primary-button:hover {
+  background-color: #2c5282;
+}
+
+.secondary-button {
+  background-color: #e2e8f0;
+  color: #4a5568;
+}
+
+.secondary-button:hover {
+  background-color: #cbd5e0;
+}
+
+.action-button svg {
+  margin-right: 8px;
+} 

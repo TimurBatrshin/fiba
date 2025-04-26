@@ -1,0 +1,44 @@
+.user-photo {
+  position: relative;
+  overflow: hidden;
+  border-radius: 50%;
+  background-color: #f0f0f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.user-photo.small {
+  width: 40px;
+  height: 40px;
+}
+
+.user-photo.medium {
+  width: 100px;
+  height: 100px;
+}
+
+.user-photo.large {
+  width: 150px;
+  height: 150px;
+}
+
+.user-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.user-photo-placeholder {
+  width: 60%;
+  height: 60%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.placeholder-icon {
+  width: 100%;
+  height: 100%;
+  color: #999;
+} 

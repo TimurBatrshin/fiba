@@ -25,35 +25,55 @@ const Tournaments: React.FC = () => {
     try {
       console.log("Запрос турниров с параметрами:", filters);
       
-      // Загружаем все турниры, затем фильтруем на клиенте
-      // В реальном API следует передавать параметры фильтрации на сервер
+      // Загружаем турниры в зависимости от фильтров
       let tournamentsData: Tournament[] = [];
       
-      if (filters.status === 'completed') {
-        tournamentsData = await tournamentService.getCompletedTournaments();
-      } else if (filters.status === 'upcoming') {
-        tournamentsData = await tournamentService.getUpcomingTournaments();
-      } else if (filters.location && filters.location.trim() !== '') {
-        tournamentsData = await tournamentService.getTournaments({ location: filters.location });
-      } else {
-        tournamentsData = await tournamentService.getAllTournaments();
+      try {
+        if (filters.status === 'completed') {
+          tournamentsData = await tournamentService.getCompletedTournaments();
+        } else if (filters.status === 'upcoming') {
+          tournamentsData = await tournamentService.getUpcomingTournaments();
+        } else if (filters.location && filters.location.trim() !== '') {
+          tournamentsData = await tournamentService.getTournaments({ location: filters.location });
+        } else {
+          tournamentsData = await tournamentService.getAllTournaments();
+        }
+      } catch (apiError) {
+        console.error("API ошибка при загрузке турниров:", apiError);
+        // В случае ошибки API используем пустой массив
+        tournamentsData = [];
       }
       
       console.log("Получены данные:", tournamentsData);
+      
+      // Проверка, что мы получили массив
+      if (!Array.isArray(tournamentsData)) {
+        console.error("Ошибка: данные не являются массивом:", tournamentsData);
+        tournamentsData = [];
+      }
       
       // Дополнительная фильтрация на клиенте по другим параметрам
       let filteredTournaments = tournamentsData;
       
       if (filters.date) {
         const filterDate = new Date(filters.date);
-        filteredTournaments = filteredTournaments.filter(tournament => {
-          const tournamentDate = new Date(tournament.date);
-          return (
-            tournamentDate.getFullYear() === filterDate.getFullYear() &&
-            tournamentDate.getMonth() === filterDate.getMonth() &&
-            tournamentDate.getDate() === filterDate.getDate()
-          );
-        });
+        if (!isNaN(filterDate.getTime())) { // Проверка валидности даты
+          filteredTournaments = filteredTournaments.filter(tournament => {
+            try {
+              const tournamentDate = new Date(tournament.date);
+              return (
+                tournamentDate.getFullYear() === filterDate.getFullYear() &&
+                tournamentDate.getMonth() === filterDate.getMonth() &&
+                tournamentDate.getDate() === filterDate.getDate()
+              );
+            } catch (error) {
+              console.warn("Ошибка при сравнении дат для турнира:", tournament.id);
+              return false;
+            }
+          });
+        } else {
+          console.warn("Невалидная дата фильтра:", filters.date);
+        }
       }
       
       if (filters.level) {
@@ -64,98 +84,9 @@ const Tournaments: React.FC = () => {
       
       setTournaments(filteredTournaments);
     } catch (error) {
-      console.error("Ошибка при загрузке турниров:", error);
+      console.error("Глобальная ошибка при загрузке турниров:", error);
       setError("Не удалось загрузить список турниров. Пожалуйста, попробуйте позже.");
-      
-      // При ошибке загрузки используем моковые данные
-      const currentDate = new Date().toISOString();
-      const mockTournaments: Tournament[] = [
-        {
-          id: "1",
-          name: "FIBA 3x3 Moscow Open",
-          date: new Date().toISOString(),
-          startTime: "10:00",
-          location: "Москва",
-          description: "Открытый турнир по баскетболу 3x3 в Москве",
-          status: "UPCOMING",
-          level: "AMATEUR",
-          imageUrl: "",
-          businessType: "COMMUNITY",
-          maxTeams: 16,
-          entryFee: 2000,
-          prizePool: "100 000 ₽",
-          isBusinessTournament: false,
-          registrationOpen: true,
-          createdAt: currentDate,
-          updatedAt: currentDate
-        },
-        {
-          id: "2",
-          name: "Pro League SPB",
-          date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-          startTime: "12:00",
-          location: "Санкт-Петербург",
-          description: "Профессиональная лига 3x3 в Санкт-Петербурге",
-          status: "UPCOMING",
-          level: "PRO",
-          imageUrl: "",
-          businessType: "OFFICIAL",
-          maxTeams: 24,
-          entryFee: 5000,
-          prizePool: "500 000 ₽",
-          isBusinessTournament: false,
-          registrationOpen: true,
-          createdAt: currentDate,
-          updatedAt: currentDate
-        },
-        {
-          id: "3",
-          name: "Корпоративный турнир Газпром",
-          date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
-          startTime: "11:00",
-          location: "Казань",
-          description: "Бизнес турнир для сотрудников Газпром",
-          status: "UPCOMING",
-          level: "BUSINESS",
-          imageUrl: "",
-          maxTeams: 12,
-          entryFee: 0,
-          prizePool: "Ценные призы",
-          isBusinessTournament: true,
-          sponsorName: "Газпром",
-          businessType: "CORPORATE",
-          registrationOpen: true,
-          createdAt: currentDate,
-          updatedAt: currentDate
-        }
-      ];
-
-      // Применяем фильтры к моковым данным
-      let filteredMocks = mockTournaments;
-      
-      if (filters.location) {
-        filteredMocks = filteredMocks.filter(t => 
-          t.location.toLowerCase().includes(filters.location!.toLowerCase())
-        );
-      }
-      
-      if (filters.level) {
-        filteredMocks = filteredMocks.filter(t => t.level === filters.level);
-      }
-      
-      if (filters.date) {
-        const filterDate = new Date(filters.date);
-        filteredMocks = filteredMocks.filter(tournament => {
-          const tournamentDate = new Date(tournament.date);
-          return (
-            tournamentDate.getFullYear() === filterDate.getFullYear() &&
-            tournamentDate.getMonth() === filterDate.getMonth() &&
-            tournamentDate.getDate() === filterDate.getDate()
-          );
-        });
-      }
-      
-      setTournaments(filteredMocks);
+      setTournaments([]);
     } finally {
       setIsLoading(false);
     }
@@ -169,11 +100,17 @@ const Tournaments: React.FC = () => {
   // Функция для форматирования даты
   const formatDate = (dateString: string) => {
     try {
+      if (!dateString) {
+        console.warn("Пустая строка даты");
+        return "Дата не указана";
+      }
+
       const date = new Date(dateString);
       if (isNaN(date.getTime())) {
         console.warn("Некорректная дата:", dateString);
         return "Дата не указана";
       }
+      
       return date.toLocaleDateString('ru-RU', { 
         day: 'numeric', 
         month: 'long', 
@@ -186,10 +123,13 @@ const Tournaments: React.FC = () => {
   };
 
   // Функция для определения статуса турнира на русском
-  const getStatusText = (status: TournamentStatus) => {
+  const getStatusText = (status: TournamentStatus, registrationOpen?: boolean) => {
+    if (status === 'UPCOMING') {
+      // По новой логике, если registrationOpen не определено или null, считаем регистрацию открытой
+      return registrationOpen !== false ? 'Регистрация открыта' : 'Регистрация закрыта';
+    }
+    
     switch(status) {
-      case 'UPCOMING':
-        return 'Регистрация';
       case 'ONGOING':
         return 'В процессе';
       case 'COMPLETED':
@@ -197,15 +137,18 @@ const Tournaments: React.FC = () => {
       case 'CANCELLED':
         return 'Отменен';
       default:
-        return 'Регистрация';
+        return 'Неизвестно';
     }
   };
 
   // Функция для определения класса статуса
-  const getStatusClass = (status: TournamentStatus) => {
+  const getStatusClass = (status: TournamentStatus, registrationOpen?: boolean) => {
+    if (status === 'UPCOMING') {
+      // По новой логике, если registrationOpen не определено или null, считаем регистрацию открытой
+      return registrationOpen !== false ? 'status-registration' : 'status-registration-closed';
+    }
+    
     switch(status) {
-      case 'UPCOMING':
-        return 'status-registration';
       case 'ONGOING':
         return 'status-in-progress';
       case 'COMPLETED':
@@ -213,7 +156,7 @@ const Tournaments: React.FC = () => {
       case 'CANCELLED':
         return 'status-cancelled';
       default:
-        return 'status-registration';
+        return 'status-unknown';
     }
   };
 
@@ -257,61 +200,67 @@ const Tournaments: React.FC = () => {
           ) : (
             <div className="tournaments-grid">
               {tournaments.length > 0 ? (
-                tournaments.map((tournament) => (
-                  <Link 
-                    to={`/tournament/${tournament.id}`} 
-                    key={tournament.id}
-                    className={`tournament-card ${tournament.isBusinessTournament ? 'business-tournament' : ''}`}
-                  >
-                    <div className="tournament-image">
-                      <img 
-                        src={tournament.imageUrl || defaultTournament} 
-                        alt={tournament.name} 
-                        onError={handleImageError}
-                      />
-                      <div className={`tournament-status ${getStatusClass(tournament.status)}`}>
-                        {getStatusText(tournament.status)}
-                      </div>
-                      {tournament.isBusinessTournament && (
-                        <div className="tournament-sponsor-badge">
-                          Спонсорский
+                tournaments.map((tournament) => {
+                  console.log("Создание ссылки на турнир:", tournament.id, typeof tournament.id);
+                  return (
+                    <Link 
+                      to={`/tournament/${tournament.id}`} 
+                      key={tournament.id}
+                      className={`tournament-card ${tournament.isBusinessTournament ? 'business-tournament' : ''}`}
+                      onClick={(e) => {
+                        console.log(`Переход на турнир с ID: ${tournament.id}`);
+                      }}
+                    >
+                      <div className="tournament-image">
+                        <img 
+                          src={tournament.imageUrl || defaultTournament} 
+                          alt={tournament.name} 
+                          onError={handleImageError}
+                        />
+                        <div className={`tournament-status ${getStatusClass(tournament.status, tournament.registrationOpen)}`}>
+                          {getStatusText(tournament.status, tournament.registrationOpen)}
                         </div>
-                      )}
-                    </div>
-                    <div className="tournament-info">
-                      <h3 className="tournament-name">{tournament.name}</h3>
-                      {tournament.isBusinessTournament && tournament.sponsorName && (
-                        <div className="tournament-sponsor">
-                          <span className="sponsor-label">Спонсор:</span> {tournament.sponsorName}
-                        </div>
-                      )}
-                      <div className="tournament-meta">
-                        <div className="meta-item">
-                          <i className="icon-calendar"></i>
-                          <span>{formatDate(tournament.date)}</span>
-                        </div>
-                        <div className="meta-item">
-                          <i className="icon-location"></i>
-                          <span>{tournament.location}</span>
-                        </div>
-                        <div className="meta-item">
-                          <i className="icon-level"></i>
-                          <span>{tournament.level}</span>
-                        </div>
-                        <div className="meta-item">
-                          <i className="icon-trophy"></i>
-                          <span>{tournament.prizePool}</span>
-                        </div>
-                        {tournament.businessType && (
-                          <div className="meta-item">
-                            <i className="icon-business"></i>
-                            <span>{tournament.businessType}</span>
+                        {tournament.isBusinessTournament && (
+                          <div className="tournament-sponsor-badge">
+                            Спонсорский
                           </div>
                         )}
                       </div>
-                    </div>
-                  </Link>
-                ))
+                      <div className="tournament-info">
+                        <h3 className="tournament-name">{tournament.name}</h3>
+                        {tournament.isBusinessTournament && tournament.sponsorName && (
+                          <div className="tournament-sponsor">
+                            <span className="sponsor-label">Спонсор:</span> {tournament.sponsorName}
+                          </div>
+                        )}
+                        <div className="tournament-meta">
+                          <div className="meta-item">
+                            <i className="icon-calendar"></i>
+                            <span>{formatDate(tournament.date)}</span>
+                          </div>
+                          <div className="meta-item">
+                            <i className="icon-location"></i>
+                            <span>{tournament.location}</span>
+                          </div>
+                          <div className="meta-item">
+                            <i className="icon-level"></i>
+                            <span>{tournament.level}</span>
+                          </div>
+                          <div className="meta-item">
+                            <i className="icon-trophy"></i>
+                            <span>{tournament.prizePool}</span>
+                          </div>
+                          {tournament.businessType && (
+                            <div className="meta-item">
+                              <i className="icon-business"></i>
+                              <span>{tournament.businessType}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })
               ) : (
                 <div className="tournaments-empty">
                   <p>На данный момент нет доступных турниров</p>

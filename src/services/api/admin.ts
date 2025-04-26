@@ -1,5 +1,7 @@
 import axios from 'axios';
 import { API_BASE_URL } from '../../config/envConfig';
+import { getStoredToken } from '../../utils/tokenStorage';
+import { AdminStats, AdminUser } from '../../interfaces/Admin';
 
 // Admin API service for managing resources in the admin panel
 
@@ -45,7 +47,7 @@ export interface AdminAd {
 // Get admin dashboard statistics
 export const getAdminStats = async (): Promise<AdminStats> => {
   try {
-    const token = localStorage.getItem('token');
+    const token = getStoredToken();
     if (!token) {
       throw new Error('Authentication required');
     }
@@ -66,7 +68,7 @@ export const getAdminStats = async (): Promise<AdminStats> => {
 // Get all users for admin management
 export const getAdminUsers = async (): Promise<AdminUser[]> => {
   try {
-    const token = localStorage.getItem('token');
+    const token = getStoredToken();
     if (!token) {
       throw new Error('Authentication required');
     }

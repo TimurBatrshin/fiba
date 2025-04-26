@@ -2,121 +2,82 @@
 /* eslint-disable react/display-name */
 import React from 'react';
 import ReactDOM from 'react-dom';
+import { BrowserRouter } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import './styles/index.scss';
 import App from './app';
 import { APP_SETTINGS } from './config/envConfig';
 import { store } from './store';
+import { AuthProvider } from './contexts/AuthContext';
+import { ConfigProvider } from 'antd';
+import zhCN from 'antd/locale/zh_CN';
+import { NotificationProvider } from './contexts/NotificationContext';
+import { BASE_PATH } from './config/envConfig';
+
+// Глобальный обработчик непойманных ошибок в промисах
+window.addEventListener('unhandledrejection', function(event) {
+  console.error('Unhandled promise rejection:', event.reason);
+  event.preventDefault();
+});
+
+// Очищаем только токены авторизации при запуске в режиме разработки
+if (process.env.NODE_ENV === 'development') {
+  console.log('Clearing localStorage for fresh authentication...');
+  const keysToRemove = [
+    'auth_token', 'refresh_token'
+  ];
+  keysToRemove.forEach(key => localStorage.removeItem(key));
+}
 
 // Конфигурация приложения
 const APP_CONFIG = {
   version: APP_SETTINGS.buildVersion,
   devURL: 'https://dev.bro-js.ru/fiba/',
-  staticURL: 'https://timurbatrshin-fiba-backend-1aa7.twc1.net/api/proxy/static-bro-js/fiba/',
-  scripts: [],
-  styles: []
+  staticURL: 'https://timurbatrshin-fiba-backend-fc1f.twc1.net/api/proxy/static-bro-js/fiba/'
 };
 
-// Загрузка внешних скриптов
-const loadExternalScript = (url: string): Promise<void> => {
-  return new Promise((resolve, reject) => {
-    if (!url) {
-      resolve();
-      return;
-    }
-    
-    const script = document.createElement('script');
-    script.src = url;
-    script.async = true;
-    script.crossOrigin = "anonymous";
-    
-    script.onload = () => {
-      console.log(`Script loaded successfully: ${url}`);
-      resolve();
-    };
-    
-    script.onerror = (error) => {
-      console.error(`Script loading error: ${url}`, error);
-      console.warn(`Script not loaded, but application will continue: ${url}`);
-      resolve();
-    };
-    
-    document.head.appendChild(script);
-  });
-};
+const root = document.getElementById('root');
 
-// Загрузка всех необходимых скриптов
-const loadAllScripts = async () => {
-  try {
-    await Promise.all(APP_CONFIG.scripts.map(url => loadExternalScript(url)));
-    console.log('All scripts loaded successfully');
-  } catch (error) {
-    console.error('Error loading scripts:', error);
-  }
-};
-
-// Инициализация приложения
-document.addEventListener('DOMContentLoaded', () => {
-  if (APP_CONFIG.scripts.length > 0) {
-    loadAllScripts();
-  }
-});
-
-// Расширяем интерфейс Module для поддержки webpack hot module replacement
-declare global {
-  interface NodeModule {
-    hot?: {
-      accept(path?: string, callback?: () => void): void;
-      accept(): void;
-    };
-  }
-}
-  
-export default () => (
-  <Provider store={store}>
-    <App/>
-  </Provider>
-);
-  
-// Храним ссылку на DOM-элемент для размонтирования
-let rootElement: HTMLElement | null = null;
-  
-export const mount = (Component: React.ComponentType<any>, element = document.getElementById('app')) => {
-  if (!element) {
-    console.error('Root element not found');
-    return;
-  }
-  
-  rootElement = element;
-  
-  // Используем ReactDOM.render для React 17
+if (root) {
   ReactDOM.render(
-    <Provider store={store}>
-      <Component/>
-    </Provider>,
-    element
+    <React.StrictMode>
+      <Provider store={store}>
+        <BrowserRouter basename={BASE_PATH}>
+          <ConfigProvider locale={zhCN}>
+            <NotificationProvider>
+              <AuthProvider>
+                <App />
+              </AuthProvider>
+            </NotificationProvider>
+          </ConfigProvider>
+        </BrowserRouter>
+      </Provider>
+    </React.StrictMode>,
+    root
   );
+}
 
-  // Поддержка hot module replacement
-  // @ts-ignore
-  if (module.hot) {
-    // @ts-ignore
-    module.hot.accept('./app', () => {
-      const NextApp = require('./app').default;
-      
+// Поддержка hot module replacement
+if (module.hot) {
+  module.hot.accept('./app', () => {
+    const NextApp = require('./app').default;
+    if (root) {
       ReactDOM.render(
-        <Provider store={store}>
-          <NextApp/>
-        </Provider>,
-        element
+        <React.StrictMode>
+          <Provider store={store}>
+            <BrowserRouter basename={BASE_PATH}>
+              <ConfigProvider locale={zhCN}>
+                <NotificationProvider>
+                  <AuthProvider>
+                    <NextApp />
+                  </AuthProvider>
+                </NotificationProvider>
+              </ConfigProvider>
+            </BrowserRouter>
+          </Provider>
+        </React.StrictMode>,
+        root
       );
-    });
-  }
-};
-
-export const unmount = () => {
-  if (rootElement) {
-    ReactDOM.unmountComponentAtNode(rootElement);
-    rootElement = null;
-  }
-};
+    }
+  });
+}

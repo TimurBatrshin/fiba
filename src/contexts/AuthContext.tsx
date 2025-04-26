@@ -35,8 +35,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     updateUser
   } = useAuthHook();
 
+  // Проверяем и нормализуем роль пользователя
+  let normalizedRole: string | null = null;
+  
+  if (user && user.role) {
+    // Приводим роль к верхнему регистру и удаляем пробелы
+    normalizedRole = user.role.toString().trim().toUpperCase();
+    console.log(`Auth context: Normalized user role from "${user.role}" to "${normalizedRole}"`);
+  }
+  
   const isAuthenticated = !!user;
-  const currentRole = user?.role || null;
+  const currentRole = normalizedRole;
   
   return (
     <AuthContext.Provider

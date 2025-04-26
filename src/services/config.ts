@@ -1,1 +1,4 @@
-export const API_BASE_URL = 'https://timurbatrshin-fiba-backend-1aa7.twc1.net/api'; 
+import { API_BASE_URL as BASE_URL } from '../config/envConfig';
+
+// Используем централизованную конфигурацию из envConfig
+export const API_BASE_URL = BASE_URL; 

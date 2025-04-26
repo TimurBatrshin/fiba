@@ -1,155 +1,234 @@
-import { ErrorHandler } from '../utils/errorHandler';
-import { API_CONFIG } from '../config/api';
+import axios, { AxiosError } from 'axios';
+import { getStoredToken, removeStoredToken } from '../utils/tokenStorage';
 
-/**
- * Сервис для работы с API
- */
-export class ApiService {
-  private static token: string | null = null;
-  private static baseUrl: string = API_CONFIG?.baseUrl || '';
+const API_BASE_URL = 'https://timurbatrshin-fiba-backend-5ef6.twc1.net/api';
 
-  /**
-   * Установить токен авторизации
-   */
-  public static setAuthToken(token: string): void {
-    ApiService.token = token;
+// Create axios instance with default config
+const api = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Add request interceptor to add auth token
+api.interceptors.request.use(
+  (config) => {
+    const token = getStoredToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
   }
+);
 
-  /**
-   * Очистить токен авторизации
-   */
-  public static clearAuthToken(): void {
-    ApiService.token = null;
-  }
+// Add response interceptor to handle errors
+api.interceptors.response.use(
+  (response) => response,
+  (error: AxiosError) => {
+    const customError = {
+      message: 'Произошла непредвиденная ошибка',
+      status: error.response?.status || 500,
+      data: error.response?.data || null,
+    };
 
-  /**
-   * Создать заголовки для запросов
-   */
-  private static createHeaders(): Headers {
-    const headers = new Headers({
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-    });
-
-    if (ApiService.token) {
-      headers.append('Authorization', `Bearer ${ApiService.token}`);
+    // Handle common authorization errors
+    if (error.response?.status === 401) {
+      customError.message = 'Ошибка авторизации. Пожалуйста, войдите снова';
+      removeStoredToken();
     }
 
-    return headers;
-  }
+    // Handle access denied errors
+    if (error.response?.status === 403) {
+      customError.message = 'Доступ запрещен';
+    }
 
-  /**
-   * Проверяет, требуется ли использовать прокси для запроса
-   */
-  private static shouldUseProxy(url: string): boolean {
-    // Проверяем, относится ли URL к статическим ресурсам bro-js
-    return url.includes('static.bro-js.ru') || url.includes('dev.bro-js.ru');
-  }
+    // Handle server errors
+    if (error.response?.status === 500) {
+      customError.message = 'Ошибка сервера. Попробуйте позже';
+    }
 
-  /**
-   * Преобразует URL для проксирования
-   */
-  private static transformUrlForProxy(url: string): string {
+    // Handle validation errors
+    if (error.response?.status === 422) {
+      customError.message = 'Проверьте правильность введенных данных';
+    }
+
+    // Handle network errors
+    if (!error.response) {
+      customError.message = 'Нет соединения с сервером. Проверьте подключение к интернету';
+    }
+
+    return Promise.reject(customError);
+  }
+);
+
+// Auth services
+export const authService = {
+  login: async (email: string, password: string) => {
     try {
-      const urlObj = new URL(url);
-      
-      if (ApiService.shouldUseProxy(url)) {
-        // Извлекаем путь после домена
-        const path = urlObj.pathname;
-        
-        // Используем полный URL с нашим доменом API для прокси
-        const baseProxyUrl = 'https://timurbatrshin-fiba-backend-1aa7.twc1.net/api/proxy/static-bro-js';
-        
-        // Если это JS файл, добавляем метку времени для предотвращения кэширования
-        if (path.endsWith('.js')) {
-          return `${baseProxyUrl}${path}?t=${Date.now()}`;
-        }
-        
-        // Другие статические ресурсы
-        return `${baseProxyUrl}${path}`;
-      }
-      
-      return url;
-    } catch (e) {
-      // Если не можем разобрать URL, оставляем как есть
-      return url;
+      const response = await api.post('/auth/login', { email, password });
+      return response.data;
+    } catch (error) {
+      throw error;
     }
-  }
+  },
+  register: async (name: string, email: string, password: string, role?: string) => {
+    try {
+      const response = await api.post('/auth/register', { name, email, password, role });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+  refreshToken: async () => {
+    try {
+      const response = await api.post('/auth/refresh-token');
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+};
 
-  /**
-   * Выполнить запрос к API
-   */
-  private static async request<T>(url: string, options: RequestInit = {}): Promise<T> {
-    // Проверяем, нужно ли использовать прокси
-    const requestUrl = ApiService.transformUrlForProxy(url);
-    
-    const response = await fetch(requestUrl, {
-      ...options,
-      headers: ApiService.createHeaders(),
-    });
-
-    if (!response.ok) {
-      const data = await response.json().catch(() => ({}));
-      
-      // Используем ErrorHandler для генерации нужного типа ошибки
-      ErrorHandler.throwFromResponse({
-        status: response.status,
-        data: data,
+// Profile services
+export const profileService = {
+  getProfile: async () => {
+    try {
+      const response = await api.get('/profile');
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+  updateProfile: async (profileData: any) => {
+    try {
+      const response = await api.put('/profile', profileData);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+  uploadPhoto: async (photo: File) => {
+    try {
+      const formData = new FormData();
+      formData.append('photo', photo);
+      const response = await api.post('/profile/photo', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
       });
+      return response.data;
+    } catch (error) {
+      throw error;
     }
+  },
+};
 
-    return response.json() as Promise<T>;
-  }
+// Tournament services
+export const tournamentService = {
+  getAllTournaments: async (params?: { limit?: number; sort?: string; direction?: string; upcoming?: boolean }) => {
+    try {
+      const response = await api.get('/tournaments', { params });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+  getTournamentById: async (id: number) => {
+    try {
+      const response = await api.get(`/tournaments/${id}`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+  getTournamentsByStatus: async (status: string) => {
+    try {
+      const response = await api.get(`/tournaments/status/${status}`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+  getUpcomingTournaments: async () => {
+    try {
+      const response = await api.get('/tournaments/upcoming');
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+  getPastTournaments: async () => {
+    try {
+      const response = await api.get('/tournaments/past');
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+  searchTournaments: async (query: string) => {
+    try {
+      const response = await api.get('/tournaments/search', { params: { query } });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+  createTournament: async (tournamentData: FormData) => {
+    try {
+      const response = await api.post('/tournaments', tournamentData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+  registerForTournament: async (tournamentId: number, teamName: string) => {
+    try {
+      const response = await api.post(`/tournaments/${tournamentId}/register`, { team_name: teamName });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+};
 
-  /**
-   * Выполнить GET-запрос
-   */
-  public static async get<T = any>(endpoint: string, params: Record<string, any> = {}): Promise<T> {
-    const url = new URL(`${ApiService.baseUrl}${endpoint}`);
-    
-    // Добавляем параметры запроса
-    Object.entries(params).forEach(([key, value]) => {
-      url.searchParams.append(key, String(value));
-    });
+// Team services
+export const teamService = {
+  getTeamDetails: async (registrationId: number) => {
+    try {
+      const response = await api.get(`/teams/${registrationId}`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+};
 
-    return ApiService.request<T>(url.toString(), {
-      method: 'GET',
-    });
-  }
+// Registration services
+export const registrationService = {
+  getRegistrationsByCaptain: async () => {
+    try {
+      const response = await api.get('/registrations/captain');
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+  getTeamsByPlayer: async () => {
+    try {
+      const response = await api.get('/registrations/player');
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+};
 
-  /**
-   * Выполнить POST-запрос
-   */
-  public static async post<T = any>(endpoint: string, data: any = {}, options: Record<string, any> = {}): Promise<T> {
-    const url = `${ApiService.baseUrl}${endpoint}`;
-    
-    return ApiService.request<T>(url, {
-      method: 'POST',
-      body: JSON.stringify(data),
-      ...options,
-    });
-  }
-
-  /**
-   * Выполнить PUT-запрос
-   */
-  public static async put<T = any>(endpoint: string, data: any = {}): Promise<T> {
-    const url = `${ApiService.baseUrl}${endpoint}`;
-    
-    return ApiService.request<T>(url, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
-  }
-
-  /**
-   * Выполнить DELETE-запрос
-   */
-  public static async delete<T = any>(endpoint: string): Promise<T> {
-    const url = `${ApiService.baseUrl}${endpoint}`;
-    
-    return ApiService.request<T>(url, {
-      method: 'DELETE',
-    });
-  }
-} 
+export default api; 

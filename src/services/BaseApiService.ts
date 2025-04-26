@@ -1,5 +1,7 @@
-import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
-import { getToken, removeToken, clearTokens } from '../utils/tokenStorage';
+import axios, { AxiosError, AxiosRequestConfig, AxiosResponse, AxiosInstance } from 'axios';
+import { API_BASE_URL, BASE_PATH } from '../config/envConfig';
+import { getStoredToken, removeStoredToken, setStoredToken } from '../utils/tokenStorage';
+import { jwtDecode } from 'jwt-decode';
 
 export interface ApiResponse<T> {
   data: T;
@@ -11,185 +13,263 @@ export interface ApiResponse<T> {
  * Базовый класс для сервисов API
  */
 export class BaseApiService {
-  protected apiBase: string;
-  protected mockBase: string;
-  protected useMock: boolean;
+  protected axiosInstance: AxiosInstance;
+  private isRefreshing = false;
+  private refreshAttempts = 0;
+  private maxRefreshAttempts = 3;
 
-  constructor(apiBase: string, mockBase: string = '', useMockByDefault: boolean = false) {
-    this.apiBase = apiBase;
-    this.mockBase = mockBase;
-    this.useMock = useMockByDefault;
-  }
-
-  /**
-   * Установить токен авторизации
-   */
-  public setAuthToken(token: string): void {
-    // Implementation needed
-  }
-
-  /**
-   * Очистить токен авторизации
-   */
-  public clearAuthToken(): void {
-    // Implementation needed
-  }
-
-  /**
-   * Создать заголовки для запросов
-   */
-  protected createHeaders(): Headers {
-    const headers = new Headers({
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
+  constructor() {
+    this.axiosInstance = axios.create({
+      baseURL: API_BASE_URL,
+      timeout: 30000,
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      }
     });
-
-    const token = getToken();
+    
+    // Initialize with token if exists
+    const token = getStoredToken();
     if (token) {
-      headers.append('Authorization', `Bearer ${token}`);
+      this.setAuthToken(token);
     }
+    
+    this.axiosInstance.interceptors.request.use(
+      async (config) => {
+        // Get fresh token for each request
+        const currentToken = getStoredToken();
+        if (currentToken) {
+          try {
+            // Check token expiration
+            const decoded = jwtDecode(currentToken);
+            const currentTime = Date.now() / 1000;
+            
+            if (decoded.exp && decoded.exp <= currentTime) {
+              console.log('Token has expired, attempting to refresh');
+              try {
+                // Try to refresh the token
+                const response = await this.axiosInstance.post('/auth/refresh-token');
+                const newToken = response.data.token;
+                
+                if (newToken) {
+                  setStoredToken(newToken);
+                  config.headers['Authorization'] = `Bearer ${newToken}`;
+                }
+              } catch (refreshError) {
+                console.log('Token refresh failed during request');
+                removeStoredToken();
+                if (typeof window !== 'undefined') {
+                  window.location.href = `${BASE_PATH}#/login`;
+                }
+                return Promise.reject(refreshError);
+              }
+            } else if (config.headers) {
+              config.headers['Authorization'] = `Bearer ${currentToken}`;
+            }
+          } catch (error) {
+            console.error('Error decoding token:', error);
+            removeStoredToken();
+          }
+        }
 
-    return headers;
+        console.log('Making request:', {
+          method: config.method,
+          url: config.url,
+          baseURL: config.baseURL,
+          fullUrl: `${config.baseURL}${config.url}`,
+          data: config.data,
+          headers: config.headers
+        });
+        return config;
+      },
+      (error) => {
+        console.error('Request error:', error);
+        return Promise.reject(error);
+      }
+    );
+    
+    this.axiosInstance.interceptors.response.use(
+      (response) => {
+        // Reset refresh attempts on successful response
+        this.refreshAttempts = 0;
+        console.log('Response:', {
+          status: response.status,
+          data: response.data,
+          headers: response.headers
+        });
+        return response;
+      },
+      async (error: AxiosError) => {
+        console.log('Error details:', {
+          status: error.response?.status,
+          data: error.response?.data,
+          headers: error.response?.headers,
+          config: error.config
+        });
+
+        // Handle 401 Unauthorized errors
+        if (error.response?.status === 401 && !this.isRefreshing) {
+          // Check if we've exceeded max refresh attempts
+          if (this.refreshAttempts >= this.maxRefreshAttempts) {
+            console.log('Max refresh attempts exceeded, logging out');
+            removeStoredToken();
+            this.clearAuthToken();
+            if (typeof window !== 'undefined') {
+              window.location.href = `${BASE_PATH}#/login`;
+            }
+            return Promise.reject(new Error('Session expired. Please login again.'));
+          }
+
+          console.log('Unauthorized request detected, attempting to refresh token');
+          
+          try {
+            this.isRefreshing = true;
+            this.refreshAttempts++;
+            console.log('Setting isRefreshing flag to true');
+            
+            // Try to refresh the token
+            const response = await this.axiosInstance.post('/auth/refresh-token');
+            const newToken = response.data.token;
+            
+            if (newToken) {
+              console.log('New token received, length:', newToken.length);
+              // Save the new token
+              setStoredToken(newToken);
+              this.setAuthToken(newToken);
+              
+              // Retry the original request with the new token
+              if (error.config) {
+                const newConfig = { ...error.config };
+                newConfig.headers['Authorization'] = `Bearer ${newToken}`;
+                console.log('Retrying original request with new token');
+                return this.axiosInstance.request(newConfig);
+              }
+            } else {
+              console.error('Received empty token from refresh endpoint');
+              throw new Error('Empty refresh token response');
+            }
+          } catch (refreshError) {
+            console.error('Token refresh failed:', refreshError);
+            if (this.refreshAttempts >= this.maxRefreshAttempts) {
+              removeStoredToken();
+              this.clearAuthToken();
+              if (typeof window !== 'undefined') {
+                window.location.href = `${BASE_PATH}#/login`;
+              }
+            }
+            throw new Error('Session expired. Please login again.');
+          } finally {
+            console.log('Setting isRefreshing flag to false');
+            this.isRefreshing = false;
+          }
+        }
+
+        return Promise.reject(error);
+      }
+    );
   }
 
-  /**
-   * Проверяет, требуется ли использовать прокси для запроса
-   */
-  protected shouldUseProxy(url: string): boolean {
-    // Implementation needed
-    return false;
-  }
-
-  /**
-   * Преобразует URL для проксирования
-   */
-  protected transformUrlForProxy(url: string): string {
-    // Implementation needed
-    return url;
-  }
-
-  /**
-   * Set whether to use mock API
-   */
-  public setUseMock(useMock: boolean): void {
-    this.useMock = useMock;
-  }
-
-  /**
-   * Get current mock usage status
-   */
-  public getUseMock(): boolean {
-    return this.useMock;
-  }
-
-  /**
-   * Generic request method
-   */
   protected async request<T>(
     method: string,
     url: string,
-    options: {
-      data?: any;
-      params?: Record<string, any>;
-      headers?: Record<string, string>;
-      responseType?: 'json' | 'blob' | 'text';
-      useMock?: boolean;
-    } = {}
-  ): Promise<ApiResponse<T>> {
-    const useMock = options.useMock !== undefined ? options.useMock : this.useMock;
-    const baseUrl = useMock ? this.mockBase : this.apiBase;
-    const token = getToken();
-
-    const config: AxiosRequestConfig = {
+    data?: any,
+    headers: Record<string, string> = {}
+  ): Promise<AxiosResponse<T>> {
+    const token = getStoredToken();
+    const config = {
       method,
-      url: `${baseUrl}${url}`,
+      url,
       headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        ...(options.headers || {})
+        ...headers,
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
       },
-      data: options.data,
-      params: options.params,
-      responseType: options.responseType || 'json'
+      data
     };
+    return this.axiosInstance.request<T>(config);
+  }
 
-    try {
-      const response: AxiosResponse<T> = await axios(config);
-      return {
-        data: response.data,
-        status: response.status,
-        headers: response.headers as Record<string, string>
+  protected async get<T>(url: string, params?: any): Promise<ApiResponse<T>> {
+    const token = getStoredToken();
+    const config = { 
+      params,
+      headers: token ? { 'Authorization': `Bearer ${token}` } : undefined
+    };
+    const response = await this.axiosInstance.get<T>(url, config);
+    return {
+      data: response.data,
+      status: response.status,
+      headers: response.headers as Record<string, string>
+    };
+  }
+
+  protected async post<T>(url: string, data?: any, config: AxiosRequestConfig = {}): Promise<ApiResponse<T>> {
+    const token = getStoredToken();
+    const finalConfig = {
+      ...config,
+      headers: {
+        ...config.headers,
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      }
+    };
+    
+    if (data instanceof URLSearchParams) {
+      finalConfig.headers = {
+        ...finalConfig.headers,
+        'Content-Type': 'application/x-www-form-urlencoded'
       };
-    } catch (error: any) {
-      if (!error.response) {
-        // Connection error, try to use mock if not already
-        if (!useMock && this.mockBase) {
-          console.warn('API connection failed, falling back to mock data');
-          return this.request<T>(method, url, { ...options, useMock: true });
-        }
-        throw new Error('Connection error');
-      }
+    }
+    
+    const response = await this.axiosInstance.post<T>(url, data, finalConfig);
+    return {
+      data: response.data,
+      status: response.status,
+      headers: response.headers as Record<string, string>
+    };
+  }
 
-      // Handle unauthorized
-      if (error.response.status === 401) {
-        clearTokens();
-        window.location.href = '/login';
-        throw new Error('Unauthorized access');
+  protected async put<T>(url: string, data?: any, config: AxiosRequestConfig = {}): Promise<ApiResponse<T>> {
+    const token = getStoredToken();
+    const finalConfig = {
+      ...config,
+      headers: {
+        ...config.headers,
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
       }
+    };
+    const response = await this.axiosInstance.put<T>(url, data, finalConfig);
+    return {
+      data: response.data,
+      status: response.status,
+      headers: response.headers as Record<string, string>
+    };
+  }
 
-      throw error;
+  protected async delete<T>(url: string): Promise<ApiResponse<T>> {
+    const token = getStoredToken();
+    const config = {
+      headers: token ? { 'Authorization': `Bearer ${token}` } : undefined
+    };
+    const response = await this.axiosInstance.delete<T>(url, config);
+    return {
+      data: response.data,
+      status: response.status,
+      headers: response.headers as Record<string, string>
+    };
+  }
+
+  protected setAuthToken(token: string): void {
+    if (this.axiosInstance.defaults.headers.common) {
+      this.axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    } else {
+      this.axiosInstance.defaults.headers.common = {
+        'Authorization': `Bearer ${token}`
+      };
     }
   }
 
-  /**
-   * GET request
-   */
-  protected async get<T>(
-    url: string, 
-    params?: Record<string, any>, 
-    options: Omit<Parameters<typeof this.request>[2], 'params'> = {}
-  ): Promise<ApiResponse<T>> {
-    return this.request<T>('GET', url, { ...options, params });
+  protected clearAuthToken(): void {
+    if (this.axiosInstance.defaults.headers.common) {
+      delete this.axiosInstance.defaults.headers.common['Authorization'];
+    }
   }
-
-  /**
-   * POST request
-   */
-  protected async post<T>(
-    url: string, 
-    data?: any, 
-    options: Omit<Parameters<typeof this.request>[2], 'data'> = {}
-  ): Promise<ApiResponse<T>> {
-    return this.request<T>('POST', url, { ...options, data });
-  }
-
-  /**
-   * PUT request
-   */
-  protected async put<T>(
-    url: string, 
-    data?: any, 
-    options: Omit<Parameters<typeof this.request>[2], 'data'> = {}
-  ): Promise<ApiResponse<T>> {
-    return this.request<T>('PUT', url, { ...options, data });
-  }
-
-  /**
-   * DELETE request
-   */
-  protected async delete<T>(
-    url: string, 
-    params?: Record<string, any>, 
-    options: Omit<Parameters<typeof this.request>[2], 'params'> = {}
-  ): Promise<ApiResponse<T>> {
-    return this.request<T>('DELETE', url, { ...options, params });
-  }
-
-  /**
-   * Загрузка файла на сервер
-   */
-  public async uploadFile<T = any>(endpoint: string, file: File, additionalData: Record<string, any> = {}): Promise<T> {
-    // Implementation needed
-    return Promise.resolve(null as T);
-  }
-} 
+}

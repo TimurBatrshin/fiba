@@ -1,16 +1,22 @@
 export interface LoginResponse {
   token: string;
-  userId: string;
+  userId: number;
   email: string;
   name: string;
-  role: 'ADMIN' | 'USER' | 'COACH' | 'ORGANIZER';
+  role: UserRole;
 }
 
 export interface User {
-  id: string;
+  id: number;
   name: string;
   email: string;
-  role: 'ADMIN' | 'USER' | 'COACH' | 'ORGANIZER';
+  role: UserRole;
+  profile?: {
+    photo_url?: string;
+    tournaments_played?: number;
+    total_points?: number;
+    rating?: number;
+  };
 }
 
 export interface LoginCredentials {
@@ -22,35 +28,47 @@ export interface RegisterData {
   name: string;
   email: string;
   password: string;
+  role?: UserRole;
 }
 
 export interface AuthResponse {
   token: string;
-  userId: string;
+  userId: number;
   email: string;
   name: string;
-  role: 'ADMIN' | 'USER' | 'COACH' | 'ORGANIZER';
+  role: UserRole;
 }
+
+export type UserRole = 'user' | 'admin' | 'business';
 
 export interface DecodedToken {
-  sub: string;
-  role: 'ADMIN' | 'USER' | 'COACH' | 'ORGANIZER';
-  exp: number;
-  iat: number;
+  // Стандартные поля JWT
+  iss?: string;        // Issuer
+  sub?: string;        // Subject (обычно user ID)
+  aud?: string[];      // Audience
+  exp: number;         // Expiration time
+  nbf?: number;        // Not before
+  iat?: number;        // Issued at
+  jti?: string;        // JWT ID
+  
+  // Кастомные поля
+  userId?: string;     // ID пользователя
+  email?: string;      // Email пользователя
+  role?: string;       // Роль пользователя
 }
 
-export interface UserProfile {
-  id: string;
-  userId: string;
-  photoUrl?: string;
-  avatarUrl?: string;
-  bio?: string;
-  phoneNumber?: string;
-  city?: string;
-  age?: number;
-  tournamentsPlayed?: number;
-  totalPoints?: number;
-  rating?: number;
-  createdAt: string;
-  updatedAt: string;
+export interface TokenValidationResult {
+  isValid: boolean;
+  error?: string;
+  decodedToken?: DecodedToken;
+}
+
+export interface UserProfile extends User {
+  email_verified: boolean;
+  profile: {
+    tournaments_played: number;
+    total_points: number;
+    rating: number;
+    photo_url?: string;
+  };
 } 

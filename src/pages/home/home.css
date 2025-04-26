@@ -1005,7 +1005,7 @@
 
 .gh-tournaments-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: 1fr;
   gap: 24px;
 }
 
@@ -1091,7 +1091,7 @@
   border-bottom: 1px solid #e2e8f0;
 }
 
-.gh-player-row {
+.gh-table-row {
   display: grid;
   grid-template-columns: 80px 3fr 1fr 1fr 120px;
   padding: 16px 20px;
@@ -1099,16 +1099,19 @@
   transition: all 0.2s ease;
   border-bottom: 1px solid #f1f5f9;
   background-color: #fff;
+  text-decoration: none;
+  color: inherit;
 }
 
-.gh-player-row:last-child {
+.gh-table-row:last-child {
   border-bottom: none;
 }
 
-.gh-player-row:hover {
+.gh-table-row:hover {
   background-color: #f8fafc;
   transform: translateY(-2px);
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  cursor: pointer;
 }
 
 .gh-player-rank {
@@ -1312,7 +1315,7 @@
     font-size: 1rem;
   }
   
-  .gh-table-header, .gh-player-row {
+  .gh-table-header, .gh-table-row {
     grid-template-columns: 40px 2fr 1fr 1fr 80px;
     font-size: 0.875rem;
   }
@@ -1349,7 +1352,7 @@
     display: none;
   }
   
-  .gh-player-row {
+  .gh-table-row {
     grid-template-columns: 30px 1fr;
     grid-template-areas:
       "rank info"

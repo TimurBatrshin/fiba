@@ -42,7 +42,18 @@ const Login: React.FC = () => {
     e.preventDefault();
     
     try {
-      await login(email, password);
+      const response = await login(email, password);
+      
+      // Проверяем, что токен действительно сохранился
+      const token = localStorage.getItem('fiba_auth_token');
+      if (!token) {
+        throw new Error('Ошибка сохранения токена');
+      }
+
+      // Даем время на инициализацию токена
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // После успешного входа перенаправление на profile произойдет через useEffect
     } catch (err: any) {
       console.error("Login error:", err);
       if (err.response?.status === 401) {
@@ -50,7 +61,7 @@ const Login: React.FC = () => {
       } else if (err.response?.data?.message) {
         setLocalError(err.response.data.message);
       } else {
-        setLocalError("Ошибка при входе. Попробуйте снова позже.");
+        setLocalError(err.message || "Ошибка при входе. Попробуйте снова позже.");
       }
     }
   };
@@ -125,13 +136,6 @@ const Login: React.FC = () => {
             
             {localError && <div className="error-message" data-cy="error-message">{localError}</div>}
             
-            <div className="form-options">
-              <div className="remember-me">
-                <input type="checkbox" id="remember" />
-                <label htmlFor="remember">Запомнить меня</label>
-              </div>
-              <Link to="/forgot-password" className="forgot-password">Забыли пароль?</Link>
-            </div>
             
             <button 
               type="submit" 

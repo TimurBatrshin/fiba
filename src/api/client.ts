@@ -1,5 +1,6 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
 import { APP_SETTINGS } from '../config/envConfig';
+import { getStoredToken, removeStoredToken } from '../utils/tokenStorage';
 
 // Типы для API-запросов
 export interface ApiResponse<T = any> {
@@ -15,111 +16,87 @@ export interface ApiError {
   data?: any;
 }
 
-// Создаем базовый экземпляр axios
+interface ApiErrorResponse {
+  error?: string;
+  message?: string;
+  data?: any;
+}
+
+// Создание экземпляра axios с базовой конфигурацией
 const createApiClient = (baseURL: string): AxiosInstance => {
   const client = axios.create({
     baseURL,
     timeout: APP_SETTINGS.requestTimeout,
     headers: {
       'Content-Type': 'application/json',
-      'Accept': 'application/json'
-    }
+      'Accept': 'application/json',
+    },
   });
 
-  // Перехватчик запросов для добавления токена авторизации
+  // Перехватчик запросов
   client.interceptors.request.use(
     (config) => {
-      const token = localStorage.getItem(APP_SETTINGS.tokenStorageKey);
-      if (token) {
+      const token = getStoredToken();
+      const method = config.method?.toUpperCase() || 'GET';
+      const url = config.url || '';
+      
+      if (token && config.headers) {
         config.headers['Authorization'] = `Bearer ${token}`;
+        console.log(`[API Client] Adding auth token to ${method} request to ${url}`);
+      } else {
+        console.log(`[API Client] No auth token available for ${method} request to ${url}`);
       }
+
+      // Log request details
+      console.log('[API Client] Request:', {
+        method,
+        url,
+        headers: config.headers,
+        data: config.data
+      });
+      
       return config;
     },
     (error) => {
-      console.error('Request error:', error);
+      console.error('[API Client] Request interceptor error:', error);
       return Promise.reject(error);
     }
   );
 
-  // Перехватчик ответов для обработки ошибок
+  // Add response interceptor for debugging
   client.interceptors.response.use(
-    (response) => response,
-    (error: AxiosError) => {
-      // Проверка на ошибку авторизации
+    (response) => {
+      console.log(`[API Client] Response received:`, {
+        status: response.status,
+        url: response.config.url,
+        method: response.config.method,
+        data: response.data
+      });
+      return response;
+    },
+    async (error: AxiosError) => {
+      console.error('[API Client] Request failed:', {
+        url: error.config?.url,
+        method: error.config?.method,
+        status: error.response?.status,
+        error: error.response?.data,
+        message: error.message
+      });
+
+      // Если получаем 401, значит токен истек или недействителен
       if (error.response?.status === 401) {
-        // Очистка токена и перенаправление на страницу входа
-        localStorage.removeItem(APP_SETTINGS.tokenStorageKey);
-        window.location.href = '/login';
+        console.log('[API Client] Unauthorized request, removing token');
+        // Удаляем невалидный токен
+        removeStoredToken();
       }
 
-      // Преобразование ошибки в удобный формат
-      const apiError: ApiError = {
-        message: error.message || 'Неизвестная ошибка',
-        status: error.response?.status,
-        data: error.response?.data
-      };
-
-      return Promise.reject(apiError);
+      return Promise.reject(error);
     }
   );
 
   return client;
 };
 
-// Создаем API-клиент с базовым URL из конфигурации
-export const apiClient = createApiClient(APP_SETTINGS.apiBaseUrl || '');
-
-// Обертки для HTTP-методов
-export const api = {
-  // GET запрос
-  get: async <T = any>(url: string, config?: AxiosRequestConfig): Promise<T> => {
-    try {
-      const response: AxiosResponse<T> = await apiClient.get(url, config);
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
-  },
-
-  // POST запрос
-  post: async <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> => {
-    try {
-      const response: AxiosResponse<T> = await apiClient.post(url, data, config);
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
-  },
-
-  // PUT запрос
-  put: async <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> => {
-    try {
-      const response: AxiosResponse<T> = await apiClient.put(url, data, config);
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
-  },
-
-  // DELETE запрос
-  delete: async <T = any>(url: string, config?: AxiosRequestConfig): Promise<T> => {
-    try {
-      const response: AxiosResponse<T> = await apiClient.delete(url, config);
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
-  },
-
-  // PATCH запрос
-  patch: async <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> => {
-    try {
-      const response: AxiosResponse<T> = await apiClient.patch(url, data, config);
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
-  }
-};
-
+// Create and export the API client instance
+const api = createApiClient(APP_SETTINGS.apiBaseUrl);
 export default api; 
