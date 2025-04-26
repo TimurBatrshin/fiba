@@ -1,28 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { playerService, Player } from '../../services/PlayerService';
+import { playerService, PlayerStatistics } from '../../services/PlayerService';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowLeft, faTrophy, faStar } from '@fortawesome/free-solid-svg-icons';
-import defaultAvatar from '../../assets/images/default-avatar.png';
+import { UserPhoto } from '../../components/UserPhoto/UserPhoto';
 import './PlayerDetails.css';
-
-// Расширяем тип Player дополнительными полями, специфичными для деталей игрока
-interface PlayerDetails extends Player {
-  position?: string;
-  totalPoints?: number;
-  teamName?: string;
-  photoUrl?: string;
-  tournaments?: {
-    id: string;
-    name: string;
-    date: string;
-    place?: number;
-  }[];
-}
 
 const PlayerDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const [player, setPlayer] = useState<PlayerDetails | null>(null);
+  const [player, setPlayer] = useState<PlayerStatistics | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,8 +16,8 @@ const PlayerDetails: React.FC = () => {
     const fetchPlayerData = async () => {
       try {
         setLoading(true);
-        const data = await playerService.getPlayerById(id!);
-        setPlayer(data as PlayerDetails);
+        const data = await playerService.getPlayerStatistics(id!);
+        setPlayer(data);
         setError(null);
       } catch (err: any) {
         console.error('Ошибка при загрузке данных игрока:', err);
@@ -94,11 +80,10 @@ const PlayerDetails: React.FC = () => {
 
       <div className="player-profile">
         <div className="player-avatar-container">
-          <img 
-            src={player.photoUrl || defaultAvatar} 
-            alt={player.name} 
-            className="player-avatar" 
-            onError={handleImageError}
+          <UserPhoto 
+            photoUrl={player.photoUrl}
+            alt={player.name}
+            className="player-avatar"
           />
           {player.rating !== undefined && (
             <div className="player-rating">

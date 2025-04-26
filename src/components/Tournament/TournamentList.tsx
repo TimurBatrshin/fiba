@@ -10,6 +10,7 @@ import {
 } from '../../store/slices/tournamentSlice';
 import { AppDispatch, RootState } from '../../store';
 import { Link } from 'react-router-dom';
+import defaultTournamentImg from '../../assets/images/default-tournament.jpg';
 
 // Вспомогательные функции для форматирования данных
 const formatDate = (dateString: string): string => {
@@ -85,7 +86,13 @@ const TournamentList: React.FC = () => {
       direction
     }));
   };
-  
+
+  // Обработчик ошибки загрузки изображения турнира
+  const handleTournamentImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    e.currentTarget.src = defaultTournamentImg;
+    e.currentTarget.onerror = null; // Предотвращаем бесконечный цикл
+  };
+
   return (
     <Container className="mt-4">
       <h2 className="mb-4">Турниры</h2>
@@ -188,6 +195,7 @@ const TournamentList: React.FC = () => {
                           src={tournamentImage} 
                           alt={tournamentTitle}
                           style={{ height: '180px', objectFit: 'cover' }}
+                          onError={handleTournamentImageError}
                         />
                       )}
                       <Card.Body>

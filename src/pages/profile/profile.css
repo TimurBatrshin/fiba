@@ -1,18 +1,17 @@
 /* Основной контейнер профиля */
 .profile-container {
   max-width: 800px;
-  margin: 40px auto;
+  margin: 0 auto;
   padding: 20px;
-  background-color: #f9f9f9;
-  border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 /* Заголовок */
 .profile-container h1 {
   text-align: center;
   color: #2d3b55;
-  margin-bottom: 20px;
+  margin-bottom: 30px;
+  font-size: 28px;
+  font-weight: 700;
 }
 
 /* Контейнер для информации профиля */
@@ -20,24 +19,64 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-bottom: 20px;
+  gap: 20px;
+  margin: 20px 0;
+  padding: 20px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .profile-avatar {
-  margin-bottom: 15px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
 }
 
-.profile-avatar img {
-  border-radius: 50%;
+.profile-avatar .profile-photo {
   width: 120px;
   height: 120px;
-  object-fit: cover;
-  border: 3px solid #0078ff;
+  border-radius: 50%;
+  border: 3px solid #3462d8;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+}
+
+.profile-avatar .profile-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.photo-upload {
+  margin-top: 10px;
+  text-align: center;
+}
+
+.change-photo-btn {
+  background: #4a90e2;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.2s;
+}
+
+.change-photo-btn:hover {
+  background: #357abd;
+}
+
+.change-photo-btn:disabled {
+  background: #cccccc;
+  cursor: not-allowed;
 }
 
 .profile-details {
-  text-align: center;
+  width: 100%;
+  max-width: 400px;
 }
 
 .profile-info p {
@@ -48,107 +87,95 @@
 
 /* Кнопка для редактирования */
 .edit-profile-btn {
-  padding: 12px;
-  font-size: 16px;
-  background-color: #007bff;
+  background: #4a90e2;
   color: white;
   border: none;
+  padding: 10px 20px;
   border-radius: 4px;
   cursor: pointer;
-  transition: background-color 0.3s;
-  margin-bottom: 20px;
-  width: 100%;
+  font-size: 1rem;
+  transition: background-color 0.2s;
 }
 
 .edit-profile-btn:hover {
-  background-color: #0056b3;
+  background: #357abd;
 }
 
 /* Стиль для формы редактирования */
 .profile-form {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
+  width: 100%;
 }
 
 .form-group {
-  display: flex;
-  flex-direction: column;
   margin-bottom: 15px;
 }
 
-.profile-form label {
-  font-weight: bold;
-  color: #3a4a73;
+.form-group label {
+  display: block;
   margin-bottom: 5px;
+  font-weight: 500;
 }
 
-.profile-form input {
-  padding: 10px;
-  font-size: 14px;
+.form-group input {
+  width: 100%;
+  padding: 8px;
   border: 1px solid #ddd;
   border-radius: 4px;
-  outline: none;
-  transition: border-color 0.3s;
-}
-
-.profile-form input:focus {
-  border-color: #4b8dff;
+  font-size: 1rem;
 }
 
 .form-actions {
   display: flex;
   gap: 10px;
-  margin-top: 10px;
+  margin-top: 20px;
 }
 
-.save-btn {
-  padding: 12px;
-  font-size: 16px;
-  background-color: #28a745;
-  color: white;
+.form-actions button {
+  padding: 8px 16px;
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  transition: background-color 0.3s;
-  flex: 1;
+  font-size: 1rem;
+  transition: background-color 0.2s;
 }
 
-.save-btn:hover {
-  background-color: #218838;
-}
-
-.cancel-btn {
-  padding: 12px;
-  font-size: 16px;
-  background-color: #dc3545;
+.form-actions button[type="submit"] {
+  background: #4caf50;
   color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.3s;
-  flex: 1;
 }
 
-.cancel-btn:hover {
-  background-color: #c82333;
+.form-actions button[type="submit"]:hover {
+  background: #45a049;
+}
+
+.form-actions button[type="button"] {
+  background: #f44336;
+  color: white;
+}
+
+.form-actions button[type="button"]:hover {
+  background: #da190b;
+}
+
+.form-actions button:disabled {
+  background: #cccccc;
+  cursor: not-allowed;
 }
 
 .loading-indicator {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 20px;
+  gap: 10px;
 }
 
 .spinner {
-  border: 4px solid rgba(0, 0, 0, 0.1);
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #3498db;
   border-radius: 50%;
-  border-left-color: #007bff;
   animation: spin 1s linear infinite;
-  margin-bottom: 15px;
 }
 
 @keyframes spin {
@@ -157,11 +184,7 @@
 }
 
 .error-message {
-  color: #dc3545;
-  text-align: center;
+  color: #ff4444;
   margin: 10px 0;
-  padding: 8px;
-  background-color: #f8d7da;
-  border-radius: 4px;
-  border: 1px solid #f5c6cb;
+  text-align: center;
 }

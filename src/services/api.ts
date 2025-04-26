@@ -1,4 +1,5 @@
 import axios, { AxiosError } from 'axios';
+import { getStoredToken, removeStoredToken } from '../utils/tokenStorage';
 
 const API_BASE_URL = 'https://timurbatrshin-fiba-backend-5ef6.twc1.net/api';
 
@@ -13,7 +14,7 @@ const api = axios.create({
 // Add request interceptor to add auth token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    const token = getStoredToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -37,7 +38,7 @@ api.interceptors.response.use(
     // Handle common authorization errors
     if (error.response?.status === 401) {
       customError.message = 'Ошибка авторизации. Пожалуйста, войдите снова';
-      localStorage.removeItem('token');
+      removeStoredToken();
     }
 
     // Handle access denied errors

@@ -155,7 +155,7 @@ const Register = ({ tournamentId }: RegisterProps): React.ReactElement => {
       }, {
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('fiba_auth_token')}`
         }
       });
       

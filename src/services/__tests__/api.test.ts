@@ -1,10 +1,15 @@
-import { ApiService } from '../api';
+import ApiService from '../api';
 import fetchMock from 'jest-fetch-mock';
+import { AuthService } from '../AuthService';
+import { AxiosRequestConfig } from 'axios';
 
 describe('ApiService', () => {
+  let authService: AuthService;
+
   beforeEach(() => {
     fetchMock.resetMocks();
-    ApiService.clearAuthToken();
+    authService = AuthService.getInstance();
+    authService.logout();
   });
 
   describe('Аутентификация', () => {
@@ -109,5 +114,37 @@ describe('ApiService', () => {
       // Восстанавливаем оригинальный метод
       ApiService['request'] = originalRequest;
     });
+  });
+
+  it('should handle authorization token', () => {
+    const mockUser = { id: 1, email: 'test@test.com', role: 'user' };
+    authService.login({ token: 'test-token', user: mockUser });
+    expect(authService.getToken()).toBe('test-token');
+    
+    authService.logout();
+    expect(authService.getToken()).toBeNull();
+  });
+
+  it('should make GET request', async () => {
+    const mockResponse = { data: 'test' };
+    fetchMock.mockResponseOnce(JSON.stringify(mockResponse));
+
+    const config: AxiosRequestConfig = {
+      params: { sort: 'desc' }
+    };
+    const response = await ApiService.get('/test', config);
+    expect(response.data).toEqual(mockResponse);
+  });
+
+  it('should make POST request', async () => {
+    const mockResponse = { data: 'test' };
+    const requestData = { test: 'value' };
+    const config: AxiosRequestConfig = {
+      params: { sort: 'desc' }
+    };
+    fetchMock.mockResponseOnce(JSON.stringify(mockResponse));
+
+    const response = await ApiService.post('/test', requestData, config);
+    expect(response.data).toEqual(mockResponse);
   });
 }); 

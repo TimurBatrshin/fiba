@@ -2,11 +2,13 @@
  * Централизованная конфигурация для переменных окружения
  */
 
+import { STORAGE_KEYS, TOKEN_EXPIRATION } from '../constants/storage';
+
 // Базовая конфигурация
 const CONFIG = {
   apiUrl: 'https://timurbatrshin-fiba-backend-5ef6.twc1.net/api',
   enableLogging: true,
-  staticUrl: 'https://timurbatrshin-fiba-backend-5ef6.twc1.net/uploads/',
+  staticUrl: 'https://timurbatrshin-fiba-backend-5ef6.twc1.net',
   appBaseUrl: '/',
   msPath: '/ms',
   basePath: '/fiba3x3'
@@ -22,22 +24,31 @@ export const BASE_PATH = CONFIG.basePath;
 // Настройки приложения
 export const APP_SETTINGS = {
   enableLogging: CONFIG.enableLogging,
-  buildVersion: '1.7.2',
-  appName: 'fiba',
-  tokenStorageKey: 'fiba_auth_token',
-  refreshTokenStorageKey: 'fiba_refresh_token',
-  userStorageKey: 'fiba_user_data',
-  requestTimeout: 15000, // 15 секунд
-  notificationDuration: 5000, // 5 секунд
-  maxUploadSize: 10 * 1024 * 1024, // 10MB согласно документации бэкенда
+  buildVersion: '1.0.0',
+  appName: 'FIBA Tournament Manager',
+  
+  // API настройки
   apiBaseUrl: CONFIG.apiUrl,
-  staticUrl: CONFIG.staticUrl, 
-  appBaseUrl: CONFIG.appBaseUrl,
-  msPath: CONFIG.msPath,
-  basePath: CONFIG.basePath,
-  tokenExpiration: 86400000, // 24 часа в миллисекундах
-  refreshTokenExpiration: 604800000 // 7 дней в миллисекундах
-};
+  requestTimeout: 30000, // 30 секунд
+  
+  // Настройки токенов
+  tokenStorageKey: STORAGE_KEYS.AUTH_TOKEN,
+  userStorageKey: STORAGE_KEYS.USER_DATA,
+  
+  // Время жизни токенов
+  tokenExpiration: TOKEN_EXPIRATION.AUTH_TOKEN,
+  
+  // Настройки UI
+  notificationDuration: 5000, // 5 секунд
+  maxFileSize: 5 * 1024 * 1024, // 5MB
+  allowedImageTypes: ['image/jpeg', 'image/png', 'image/gif'],
+  maxTeamSize: 4,
+  minTeamSize: 3,
+  
+  // Настройки пагинации
+  defaultPageSize: 10,
+  maxPageSize: 50
+} as const;
 
 // Настройки Service Worker
 export const SERVICE_WORKER_SETTINGS = {

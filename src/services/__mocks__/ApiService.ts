@@ -2,6 +2,7 @@
 import { AxiosRequestConfig } from 'axios';
 import { ApiError, ValidationError, AuthError } from '../../utils/errorHandler';
 import { BASE_PATH } from '../../config/envConfig';
+import { getStoredToken, removeStoredToken } from '../../utils/tokenStorage';
 
 // Расширенный тип для request interceptor
 interface RequestInterceptor {
@@ -35,7 +36,7 @@ export const mockApiClient = {
 // Обработчики интерцепторов
 const requestInterceptor = (config: any) => {
   if (typeof window !== 'undefined') {
-    const token = localStorage.getItem('auth_token') || localStorage.getItem('token');
+    const token = getStoredToken();
     if (token) {
       config.headers = config.headers || {};
       config.headers['Authorization'] = `Bearer ${token}`;
@@ -44,42 +45,14 @@ const requestInterceptor = (config: any) => {
   return config;
 };
 
-const responseErrorInterceptor = (error: any) => {
-  // Обработка 401 - редирект на логин
+const responseInterceptor = (response: any) => {
+  return response;
+};
+
+const errorInterceptor = (error: any) => {
   if (error.response?.status === 401) {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('token');
-      window.location.href = `${BASE_PATH}#/login`;
-    }
+    removeStoredToken();
   }
-  
-  // Преобразование ответов в специфичные ошибки
-  if (error.response) {
-    const { status } = error.response;
-    const data = error.response.data;
-    
-    if (status === 400 && data?.errors) {
-      const validationError = new ValidationError(
-        data.message || 'Validation failed',
-        data.errors
-      );
-      return Promise.reject(validationError);
-    } else if (status === 401 || status === 403) {
-      const authError = new AuthError(
-        data?.message || 'Authentication failed'
-      );
-      return Promise.reject(authError);
-    } else {
-      const apiError = new ApiError(
-        data?.message || 'API request failed',
-        status,
-        data
-      );
-      return Promise.reject(apiError);
-    }
-  }
-  
   return Promise.reject(error);
 };
 
@@ -107,7 +80,7 @@ export class ApiService {
       return response.data;
     } catch (error: any) {
       if (error.response) {
-        return responseErrorInterceptor(error);
+        return errorInterceptor(error);
       }
       throw error;
     }
@@ -122,7 +95,7 @@ export class ApiService {
       return response.data;
     } catch (error: any) {
       if (error.response) {
-        return responseErrorInterceptor(error);
+        return errorInterceptor(error);
       }
       throw error;
     }
@@ -137,7 +110,7 @@ export class ApiService {
       return response.data;
     } catch (error: any) {
       if (error.response) {
-        return responseErrorInterceptor(error);
+        return errorInterceptor(error);
       }
       throw error;
     }
@@ -152,7 +125,7 @@ export class ApiService {
       return response.data;
     } catch (error: any) {
       if (error.response) {
-        return responseErrorInterceptor(error);
+        return errorInterceptor(error);
       }
       throw error;
     }

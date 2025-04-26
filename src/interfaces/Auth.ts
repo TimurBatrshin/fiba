@@ -3,14 +3,20 @@ export interface LoginResponse {
   userId: number;
   email: string;
   name: string;
-  role: 'user' | 'admin' | 'business';
+  role: UserRole;
 }
 
 export interface User {
   id: number;
   name: string;
   email: string;
-  role: 'user' | 'admin' | 'business';
+  role: UserRole;
+  profile?: {
+    photo_url?: string;
+    tournaments_played?: number;
+    total_points?: number;
+    rating?: number;
+  };
 }
 
 export interface LoginCredentials {
@@ -22,7 +28,7 @@ export interface RegisterData {
   name: string;
   email: string;
   password: string;
-  role?: 'user' | 'admin' | 'business';
+  role?: UserRole;
 }
 
 export interface AuthResponse {
@@ -30,25 +36,39 @@ export interface AuthResponse {
   userId: number;
   email: string;
   name: string;
-  role: 'user' | 'admin' | 'business';
+  role: UserRole;
 }
+
+export type UserRole = 'user' | 'admin' | 'business';
 
 export interface DecodedToken {
-  sub: string; // user ID
-  role: 'user' | 'admin' | 'business';
-  exp: number; // expiration timestamp
-  iat: number; // issued at timestamp
-  name?: string; // имя пользователя (необязательное)
-  email?: string; // email пользователя (необязательное)
+  // Стандартные поля JWT
+  iss?: string;        // Issuer
+  sub?: string;        // Subject (обычно user ID)
+  aud?: string[];      // Audience
+  exp: number;         // Expiration time
+  nbf?: number;        // Not before
+  iat?: number;        // Issued at
+  jti?: string;        // JWT ID
+  
+  // Кастомные поля
+  userId?: string;     // ID пользователя
+  email?: string;      // Email пользователя
+  role?: string;       // Роль пользователя
 }
 
-export interface UserProfile {
-  id: number;
-  user_id: number;
-  name: string;
-  email: string;
-  photo_url: string;
-  tournaments_played: number;
-  total_points: number;
-  rating: number;
+export interface TokenValidationResult {
+  isValid: boolean;
+  error?: string;
+  decodedToken?: DecodedToken;
+}
+
+export interface UserProfile extends User {
+  email_verified: boolean;
+  profile: {
+    tournaments_played: number;
+    total_points: number;
+    rating: number;
+    photo_url?: string;
+  };
 } 

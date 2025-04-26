@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { playerService, PlayerStatistics as PlayerStatsType } from '../../services/PlayerService';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowLeft, faChartLine, faTrophy } from '@fortawesome/free-solid-svg-icons';
-import defaultAvatar from '../../assets/images/default-avatar.png';
+import { UserPhoto } from '../../components/UserPhoto/UserPhoto';
 import './PlayerStatistics.css';
 
 const PlayerStatistics: React.FC = () => {
@@ -33,7 +33,6 @@ const PlayerStatistics: React.FC = () => {
   }, [id]);
 
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    e.currentTarget.src = defaultAvatar;
     e.currentTarget.onerror = null; // Prevent infinite loop
   };
 

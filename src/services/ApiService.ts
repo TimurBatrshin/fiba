@@ -3,6 +3,7 @@ import { API_CONFIG } from '../config/api';
 import { ErrorHandler, ApiError, ValidationError, AuthError } from '../utils/errorHandler';
 import logger from '../utils/logger';
 import { User } from '../interfaces/Auth';
+import { getStoredToken } from '../utils/tokenStorage';
 import { 
   Tournament, 
   TournamentStatus, 
@@ -33,7 +34,7 @@ class ApiService {
     // Setup interceptors
     this.api.interceptors.request.use(
       (config) => {
-        const token = localStorage.getItem('token');
+        const token = getStoredToken();
         if (token) {
           config.headers = config.headers || {};
           config.headers.Authorization = `Bearer ${token}`;
@@ -50,16 +51,14 @@ class ApiService {
     this.api.interceptors.response.use(
       (response) => response,
       (error) => {
-        if (error.response && error.response.status === 401) {
-          localStorage.removeItem('token');
-          // Try to refresh token if available
-          const authService = require('./AuthService').AuthService.getInstance();
-          if (authService) {
-            authService.refreshToken().catch(() => {
-              // If refresh fails, logout
-              authService.logout();
-            });
-          }
+        // Just log the error and reject the promise
+        if (error.response) {
+          logger.error('API Error:', {
+            status: error.response.status,
+            url: error.config?.url,
+            method: error.config?.method,
+            data: error.response.data
+          });
         }
         return Promise.reject(error);
       }
@@ -307,12 +306,14 @@ class ApiService {
   }
   
   async logout(): Promise<any> {
-    localStorage.removeItem('token');
+    const authService = require('./AuthService').AuthService.getInstance();
+    authService.logout();
     return this.post<void>('/api/auth/logout', {});
   }
   
   clearAuthToken() {
-    localStorage.removeItem('token');
+    const authService = require('./AuthService').AuthService.getInstance();
+    authService.logout();
   }
 }
 

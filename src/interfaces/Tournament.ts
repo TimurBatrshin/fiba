@@ -64,4 +64,18 @@ export interface Team {
   captain: { id: number; name: string; email: string };
   tournament: number;
   status: RegistrationStatus;
+}
+
+export interface Player {
+  id: number;
+  name: string;
+  email: string;
+  email_verified?: boolean;
+  role?: string;
+  profile?: {
+    photo_url?: string;
+    tournaments_played?: number;
+    total_points?: number;
+    rating?: number;
+  };
 } 

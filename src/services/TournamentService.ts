@@ -1,6 +1,11 @@
-import { BaseApiService, ApiResponse } from './BaseApiService';
 import { Tournament, TournamentLevel, TournamentStatus } from '../interfaces/Tournament';
 import { API_CONFIG } from '../config/api';
+import { jwtDecode } from 'jwt-decode';
+import { getStoredToken, setStoredToken } from '../utils/tokenStorage';
+import { DecodedToken } from '../types/auth';
+import { BaseApiService } from './BaseApiService';
+import { TournamentResponse } from '../types/tournament';
+import { authService } from './auth.service';
 
 export interface TournamentFilter {
   status?: TournamentStatus;
@@ -11,9 +16,15 @@ export interface TournamentFilter {
   search?: string;
 }
 
+interface TeamRegistrationData {
+  teamName: string;
+  playerIds?: string[];
+  teamLogo?: File;
+}
+
 export class TournamentService extends BaseApiService {
   constructor() {
-    super(API_CONFIG.baseUrl);
+    super();
   }
 
   /**
@@ -50,7 +61,7 @@ export class TournamentService extends BaseApiService {
   public async getTournamentById(id: string): Promise<Tournament | null> {
     try {
       console.log(`TournamentService.getTournamentById(${id}) - начало запроса`);
-      const response = await this.get<Tournament>(`/tournaments/${id}`);
+      const response = await this.get<Tournament>(`/${id}`);
       
       if (!response || !response.data) {
         console.warn(`TournamentService.getTournamentById(${id}) - получены пустые данные`);
@@ -141,7 +152,7 @@ export class TournamentService extends BaseApiService {
    */
   public async getTournamentLocations(): Promise<string[]> {
     try {
-      const response = await this.get<string[]>('/tournaments/locations');
+      const response = await this.get<string[]>('/locations');
       return response.data;
     } catch (error) {
       console.error("Error fetching tournament locations:", error);
@@ -150,14 +161,74 @@ export class TournamentService extends BaseApiService {
   }
 
   /**
-   * Register user for tournament
+   * Register team for tournament
    */
-  public async registerForTournament(tournamentId: string, userId: string): Promise<any> {
+  public async registerForTournament(
+    tournamentId: number,
+    teamName: string,
+    playerIds: string[],
+    teamLogo?: File
+  ): Promise<TournamentResponse> {
+    let token = getStoredToken();
+    console.log('Initial token check:', {
+      hasToken: !!token,
+      tokenFirstChars: token ? token.substring(0, 10) : null,
+      tokenLastChars: token ? token.substring(token.length - 10) : null
+    });
+
+    if (!token) {
+      throw new Error('Для регистрации команды необходимо авторизоваться');
+    }
+
     try {
-      const response = await this.post<any>(`/tournaments/${tournamentId}/register`, { userId });
+      // Проверяем валидность токена
+      const decoded = jwtDecode(token) as DecodedToken;
+      const currentTime = Date.now() / 1000;
+      
+      console.log('Token validation:', {
+        tokenDecoded: true,
+        expiresIn: decoded.exp - currentTime,
+        isExpired: decoded.exp <= currentTime
+      });
+
+      // Если токен истекает в ближайшие 5 минут или уже истек, пробуем обновить
+      if (decoded.exp <= currentTime + 300) {
+        console.log('Token expired or expiring soon, attempting refresh...');
+        try {
+          const refreshResult = await authService.refreshToken();
+          if (refreshResult.token) {
+            token = refreshResult.token;
+            console.log('Token refreshed successfully');
+          }
+        } catch (refreshError) {
+          console.error('Token refresh failed:', refreshError);
+          throw new Error('Ошибка авторизации. Пожалуйста, войдите снова.');
+        }
+      }
+
+      // Создаем FormData для отправки данных
+      const formData = new FormData();
+      formData.append('teamName', teamName);
+      formData.append('playerIds', JSON.stringify(playerIds));
+      if (teamLogo) {
+        formData.append('teamLogo', teamLogo);
+      }
+
+      // Отправляем запрос на регистрацию
+      const response = await this.post<TournamentResponse>(
+        `/tournaments/${tournamentId}/teams/register`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+
       return response.data;
     } catch (error) {
-      console.error(`Error registering user ${userId} for tournament ${tournamentId}:`, error);
+      console.error('Error registering for tournament:', error);
       throw error;
     }
   }
@@ -182,7 +253,7 @@ export class TournamentService extends BaseApiService {
         }
       });
 
-      const response = await this.post<Tournament>('/tournaments', params);
+      const response = await this.post<Tournament>('/', params);
       return response.data;
     } catch (error) {
       console.error("Error creating tournament:", error);
@@ -195,7 +266,7 @@ export class TournamentService extends BaseApiService {
    */
   public async updateTournament(id: string, tournament: Partial<Tournament>): Promise<Tournament> {
     try {
-      const response = await this.put<Tournament>(`/tournaments/${id}`, tournament);
+      const response = await this.put<Tournament>(`/${id}`, tournament);
       return response.data;
     } catch (error) {
       console.error(`Error updating tournament ${id}:`, error);
@@ -208,7 +279,7 @@ export class TournamentService extends BaseApiService {
    */
   public async deleteTournament(id: string): Promise<void> {
     try {
-      await this.delete<void>(`/tournaments/${id}`);
+      await this.delete<void>(`/${id}`);
     } catch (error) {
       console.error(`Error deleting tournament ${id}:`, error);
       throw error;

@@ -1,131 +1,116 @@
 import { BaseApiService } from './BaseApiService';
-import { API_CONFIG } from '../config/api';
-import { User, DecodedToken } from '../interfaces/Auth';
-import { APP_SETTINGS } from '../config/envConfig';
-import { getToken } from '../utils/tokenStorage';
-import { jwtDecode } from 'jwt-decode';
+import { User, UserProfile } from '../interfaces/Auth';
+import { API_ENDPOINTS, API_BASE_URL } from '../config/apiConfig';
 
-export interface UserUpdateInput {
-  name?: string;
+export interface ProfileUpdateInput {
+  photo?: File;
   email?: string;
-  avatar?: string;
-  password?: string;
-  tournaments_played?: number;
-  total_points?: number;
-  rating?: number;
+  name?: string;
 }
 
 export class UserService extends BaseApiService {
+  private static instance: UserService;
+
   constructor() {
-    super(API_CONFIG.baseUrl);
+    super();
   }
 
-  /**
-   * Get token from storage
-   */
-  protected getToken(): string | null {
-    return localStorage.getItem(APP_SETTINGS.tokenStorageKey) || localStorage.getItem('token');
+  public static getInstance(): UserService {
+    if (!UserService.instance) {
+      UserService.instance = new UserService();
+    }
+    return UserService.instance;
   }
 
   /**
    * Get current user profile
    */
-  public async getCurrentUser(): Promise<User | null> {
-    try {
-      // Получаем токен, проверяем его наличие
-      const token = this.getToken();
-      if (!token) {
-        console.log('UserService: Token not found when getting current user');
-        return null;
-      }
-
-      // Проверяем валидность токена
-      try {
-        const decodedToken = jwtDecode<DecodedToken>(token);
-        
-        // Проверяем срок действия токена
-        if (decodedToken.exp && decodedToken.exp * 1000 < Date.now()) {
-          console.log('UserService: Token expired when getting current user');
-          return null;
-        }
-
-        // Если у нас нет userId в токене, не можем создать пользователя
-        if (!decodedToken.sub) {
-          console.log('UserService: Token missing required user data');
-          return null;
-        }
-
-        // Создаем объект пользователя из данных токена
-        const user: User = {
-          id: parseInt(decodedToken.sub, 10),
-          email: decodedToken.email || '',
-          name: decodedToken.name || '',
-          role: decodedToken.role
-        };
-
-        console.log('UserService: Successfully decoded user from token');
-        return user;
-      } catch (decodeError) {
-        console.error('UserService: Error decoding token:', decodeError);
-        return null;
-      }
-    } catch (error) {
-      console.error('UserService: Unexpected error getting current user:', error);
-      return null;
-    }
-  }
-  
-  /**
-   * Get user by ID
-   */
-  public async getUserById(id: string): Promise<User> {
-    const response = await this.get<User>(`/users/${id}`);
+  public async getCurrentUser(): Promise<UserProfile> {
+    const response = await this.get<UserProfile>('/users/me');
     return response.data;
   }
-  
+
   /**
    * Update user profile
    */
-  public async updateUser(id: string, userData: UserUpdateInput): Promise<User> {
-    const response = await this.put<User>(`/users/${id}`, userData);
+  public async updateProfile(data: ProfileUpdateInput): Promise<UserProfile> {
+    const formData = new FormData();
+    
+    if (data.photo) formData.append('photo', data.photo);
+    if (data.email) formData.append('email', data.email);
+    if (data.name) formData.append('name', data.name);
+    
+    const response = await this.post<UserProfile>(API_ENDPOINTS.profile.update, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+    return response.data;
+  }
+
+  /**
+   * Get user by ID
+   */
+  public async getUserById(id: string): Promise<UserProfile> {
+    const response = await this.get<UserProfile>(`/users/${id}`);
     return response.data;
   }
   
   /**
    * Get list of top users by rating
    */
-  public async getTopUsers(limit: number = 10): Promise<User[]> {
-    const response = await this.get<User[]>('/users/top', { limit });
+  public async getTopUsers(limit: number = 10): Promise<UserProfile[]> {
+    const response = await this.get<UserProfile[]>('/users/top', { limit });
     return response.data;
   }
   
   /**
    * Search users by name or email
    */
-  public async searchUsers(query: string): Promise<User[]> {
-    const response = await this.get<User[]>('/users/search', { query });
+  public async searchUsers(query: string): Promise<UserProfile[]> {
+    const response = await this.get<UserProfile[]>('/users/search', { query });
     return response.data;
   }
-  
+
   /**
-   * Upload profile photo for user
-   * @param userId User ID
-   * @param photo Photo file
-   * @param profileData Optional additional profile data
+   * Upload profile photo
    */
-  public async uploadProfilePhoto(userId: string | number, photo: File): Promise<any> {
+  public async uploadProfilePhoto(photo: File): Promise<UserProfile> {
+    const formData = new FormData();
+    formData.append('photo', photo);
+    
+    const response = await this.post<UserProfile>(API_ENDPOINTS.profile.uploadPhoto, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+    return response.data;
+  }
+
+  /**
+   * Get profile photo URL
+   */
+  public getProfilePhotoUrl(photoUrl: string | null | undefined): string {
+    if (!photoUrl) return '';
+    return `${API_BASE_URL}${photoUrl}`;
+  }
+
+  /**
+   * Get user profile photo URL by user ID
+   */
+  public async getUserPhotoUrl(userId: string | number): Promise<string> {
     try {
-      // При загрузке для конкретного пользователя используем эндпоинт с id
-      const endpoint = `/profile/${userId}/photo`;
-      
-      // Используем общий метод для загрузки файла БЕЗ дополнительных данных
-      return await this.uploadFile(endpoint, photo); // Убрали additionalData
+      const userData = await this.getUserById(userId.toString());
+      if (userData?.profile?.photo_url) {
+        return this.getProfilePhotoUrl(userData.profile.photo_url);
+      }
+      return '';
     } catch (error) {
-      console.error('[UserService] Error uploading profile photo:', error);
-      throw error;
+      console.error('Error fetching user photo:', error);
+      return '';
     }
   }
 }
 
 // Create and export a singleton instance
-export const userService = new UserService(); 
+export const userService = UserService.getInstance(); 

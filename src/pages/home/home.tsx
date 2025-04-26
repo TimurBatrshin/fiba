@@ -14,21 +14,13 @@ import {
   faBasketballBall
 } from '@fortawesome/free-solid-svg-icons';
 import defaultTournamentImg from '../../assets/images/default-tournament.jpg';
-import defaultAvatar from '../../assets/images/default-avatar.png';
 import heroBanner from '../../assets/images/hero-basketball.jpg';
 import { ServiceFactory } from '../../services/serviceFactory';
 import { Tournament as TournamentType } from '../../interfaces/Tournament';
-import { PlayerStatistics, PlayerWithStats } from '../../services/PlayerService';
-
-// Интерфейс для игрока в компоненте
-interface Player {
-  id: number | string;
-  name: string;
-  points: number;
-  team: string;
-  position: string;
-  avatar: string;
-}
+import { Player } from '../../services/PlayerService';
+import { Loader } from '../../components/Loader';
+import { TopPlayers } from '../../components/TopPlayers';
+import { UserPhoto } from '../../components/UserPhoto/UserPhoto';
 
 const Home: React.FC = () => {
   const [upcomingTournaments, setUpcomingTournaments] = useState<TournamentType[]>([]);
@@ -37,6 +29,7 @@ const Home: React.FC = () => {
   const [isError, setIsError] = useState(false);
   const [playersError, setPlayersError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoadingTopPlayers, setIsLoadingTopPlayers] = useState(true);
 
   useEffect(() => {
     // Проверяем авторизацию
@@ -76,21 +69,13 @@ const Home: React.FC = () => {
         
         // Получаем данные о лучших игроках из API
         try {
+          setIsLoadingTopPlayers(true);
           const playerService = ServiceFactory.getPlayerService();
           const topPlayersData = await playerService.getTopPlayers(5);
           console.log("Loaded players data:", topPlayersData);
           
           if (topPlayersData && Array.isArray(topPlayersData) && topPlayersData.length > 0) {
-            // Преобразуем данные в формат, необходимый для отображения
-            const formattedPlayers = topPlayersData.map(player => ({
-              id: player.id || 0,
-              name: player.name || '',
-              points: player.rating || 0,
-              team: '—', // Заполняем статичными данными
-              position: '—', // Заполняем статичными данными
-              avatar: player.photoUrl || player.avatar || defaultAvatar
-            }));
-            setTopPlayers(formattedPlayers);
+            setTopPlayers(topPlayersData);
             setPlayersError(null);
           } else {
             // Если данных нет, устанавливаем ошибку
@@ -102,6 +87,8 @@ const Home: React.FC = () => {
           // Устанавливаем сообщение об ошибке
           setTopPlayers([]);
           setPlayersError(playerError?.message || 'Ошибка при загрузке данных игроков');
+        } finally {
+          setIsLoadingTopPlayers(false);
         }
       } catch (error: any) {
         console.error("Ошибка при загрузке турниров:", error);
@@ -124,7 +111,7 @@ const Home: React.FC = () => {
   };
 
   const handlePlayerImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    e.currentTarget.src = defaultAvatar;
+    e.currentTarget.src = defaultTournamentImg;
     e.currentTarget.onerror = null; // Prevent infinite loop
   };
 
@@ -305,60 +292,20 @@ const Home: React.FC = () => {
             </Link>
           </div>
           
-          {isLoading ? (
-            <div className="gh-loading">
-              {[1, 2, 3, 4, 5].map((item) => (
-                <div key={item} className="gh-loading-row">
-                  <div className="gh-loading-avatar"></div>
-                  <div className="gh-loading-name"></div>
-                  <div className="gh-loading-points"></div>
-                </div>
-              ))}
-            </div>
+          {isLoadingTopPlayers ? (
+            <Loader />
           ) : playersError ? (
             <div className="gh-error-message">
               <p>{playersError}</p>
               <p>Пожалуйста, попробуйте позже или обратитесь к администратору.</p>
             </div>
           ) : topPlayers.length === 0 ? (
-            <div className="gh-empty-state">
-              <p>Нет данных о рейтинге игроков</p>
-            </div>
+            <div className="gh-empty-state">No top players found</div>
           ) : (
-            <div className="gh-top-players-table">
-              <div className="gh-table-header">
-                <div className="gh-header-rank">#</div>
-                <div className="gh-header-player">Игрок</div>
-                <div className="gh-header-team">Команда</div>
-                <div className="gh-header-position">Позиция</div>
-                <div className="gh-header-points">Очки</div>
-              </div>
-              
-              {topPlayers.map((player, index) => (
-                <Link 
-                  to={`/players/${player.id}`}
-                  key={player.id} 
-                  className="gh-table-row"
-                >
-                  <div className="gh-player-rank">{index + 1}</div>
-                  <div className="gh-player-info">
-                    <img 
-                      src={player.avatar} 
-                      alt={player.name} 
-                      className="gh-player-avatar" 
-                      onError={handlePlayerImageError}
-                    />
-                    <span className="gh-player-name">{player.name}</span>
-                  </div>
-                  <div className="gh-player-team">{player.team}</div>
-                  <div className="gh-player-position">{player.position}</div>
-                  <div className="gh-player-points">
-                    <span className="gh-points-value">{player.points}</span>
-                    <FontAwesomeIcon icon={faStar} className="gh-points-icon" />
-                  </div>
-                </Link>
-              ))}
-            </div>
+            <TopPlayers 
+              players={topPlayers} 
+              isLoading={isLoadingTopPlayers} 
+            />
           )}
         </div>
       </section>

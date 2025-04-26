@@ -1,10 +1,10 @@
 import { BaseApiService } from './BaseApiService';
-import { User } from '../interfaces/Auth';
+import { UserProfile } from '../interfaces/Auth';
 import { API_CONFIG } from '../config/api';
 import api from '../api/client';
 import { API_ENDPOINTS } from '../config/apiConfig';
 
-export interface Player extends User {
+export interface Player extends UserProfile {
   photoUrl?: string;
   avatar?: string;
   rating?: number;
@@ -18,14 +18,7 @@ export interface Player extends User {
 }
 
 // Дополнительный интерфейс для результатов поиска игроков
-export interface SearchPlayer {
-  id: string | number;
-  name: string;
-  email?: string;
-  photoUrl?: string;
-  avatar?: string;
-  rating?: number;
-}
+export type SearchPlayer = UserProfile;
 
 // Расширенный интерфейс игрока с базовой статистикой
 export interface PlayerWithStats extends Player {
@@ -93,15 +86,15 @@ export interface PlayerStatistics {
 export class PlayerService extends BaseApiService {
   private static instance: PlayerService;
 
+  private constructor() {
+    super();
+  }
+
   public static getInstance(): PlayerService {
     if (!PlayerService.instance) {
       PlayerService.instance = new PlayerService();
     }
     return PlayerService.instance;
-  }
-
-  constructor() {
-    super(API_CONFIG.baseUrl);
   }
 
   /**
@@ -115,8 +108,8 @@ export class PlayerService extends BaseApiService {
   /**
    * Get player by ID
    */
-  public async getPlayerById(id: string): Promise<Player> {
-    const response = await this.get<Player>(API_ENDPOINTS.players.byId(id));
+  public async getPlayerById(id: string | number): Promise<SearchPlayer> {
+    const response = await this.get<SearchPlayer>(`/players/${id}`);
     return response.data;
   }
 
@@ -151,6 +144,14 @@ export class PlayerService extends BaseApiService {
     await this.delete<void>(`/players/${id}`);
   }
 
+  /**
+   * Update player rating
+   */
+  public async updatePlayerRating(id: string, rating: number): Promise<Player> {
+    const response = await this.put<Player>(`/players/${id}/rating`, { rating });
+    return response.data;
+  }
+
   // Получение базовой статистики игрока
   async getPlayerBasicStats(id: string): Promise<PlayerWithStats> {
     const response = await this.get<PlayerWithStats>(API_ENDPOINTS.players.getBasicStats(id));
@@ -177,23 +178,14 @@ export class PlayerService extends BaseApiService {
   }
 
   /**
-   * Поиск игроков по имени или email
-   * @param query Строка поиска
+   * Search players by name or email
    */
-  async searchPlayers(query: string): Promise<SearchPlayer[]> {
-    try {
-      console.log('Поиск игроков с запросом:', query);
-      // Используем прямой запрос с русскими буквами
-      const response = await this.get<SearchPlayer[]>(`${API_ENDPOINTS.players.search}?query=${query}`);
-      return response.data;
-    } catch (error) {
-      console.error('Ошибка при поиске игроков:', error);
-      throw error;
-    }
+  public async searchPlayers(query: string): Promise<SearchPlayer[]> {
+    const response = await this.get<SearchPlayer[]>('/players/search', { query });
+    return response.data;
   }
 }
 
-// Создаем экземпляр сервиса для удобного импорта
 export const playerService = PlayerService.getInstance();
 
 // Функция поиска игроков для поддержки обратной совместимости

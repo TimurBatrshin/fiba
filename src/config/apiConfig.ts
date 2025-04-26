@@ -10,6 +10,9 @@ export const API_HOST = 'timurbatrshin-fiba-backend-5ef6.twc1.net';
 export const API_PROTOCOL = 'https';
 export const API_BASE_PATH = '/api';
 
+// URL для статических ресурсов
+export const STATIC_CONTENT_URL = STATIC_URL;
+
 // Полный URL API - используем из envConfig для согласованности
 export { API_BASE_URL };
 
@@ -30,8 +33,9 @@ export const API_ENDPOINTS = {
   },
   profile: {
     get: '/profile',
-    update: '/profile',
-    uploadPhoto: '/profile/photo'
+    update: '/profile/update',
+    uploadPhoto: '/profile/photo',
+    getPhoto: (id: string | number) => `/profile/${id}/photo`
   },
   tournaments: {
     base: '/tournaments',
@@ -65,7 +69,8 @@ export const API_ENDPOINTS = {
     getBasicStats: (id: string | number) => `/players/${id}/stats/basic`,
     getDetailedStats: (id: string | number) => `/players/${id}/stats/detailed`,
     getStatistics: (id: string | number) => `/players/${id}/statistics`,
-    search: '/players/search'
+    search: '/players/search',
+    updateRating: (id: string | number) => `/players/${id}/rating`
   },
   statistics: {
     topPlayers: '/players/rankings',
@@ -127,9 +132,8 @@ export const getApiStatus = (): { available: boolean, checkedAt: string, error?:
 // Конфигурация для запросов
 export const API_CONFIG = {
   baseUrl: API_BASE_URL,
-  timeout: APP_SETTINGS.requestTimeout, // Используем таймаут из APP_SETTINGS
+  timeout: APP_SETTINGS.requestTimeout,
   withCredentials: true,
-  retryCount: 2,
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json'

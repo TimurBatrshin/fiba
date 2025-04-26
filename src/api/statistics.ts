@@ -7,12 +7,13 @@ export const statisticsApi = {
   // Получение топ игроков по категории
   getTopPlayers: async (category: string = 'points', limit: number = 10): Promise<PlayerBasicStats[]> => {
     try {
-      return await api.get(API_ENDPOINTS.statistics.topPlayers, {
+      const response = await api.get(API_ENDPOINTS.statistics.topPlayers, {
         params: { 
           category, 
           limit 
         }
       });
+      return response.data;
     } catch (error) {
       console.error(`Error fetching top players by ${category}:`, error);
       throw error;

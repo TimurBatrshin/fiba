@@ -10,5 +10,13 @@ export interface TournamentRegistration {
   userId?: string;
 }
 
+// Response from tournament registration
+export interface TournamentResponse {
+  success: boolean;
+  message?: string;
+  tournament?: Tournament;
+  error?: string;
+}
+
 // Re-export other types
 export type { TournamentStatus, TournamentLevel, Registration }; 

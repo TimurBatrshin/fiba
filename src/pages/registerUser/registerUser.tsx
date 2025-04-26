@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
 import "./registerUser.css";  // Импортируем стили
 import { API_BASE_URL } from "../../config/envConfig";
-import { AuthService } from "../../services/AuthService";
 import { useAuth } from "../../contexts/AuthContext";
 import { BASE_PATH } from '../../config/envConfig';
 
@@ -20,63 +19,50 @@ const RegisterUser: React.FC = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [success, setSuccess] = useState(false);
   const navigate = useNavigate();
-
-  // Проверяем авторизацию при загрузке компонента
-  useEffect(() => {
-    // Если пользователь уже авторизован, перенаправляем на страницу профиля
-    if (AuthService.getInstance().isAuthenticated()) {
-      navigate("/profile");
-    }
-  }, [navigate]);
-
-  const validateForm = () => {
-    const newErrors: {[key: string]: string} = {};
-    let isValid = true;
-
-    if (!formData.username.trim()) {
-      newErrors.username = 'Имя пользователя обязательно';
-      isValid = false;
-    }
-
-    if (!formData.email.trim()) {
-      newErrors.email = 'Email обязателен';
-      isValid = false;
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Введите корректный email';
-      isValid = false;
-    }
-
-    if (!formData.password) {
-      newErrors.password = 'Пароль обязателен';
-      isValid = false;
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'Пароль должен содержать минимум 6 символов';
-      isValid = false;
-    }
-
-    if (formData.confirmPassword !== formData.password) {
-      newErrors.confirmPassword = 'Пароли не совпадают';
-      isValid = false;
-    }
-
-    setErrors(newErrors);
-    return isValid;
-  };
+  const { login } = useAuth();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData((prevData) => ({
-      ...prevData,
-      [name]: value,
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
     }));
-    
-    // Сбрасываем ошибку при вводе
+    // Clear error when user starts typing
     if (errors[name]) {
-      setErrors({
-        ...errors,
-        [name]: '',
-      });
+      setErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }));
     }
+  };
+
+  const validateForm = () => {
+    const newErrors: {[key: string]: string} = {};
+    
+    if (!formData.username.trim()) {
+      newErrors.username = 'Имя пользователя обязательно';
+    }
+    
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email обязателен';
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = 'Введите корректный email';
+    }
+    
+    if (!formData.password) {
+      newErrors.password = 'Пароль обязателен';
+    } else if (formData.password.length < 6) {
+      newErrors.password = 'Пароль должен быть не менее 6 символов';
+    }
+    
+    if (!formData.confirmPassword) {
+      newErrors.confirmPassword = 'Подтвердите пароль';
+    } else if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'Пароли не совпадают';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const toggleShowPassword = () => {
@@ -102,24 +88,29 @@ const RegisterUser: React.FC = () => {
         email: formData.email,
         password: formData.password,
         name: formData.username
-      }, {
-        headers: { "Content-Type": "application/json" },
       });
 
-      if (response && response.data && response.data.token) {
-        console.log('Registration successful, redirecting to login page');
-        // Show success before redirecting
+      if (response && response.data) {
         setSuccess(true);
-        setTimeout(() => {
-          window.location.href = `${BASE_PATH}#/`;
-        }, 1000);
+        // После успешной регистрации пытаемся залогиниться
+        try {
+          await login(formData.email, formData.password);
+          // После успешного логина перенаправляем на главную
+          setTimeout(() => {
+            navigate('/');
+          }, 1500);
+        } catch (loginError) {
+          console.error('Ошибка автоматического входа:', loginError);
+          // Если автоматический вход не удался, все равно показываем успешную регистрацию
+          setTimeout(() => {
+            navigate('/login');
+          }, 1500);
+        }
       }
     } catch (err: any) {
       console.error("Ошибка регистрации:", err);
       
       if (axios.isAxiosError(err) && err.response) {
-        console.error("Ошибка регистрации:", err.response.data);
-        
         if (err.response.data.message === 'Email уже зарегистрирован') {
           setErrors({
             ...errors,

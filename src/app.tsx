@@ -27,13 +27,11 @@ const basePath = BASE_PATH;
 const PrivateRoute = ({ children }: { children: React.ReactNode }): React.ReactElement => {
   const { isAuthenticated } = useAuth();
   
-  useEffect(() => {
-    if (!isAuthenticated) {
-      window.location.href = `${basePath}#/login`;
-    }
-  }, [isAuthenticated]);
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
   
-  return isAuthenticated ? <>{children}</> : <div className="redirecting"></div>;
+  return <>{children}</>;
 };
 
 // Новый компонент для перенаправления авторизованных пользователей
@@ -46,13 +44,11 @@ const AuthRedirectRoute = ({ children }: { children: React.ReactNode }): React.R
 const AdminRoute = ({ children }: { children: React.ReactNode }): React.ReactElement => {
   const { isAuthenticated, currentRole } = useAuth();
   
-  useEffect(() => {
-    if (!isAuthenticated || (currentRole?.toUpperCase() !== 'ADMIN')) {
-      window.location.href = `${basePath}#/login`;
-    }
-  }, [isAuthenticated, currentRole]);
+  if (!isAuthenticated || (currentRole?.toUpperCase() !== 'ADMIN')) {
+    return <Navigate to="/login" replace />;
+  }
   
-  return (isAuthenticated && (currentRole?.toUpperCase() === 'ADMIN')) ? <>{children}</> : <div className="redirecting"></div>;
+  return <>{children}</>;
 };
 
 const App = (): React.ReactElement => {

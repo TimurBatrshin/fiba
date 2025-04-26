@@ -1,83 +1,47 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import "./profile.css";
-import defaultAvatar from '../../assets/images/default-avatar.png';
 import { useAuth } from '../../hooks/useAuth';
-import { API_CONFIG } from "../../config/api";
 import { userService } from "../../services/UserService";
-import { BASE_PATH } from '../../config/envConfig';
-import { AuthService } from '../../services/AuthService';
-import api from '../../api/client';
+import { UserPhoto } from '../../components/UserPhoto/UserPhoto';
 
 interface ProfileFormData {
   photo: File | null;
-  tournaments_played: number;
-  total_points: number;
-  rating: number;
+  name: string;
+  email: string;
 }
 
-// Расширенный интерфейс пользователя с дополнительными полями
 interface ExtendedUser {
   id: number;
-  name?: string;
-  username?: string;
+  name: string;
   email: string;
-  role?: string;
-  avatar?: string;
-  tournaments_played?: number;
-  total_points?: number;
-  rating?: number;
+  profile?: {
+    photo_url?: string;
+  };
 }
-
-// Функция для загрузки фото
-const uploadProfilePhoto = async (userId: string | number, photo: File): Promise<void> => {
-  try {
-    // Используем метод из userService вместо прямого вызова API
-    await userService.uploadProfilePhoto(userId, photo);
-    console.log('Фото профиля успешно загружено');
-  } catch (error) {
-    console.error('Ошибка при загрузке фото профиля:', error);
-    throw error;
-  }
-};
 
 const Profile: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [profile, setProfile] = useState<ExtendedUser | null>(null);
   const [editMode, setEditMode] = useState<boolean>(false);
-  const [error, setError] = useState(false);
-  const [uploadError, setUploadError] = useState<string>("");
+  const [error, setError] = useState<string>("");
+  const [shouldRedirect, setShouldRedirect] = useState(false);
   const [formData, setFormData] = useState<ProfileFormData>({
     photo: null,
-    tournaments_played: 0,
-    total_points: 0,
-    rating: 0
+    name: '',
+    email: ''
   });
   
-  const { user, updateUser } = useAuth();
+  const { user } = useAuth();
   const redirectAttempted = useRef<boolean>(false);
-  const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const fetchProfile = async () => {
       if (!user) {
         if (!redirectAttempted.current) {
           redirectAttempted.current = true;
-          
-          // Проверяем счетчик перенаправлений в localStorage
-          const redirectAttemptsKey = 'profile_redirect_attempts';
-          const redirectAttempts = parseInt(localStorage.getItem(redirectAttemptsKey) || '0');
-          
-          if (redirectAttempts < 3) {
-            localStorage.setItem(redirectAttemptsKey, (redirectAttempts + 1).toString());
-            window.location.href = `${BASE_PATH}#/login`;
-          } else {
-            console.warn('Превышено максимальное количество попыток перенаправления из профиля');
-            // Сбрасываем счетчик через 10 секунд
-            setTimeout(() => {
-              localStorage.setItem(redirectAttemptsKey, '0');
-            }, 10000);
-          }
+          setShouldRedirect(true);
         }
         return;
       }
@@ -85,73 +49,81 @@ const Profile: React.FC = () => {
       try {
         setIsLoading(true);
         const userData = await userService.getCurrentUser();
-        // Явно преобразуем User в ExtendedUser через unknown
-        const extendedUser = {
-          ...userData, 
-          username: userData?.name || '',
-          tournaments_played: 0,
-          total_points: 0,
-          rating: 0
-        } as ExtendedUser;
-        
-        setProfile(extendedUser);
+        setProfile(userData);
         setFormData({
-          photo: null, // Обнуляем фото в форме, чтобы не отправлять старое
-          tournaments_played: extendedUser.tournaments_played || 0,
-          total_points: extendedUser.total_points || 0,
-          rating: extendedUser.rating || 0,
+          photo: null,
+          name: userData.name || '',
+          email: userData.email || ''
         });
       } catch (err: any) {
         console.error("Ошибка при получении профиля", err);
-        setError(true);
+        setError(err.message || "Ошибка при загрузке профиля");
         
-        // Если получили ошибку авторизации, предотвращаем зацикливание
         if (err.message === 'Unauthorized access' && !redirectAttempted.current) {
           redirectAttempted.current = true;
-          
-          // Проверяем счетчик перенаправлений в localStorage
-          const redirectAttemptsKey = 'profile_redirect_attempts';
-          const redirectAttempts = parseInt(localStorage.getItem(redirectAttemptsKey) || '0');
-          
-          if (redirectAttempts < 3) {
-            localStorage.setItem(redirectAttemptsKey, (redirectAttempts + 1).toString());
-            window.location.href = `${BASE_PATH}#/login`;
-          } else {
-            console.warn('Превышено максимальное количество попыток перенаправления из профиля (ошибка)');
-            // Сбрасываем счетчик через 10 секунд
-            setTimeout(() => {
-              localStorage.setItem(redirectAttemptsKey, '0');
-            }, 10000);
-          }
+          setShouldRedirect(true);
         }
       } finally {
         setIsLoading(false);
       }
     };
 
-    if (!redirectAttempted.current) {
-      fetchProfile();
-    }
-  }, [user?.id]);
+    fetchProfile();
+  }, [user]);
 
-  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    e.currentTarget.src = defaultAvatar;
-    e.currentTarget.onerror = null; // Предотвращаем бесконечный цикл
+  if (shouldRedirect) {
+    return <Navigate to="/login" replace />;
+  }
+
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      
+      // Проверка размера файла (не более 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setError("Размер файла не должен превышать 5MB");
+        return;
+      }
+
+      // Проверка типа файла
+      if (!file.type.startsWith('image/')) {
+        setError("Пожалуйста, загрузите изображение");
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+        setError("");
+        
+        // Загружаем фото сразу при выборе
+        const updatedProfile = await userService.uploadProfilePhoto(file);
+        setProfile(updatedProfile);
+        
+        // Обновляем форму
+        setFormData(prev => ({
+          ...prev,
+          photo: null // Сбрасываем файл, так как он уже загружен
+        }));
+
+        // Сбрасываем input file
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+      } catch (err: any) {
+        console.error("Ошибка при загрузке фото", err);
+        setError(err.message || "Ошибка при загрузке фото");
+      } finally {
+        setIsLoading(false);
+      }
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.name === "photo" && e.target.files && e.target.files.length > 0) {
-      setFormData({
-        ...formData,
-        photo: e.target.files[0],
-      });
-      setUploadError("");
-    } else {
-      setFormData({
-        ...formData,
-        [e.target.name]: e.target.value,
-      });
-    }
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -160,64 +132,44 @@ const Profile: React.FC = () => {
     if (!user) {
       if (!redirectAttempted.current) {
         redirectAttempted.current = true;
-        
-        // Проверяем счетчик перенаправлений в localStorage
-        const redirectAttemptsKey = 'profile_redirect_attempts';
-        const redirectAttempts = parseInt(localStorage.getItem(redirectAttemptsKey) || '0');
-        
-        if (redirectAttempts < 3) {
-          localStorage.setItem(redirectAttemptsKey, (redirectAttempts + 1).toString());
-          window.location.href = `${BASE_PATH}#/login`;
-        } else {
-          console.warn('Превышено максимальное количество попыток перенаправления из handleSubmit');
-          // Сбрасываем счетчик через 10 секунд
-          setTimeout(() => {
-            localStorage.setItem(redirectAttemptsKey, '0');
-          }, 10000);
-        }
+        setShouldRedirect(true);
       }
       return;
     }
 
     try {
       setIsLoading(true);
-      setUploadError("");
+      setError("");
       
-      // Create data to update user
-      const updateData = {
-        tournaments_played: formData.tournaments_played,
-        total_points: formData.total_points,
-        rating: formData.rating
-      };
+      // Создаем объект только с измененными данными
+      const updateData: { name?: string; email?: string } = {};
       
-      // If there's a photo, handle it separately with the new function
-      if (formData.photo) {
-    try {
-      await uploadProfilePhoto(user.id, formData.photo); // Вызываем без profileData
-    } catch (photoError: any) {
-      console.error("Ошибка при загрузке фото:", photoError);
-      setUploadError("Не удалось загрузить фото, но данные профиля будут обновлены");
-    }
-  }
-      
-      try {
-        // Используем updateUser из хука useAuth
-        const updatedUser = await updateUser(String(user.id), updateData);
-        setProfile(updatedUser as ExtendedUser);
-        setEditMode(false);
-      } catch (profileError: any) {
-        console.error("Ошибка при обновлении профиля", profileError);
-        setUploadError(profileError.message || "Ошибка при сохранении данных профиля");
-        
-        // Обработка ошибки авторизации
-        if (profileError.status === 401 && !redirectAttempted.current) {
-          redirectAttempted.current = true;
-          window.location.href = `${BASE_PATH}#/login`;
-        }
+      if (formData.email !== profile?.email) {
+        updateData.email = formData.email;
       }
+      
+      if (formData.name !== profile?.name) {
+        updateData.name = formData.name;
+      }
+
+      // Проверяем, есть ли что обновлять
+      if (Object.keys(updateData).length === 0) {
+        setEditMode(false);
+        return;
+      }
+
+      // Обновляем профиль
+      const updatedUser = await userService.updateProfile(updateData);
+      setProfile(updatedUser);
+      setEditMode(false);
     } catch (err: any) {
       console.error("Ошибка при обновлении профиля", err);
-      setUploadError("Ошибка при сохранении профиля");
+      setError(err.message || "Ошибка при сохранении профиля");
+      
+      if (err.status === 401 && !redirectAttempted.current) {
+        redirectAttempted.current = true;
+        setShouldRedirect(true);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -234,86 +186,81 @@ const Profile: React.FC = () => {
       ) : profile ? (
         <div className="profile-info">
           <div className="profile-avatar">
-            <img 
-              src={profile.avatar || defaultAvatar} 
-              alt="Фото профиля" 
-              onError={handleImageError}
+            <UserPhoto 
+              photoUrl={profile?.profile?.photo_url}
+              className="profile-photo"
             />
+            <div className="photo-upload">
+              <input
+                ref={fileInputRef}
+                type="file"
+                id="photo"
+                name="photo"
+                accept="image/*"
+                onChange={handlePhotoChange}
+                style={{ display: 'none' }}
+              />
+              <button 
+                onClick={() => fileInputRef.current?.click()}
+                className="change-photo-btn"
+                disabled={isLoading}
+              >
+                {profile?.profile?.photo_url ? 'Изменить фото' : 'Загрузить фото'}
+              </button>
+            </div>
           </div>
           <div className="profile-details">
-            <p><strong>Имя:</strong> {profile.username || "Не указано"}</p>
-            <p><strong>Email:</strong> {profile.email || "Не указано"}</p>
-            <p><strong>Турниров сыграно:</strong> {profile.tournaments_played}</p>
-            <p><strong>Всего очков:</strong> {profile.total_points}</p>
-            <p><strong>Рейтинг:</strong> {profile.rating}</p>
+            {!editMode ? (
+              <>
+                <p><strong>Имя:</strong> {profile.name || "Не указано"}</p>
+                <p><strong>Email:</strong> {profile.email || "Не указано"}</p>
+              </>
+            ) : (
+              <form onSubmit={handleSubmit} className="profile-form">
+                <div className="form-group">
+                  <label htmlFor="name">Имя</label>
+                  <input
+                    id="name"
+                    type="text"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleChange}
+                    disabled={isLoading}
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="email">Email</label>
+                  <input
+                    id="email"
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    disabled={isLoading}
+                  />
+                </div>
+                <div className="form-actions">
+                  <button type="submit" disabled={isLoading}>
+                    {isLoading ? 'Сохранение...' : 'Сохранить изменения'}
+                  </button>
+                  <button type="button" onClick={() => setEditMode(false)} disabled={isLoading}>
+                    Отмена
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       ) : (
         <p>Профиль не найден</p>
       )}
 
+      {error && <p className="error-message">{error}</p>}
+
       {!isLoading && profile && !editMode && (
         <button onClick={() => setEditMode(true)} className="edit-profile-btn">
           Редактировать профиль
         </button>
-      )}
-
-      {editMode && (
-        <form onSubmit={handleSubmit} className="profile-form">
-          <div className="form-group">
-            <label htmlFor="photo">Фото профиля</label>
-            <input
-              id="photo"
-              type="file"
-              name="photo"
-              accept="image/*"
-              onChange={handleChange}
-              disabled={isLoading}
-            />
-            {uploadError && <p className="error-message">{uploadError}</p>}
-          </div>
-          <div className="form-group">
-            <label htmlFor="tournaments_played">Турниров сыграно</label>
-            <input
-              id="tournaments_played"
-              type="number"
-              name="tournaments_played"
-              value={formData.tournaments_played}
-              onChange={handleChange}
-              disabled={isLoading}
-            />
-          </div>
-          <div className="form-group">
-            <label htmlFor="total_points">Всего очков</label>
-            <input
-              id="total_points"
-              type="number"
-              name="total_points"
-              value={formData.total_points}
-              onChange={handleChange}
-              disabled={isLoading}
-            />
-          </div>
-          <div className="form-group">
-            <label htmlFor="rating">Рейтинг</label>
-            <input
-              id="rating"
-              type="number"
-              name="rating"
-              value={formData.rating}
-              onChange={handleChange}
-              disabled={isLoading}
-            />
-          </div>
-          <div className="form-actions">
-            <button type="submit" className="save-btn" disabled={isLoading}>
-              {isLoading ? "Сохранение..." : "Сохранить изменения"}
-            </button>
-            <button type="button" onClick={() => setEditMode(false)} className="cancel-btn" disabled={isLoading}>
-              Отмена
-            </button>
-          </div>
-        </form>
       )}
     </div>
   );

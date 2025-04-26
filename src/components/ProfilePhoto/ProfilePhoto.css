@@ -1,0 +1,51 @@
+.profile-photo {
+  position: relative;
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  overflow: hidden;
+  margin: 0 auto;
+}
+
+.profile-photo .profile-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.profile-photo.player-avatar {
+  width: 40px;
+  height: 40px;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.profile-photo-loading {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f0f0f0;
+  color: #666;
+}
+
+.profile-photo-loading.player-avatar {
+  width: 40px;
+  height: 40px;
+}
+
+.error-message {
+  color: #ff4444;
+  font-size: 0.8rem;
+  margin-top: 5px;
+  text-align: center;
+}
+
+.loading-indicator {
+  text-align: center;
+  padding: 10px;
+  color: #6c757d;
+} 

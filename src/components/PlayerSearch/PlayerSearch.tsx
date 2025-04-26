@@ -2,9 +2,10 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch, faPlus, faTimes, faCrown } from '@fortawesome/free-solid-svg-icons';
 import { playerService, SearchPlayer } from '../../services/PlayerService';
-import defaultAvatar from '../../assets/images/default-avatar.png';
+import { UserPhoto } from '../../components/UserPhoto/UserPhoto';
 import './PlayerSearch.css';
 import api from '../../api/client';
+import { UserProfile } from '../../interfaces/Auth';
 
 export interface PlayerSearchProps {
   onSelectPlayer?: (player: SearchPlayer) => void;
@@ -169,9 +170,6 @@ export const PlayerSearch: React.FC<PlayerSearchProps> = (props) => {
   };
 
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    if (e.currentTarget.src !== defaultAvatar) {
-      e.currentTarget.src = defaultAvatar;
-    }
     e.currentTarget.onerror = null; // Prevent infinite loop
   };
 
@@ -194,137 +192,80 @@ export const PlayerSearch: React.FC<PlayerSearchProps> = (props) => {
               onClick={handleClearSearch}
               aria-label="Очистить поиск"
               type="button"
-              style={{
-                position: 'absolute',
-                right: '10px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                color: '#999'
-              }}
             >
               <FontAwesomeIcon icon={faTimes} />
             </button>
           )}
         </div>
-        <button 
-          className="search-button" 
-          onClick={handleSearchPlayers}
-          aria-label="Поиск"
-          type="button"
-          disabled={isSearching || disabled}
-        >
-          <FontAwesomeIcon icon={faSearch} />
-        </button>
-        <div className="players-count">
-          {selectedPlayers.length}/{maxPlayers} игроков
-        </div>
       </div>
+
+      {/* Результаты поиска */}
+      {searchResults.length > 0 && (
+        <div className="mt-4">
+          <h3 className="text-lg font-semibold mb-2">Результаты поиска</h3>
+          <div className="space-y-2">
+            {searchResults.map((player) => (
+              <div
+                key={player.id}
+                className="flex items-center justify-between p-2 border rounded hover:bg-gray-50"
+              >
+                <div className="flex items-center space-x-2">
+                  <UserPhoto
+                    photoUrl={player.profile?.photo_url}
+                    alt={player.name}
+                    className="w-10 h-10 rounded-full"
+                  />
+                  <span>{player.name}</span>
+                </div>
+                <button
+                  onClick={() => handleSelectPlayer(player)}
+                  className="px-3 py-1 text-sm text-white bg-blue-500 rounded hover:bg-blue-600"
+                  disabled={selectedPlayers.some((p) => p.id === player.id)}
+                >
+                  {selectedPlayers.some((p) => p.id === player.id)
+                    ? 'Добавлен'
+                    : 'Добавить'}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Список выбранных игроков */}
+      {!hideSelectedPlayersList && selectedPlayers.length > 0 && (
+        <div className="mt-6">
+          <h3 className="text-lg font-semibold mb-2">Список выбранных игроков</h3>
+          <div className="space-y-2">
+            {selectedPlayers.map((player) => (
+              <div
+                key={player.id}
+                className="flex items-center justify-between p-2 border rounded"
+              >
+                <div className="flex items-center space-x-2">
+                  <UserPhoto
+                    photoUrl={player.profile?.photo_url}
+                    alt={player.name}
+                    className="w-10 h-10 rounded-full"
+                  />
+                  <span>{player.name}</span>
+                </div>
+                <button
+                  onClick={() => handleRemovePlayer(player.id)}
+                  className="px-3 py-1 text-sm text-white bg-red-500 rounded hover:bg-red-600"
+                >
+                  Удалить
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {searchError && (
         <div className="search-error">
-          <p>{searchError}</p>
+          {searchError}
         </div>
-      )}
-
-      {!hideSelectedPlayersList && (
-        <div className="selected-players">
-          <h3>Выбранные игроки</h3>
-          {selectedPlayers.length === 0 ? (
-            <p className="no-players-message">Игроки еще не выбраны</p>
-          ) :
-            <ul className="players-list">
-              {selectedPlayers.map((player, index) => (
-                <li key={player.id} className="selected-player">
-                  <div className="player-info">
-                    <img 
-                      src={player.avatar || player.photoUrl || defaultAvatar} 
-                      alt={player.name} 
-                      className="player-avatar" 
-                      onError={handleImageError}
-                    />
-                    <div className="player-details">
-                      <span className="player-name">
-                        {player.name}
-                        {showCaptain && index === 0 && (
-                          <span className="captain-badge">Капитан</span>
-                        )}
-                      </span>
-                      {player.rating && <span className="player-rating">{player.rating}</span>}
-                    </div>
-                  </div>
-                  <button
-                    className="remove-player-button"
-                    onClick={() => handleRemovePlayer(player.id)}
-                    aria-label="Удалить игрока"
-                    type="button"
-                    disabled={disabled}
-                  >
-                    ×
-                  </button>
-                </li>
-              ))}
-            </ul>
-          }
-        </div>
-      )}
-
-      {isSearching && (
-        <div className="search-loading">Поиск игроков...</div>
-      )}
-
-      {searchResults.length > 0 && !isSearching && (
-        <div className="search-results">
-          <h3>Результаты поиска</h3>
-          <ul className="results-list">
-            {searchResults.map((player) => {
-              const isSelected = selectedPlayers.some((p) => p.id === player.id);
-              const isMaxReached = selectedPlayers.length >= maxPlayers;
-              return (
-                <li
-                  key={player.id}
-                  className={`result-item ${isSelected ? 'selected' : ''} ${
-                    isMaxReached && !isSelected ? 'disabled' : ''
-                  }`}
-                  onClick={() => {
-                    if (disabled) return;
-                    if (!isSelected && !isMaxReached) {
-                      handleSelectPlayer(player);
-                    } else if (isSelected) {
-                      handleRemovePlayer(player.id);
-                    }
-                  }}
-                >
-                  <div className="result-player-info">
-                    <img 
-                      src={player.avatar || player.photoUrl || defaultAvatar} 
-                      alt={player.name} 
-                      className="result-player-avatar" 
-                      onError={handleImageError}
-                    />
-                    <div className="result-player-details">
-                      <span className="result-player-name">{player.name}</span>
-                      {player.rating && (
-                        <span className="result-player-rating">Рейтинг: {player.rating}</span>
-                      )}
-                    </div>
-                  </div>
-                  {isSelected ? (
-                    <button className="remove-result-button" type="button" disabled={disabled}>Удалить</button>
-                  ) : (
-                    !isMaxReached && <button className="add-result-button" type="button" disabled={disabled}>Добавить</button>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      )}
-
-      {searchQuery && searchResults.length === 0 && !isSearching && (
-        <div className="no-results">Игроки не найдены. Попробуйте изменить запрос.</div>
       )}
     </div>
   );

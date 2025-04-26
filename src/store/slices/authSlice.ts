@@ -1,14 +1,15 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { authService } from '../../services/api';
+import { STORAGE_KEYS } from '../../constants/storage';
+import { authService } from '../../services/auth.service';
 
-// Интерфейс ошибки от API
+// API Error interface
 interface ApiError {
   message: string;
   status: number;
   data: any;
 }
 
-// Пользовательский интерфейс
+// User interface
 interface User {
   id: number;
   email: string;
@@ -16,7 +17,7 @@ interface User {
   role: string;
 }
 
-// Состояние авторизации
+// Auth state interface
 interface AuthState {
   token: string | null;
   user: User | null;
@@ -25,16 +26,16 @@ interface AuthState {
   lastLoginAttempt: string | null;
 }
 
-// Начальное состояние
+// Initial state
 const initialState: AuthState = {
-  token: localStorage.getItem('token'),
+  token: localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN),
   user: null,
   loading: false,
   error: null,
   lastLoginAttempt: null,
 };
 
-// Асинхронное действие для входа в систему
+// Async thunk for login
 export const login = createAsyncThunk<
   any,
   { email: string; password: string },
@@ -44,7 +45,6 @@ export const login = createAsyncThunk<
   async ({ email, password }, { rejectWithValue }) => {
     try {
       const response = await authService.login(email, password);
-      localStorage.setItem('token', response.token);
       return response;
     } catch (error: any) {
       return rejectWithValue(error);
@@ -52,7 +52,7 @@ export const login = createAsyncThunk<
   }
 );
 
-// Асинхронное действие для регистрации
+// Async thunk for registration
 export const register = createAsyncThunk<
   any,
   { name: string; email: string; password: string; role?: string },
@@ -62,7 +62,6 @@ export const register = createAsyncThunk<
   async ({ name, email, password, role }, { rejectWithValue }) => {
     try {
       const response = await authService.register(name, email, password, role);
-      localStorage.setItem('token', response.token);
       return response;
     } catch (error: any) {
       return rejectWithValue(error);
@@ -70,13 +69,12 @@ export const register = createAsyncThunk<
   }
 );
 
-// Асинхронное действие для обновления токена
+// Async thunk for token refresh
 export const refreshToken = createAsyncThunk<any, void, { rejectValue: ApiError }>(
   'auth/refreshToken', 
   async (_, { rejectWithValue }) => {
     try {
       const response = await authService.refreshToken();
-      localStorage.setItem('token', response.token);
       return response;
     } catch (error: any) {
       return rejectWithValue(error);
@@ -84,48 +82,42 @@ export const refreshToken = createAsyncThunk<any, void, { rejectValue: ApiError 
   }
 );
 
-// Slice для авторизации
+// Auth slice
 const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
-    // Прямая установка пользователя
     setUser: (state, action: PayloadAction<User | null>) => {
       state.user = action.payload;
     },
-    // Прямая установка токена
     setToken: (state, action: PayloadAction<string | null>) => {
       state.token = action.payload;
       if (action.payload) {
-        localStorage.setItem('token', action.payload);
+        localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, action.payload);
       } else {
-        localStorage.removeItem('token');
+        localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
       }
     },
-    // Полная очистка пользовательских данных
     clearUser: (state) => {
       state.user = null;
       state.token = null;
-      localStorage.removeItem('token');
+      localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
     },
-    // Выход из системы
     logout: (state) => {
       state.token = null;
       state.user = null;
-      localStorage.removeItem('token');
+      localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
     },
-    // Очистка ошибок
     clearError: (state) => {
       state.error = null;
     },
-    // Обновление пользовательских данных
     updateUser: (state, action: PayloadAction<User>) => {
       state.user = action.payload;
     },
   },
   extraReducers: (builder) => {
     builder
-      // Обработка входа
+      // Login cases
       .addCase(login.pending, (state, action) => {
         state.loading = true;
         state.error = null;
@@ -150,7 +142,7 @@ const authSlice = createSlice({
         }
       })
       
-      // Обработка регистрации
+      // Registration cases
       .addCase(register.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -174,7 +166,7 @@ const authSlice = createSlice({
         }
       })
       
-      // Обработка обновления токена
+      // Token refresh cases
       .addCase(refreshToken.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -198,7 +190,7 @@ const authSlice = createSlice({
         }
         state.token = null;
         state.user = null;
-        localStorage.removeItem('token');
+        localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
       });
   },
 });
