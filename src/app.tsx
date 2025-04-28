@@ -111,13 +111,8 @@ const App = (): React.ReactElement => {
                       <Admin />
                     </AdminRoute>
                   </ErrorBoundary>
-              <Route path="/admin" element={
-                <ErrorBoundary>
-                  <AdminRoute>
-                    <Admin />
-                  </AdminRoute>
-                </ErrorBoundary>
-              } />
+                } />
+              )}
               <Route path="/top-players" element={
                 <ErrorBoundary>
                   <TopPlayers />
