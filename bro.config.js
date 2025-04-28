@@ -3,7 +3,7 @@ const pkg = require("./package");
 module.exports = {
   webpackConfig: {
     output: {
-      publicPath: `/static/fiba3x3/${process.env.VERSION || pkg.version}/`,
+      publicPath: `https://timurbatrshin-fiba-backend-5ef6.twc1.net/api/proxy/static-bro-js/fiba3x3/${process.env.VERSION || pkg.version}/`,
     },
     module: {
       rules: [

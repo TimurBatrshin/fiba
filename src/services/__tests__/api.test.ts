@@ -105,7 +105,7 @@ describe('ApiService', () => {
       const originalRequest = ApiService['request'];
       ApiService['request'] = jest.fn().mockResolvedValue({ data: 'success' });
       
-      await ApiService.get('https://static.bro-js.ru/some-resource.js');
+      await ApiService.get('/api/proxy/static-bro-js/some-resource.js');
       
       expect(ApiService['request']).toHaveBeenCalledTimes(1);
       const args = (ApiService['request'] as jest.Mock).mock.calls[0];
