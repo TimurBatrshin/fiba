@@ -41,7 +41,7 @@ module.exports = {
     "fiba.api": "/api",
     "fiba.static": "https://timurbatrshin-fiba-backend-5ef6.twc1.net/api/proxy/static-bro-js/",
     "fiba.ms": "/ms",
-    "fiba.version": "1.6.9"
+    "fiba.version": "1.8.0"
   },
   port: 8099,
   apiBaseUrl: '/api' // Используем реальный API
