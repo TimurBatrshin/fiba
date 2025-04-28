@@ -7,7 +7,7 @@
     <meta name="description" content="FIBA3x3 Basketball Tournament Management System" />
     
     <!-- Настройка CSP для разрешения загрузки ресурсов -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://timurbatrshin-fiba-backend-fc1f.twc1.net; img-src 'self' data: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://timurbatrshin-fiba-backend-fc1f.twc1.net; style-src 'self' 'unsafe-inline' https:; font-src 'self' data: https:; connect-src 'self' https://timurbatrshin-fiba-backend-fc1f.twc1.net https: http: ws: wss:;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://timurbatrshin-fiba-backend-fc1f.twc1.net https://timurbatrshin-fiba-backend-5ef6.twc1.net; img-src 'self' data: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://timurbatrshin-fiba-backend-fc1f.twc1.net https://timurbatrshin-fiba-backend-5ef6.twc1.net https://static.bro-js.ru; style-src 'self' 'unsafe-inline' https:; font-src 'self' data: https:; connect-src 'self' https://timurbatrshin-fiba-backend-fc1f.twc1.net https://timurbatrshin-fiba-backend-5ef6.twc1.net https: http: ws: wss:;">
     
     <!-- PWA assets -->
     <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
@@ -36,6 +36,20 @@
         color: #666;
       }
     </style>
+
+    <!-- Загрузка FIBA3x3 скрипта через прокси -->
+    <script>
+      window.addEventListener('DOMContentLoaded', function() {
+        const script = document.createElement('script');
+        script.src = '/api/proxy/static-bro-js/fiba3x3/1.8.0/index.js';
+        script.async = true;
+        script.crossOrigin = 'anonymous';
+        script.onerror = function(error) {
+          console.error('Error loading FIBA3x3 script:', error);
+        };
+        document.head.appendChild(script);
+      });
+    </script>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
