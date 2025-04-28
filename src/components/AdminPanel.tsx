@@ -11,6 +11,7 @@ import {
   AdminTournament
 } from '../services/api/admin';
 import './AdminPanel.css';
+import FeatureFlagsManager from './FeatureFlagsManager';
 
 const AdminPanel: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -193,6 +194,9 @@ const AdminPanel: React.FC = () => {
         </Tab>
         <Tab eventKey="tournaments" title="Tournaments">
           {loading ? <p>Loading...</p> : renderTournaments()}
+        </Tab>
+        <Tab eventKey="features" title="Функции">
+          <FeatureFlagsManager />
         </Tab>
       </Tabs>
     </div>
