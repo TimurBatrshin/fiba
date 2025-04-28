@@ -39,9 +39,10 @@ module.exports = {
   },
   config: {
     "fiba.api": "/api",
-    "fiba.static": "https://timurbatrshin-fiba-backend-5ef6.twc1.net/api/proxy/static-bro-js/",
+    "fiba.static": "/static",
     "fiba.ms": "/ms",
-    "fiba.version": "1.8.0"
+    "fiba.version": pkg.version,
+    "fiba.baseUrl": "https://dev.bro-js.ru"
   },
   port: 8099,
   apiBaseUrl: '/api' // Используем реальный API

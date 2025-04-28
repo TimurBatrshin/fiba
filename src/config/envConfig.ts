@@ -8,7 +8,7 @@ import { STORAGE_KEYS, TOKEN_EXPIRATION } from '../constants/storage';
 const CONFIG = {
   apiUrl: 'https://timurbatrshin-fiba-backend-5ef6.twc1.net/api',
   enableLogging: true,
-  staticUrl: 'https://timurbatrshin-fiba-backend-5ef6.twc1.net',
+  staticUrl: '/static',
   appBaseUrl: '/',
   msPath: '/ms',
   basePath: '/fiba3x3'
